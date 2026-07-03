@@ -22,14 +22,14 @@ pnpm install
 # Generate Prisma client
 pnpm db:generate
 
-# Push schema to database
-pnpm db:push
+# Run database migrations
+pnpm db:migrate
 
 # Run dev servers
 pnpm dev
 ```
 
-Visit http://localhost:3000 for the admin panel and http://localhost:4000 for the API.
+Visit http://localhost:3000 for the admin panel and http://localhost:3001 for the API.
 
 ## Project Structure
 
@@ -45,7 +45,7 @@ nodepress/
 │   ├── editor/     # Rich text editor
 │   ├── config/     # Configuration
 │   └── cli/        # CLI tools
-├── plugins/        # Official plugins
+├── plugins/        # Official plugins (13 WordPress-equivalent plugins)
 └── rfcs/           # RFC proposals
 ```
 
@@ -105,31 +105,31 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### Types
 
-| Type       | Usage                          |
-|------------|--------------------------------|
-| `feat`     | New feature                    |
-| `fix`      | Bug fix                        |
-| `chore`    | Maintenance                    |
-| `docs`     | Documentation                  |
-| `refactor` | Code refactoring               |
-| `test`     | Tests                          |
-| `style`    | Code style (formatting, etc.)  |
-| `perf`     | Performance improvement        |
-| `ci`       | CI/CD changes                  |
+| Type       | Usage                         |
+| ---------- | ----------------------------- |
+| `feat`     | New feature                   |
+| `fix`      | Bug fix                       |
+| `chore`    | Maintenance                   |
+| `docs`     | Documentation                 |
+| `refactor` | Code refactoring              |
+| `test`     | Tests                         |
+| `style`    | Code style (formatting, etc.) |
+| `perf`     | Performance improvement       |
+| `ci`       | CI/CD changes                 |
 
 ### Scopes
 
-| Scope        | Area                          |
-|--------------|-------------------------------|
-| `core`       | @nodepress/core               |
-| `db`         | @nodepress/db                 |
-| `plugin-sdk` | @nodepress/plugin-sdk         |
-| `testing`    | @nodepress/testing            |
-| `ui`         | @nodepress/ui                 |
-| `editor`     | @nodepress/editor             |
-| `admin`      | Admin panel                   |
-| `api`        | API server                    |
-| `plugin:*`   | Specific plugin               |
+| Scope        | Area                  |
+| ------------ | --------------------- |
+| `core`       | @nodepress/core       |
+| `db`         | @nodepress/db         |
+| `plugin-sdk` | @nodepress/plugin-sdk |
+| `testing`    | @nodepress/testing    |
+| `ui`         | @nodepress/ui         |
+| `editor`     | @nodepress/editor     |
+| `admin`      | Admin panel           |
+| `api`        | API server            |
+| `plugin:*`   | Specific plugin       |
 
 ### Examples
 
@@ -169,6 +169,17 @@ Releases are automated via Changesets:
 2. Commit the changeset file with your changes
 3. When PR is merged to `main`, the release workflow creates a version PR
 4. Merging the version PR publishes updates to npm
+
+## Plugin Development
+
+See [packages/plugin-sdk/README.md](packages/plugin-sdk/README.md) for the Plugin Development Kit documentation, including:
+
+- Creating a new plugin with `npx nodepress-cli generate plugin`
+- Registering hooks (actions & filters)
+- Adding custom REST/GraphQL endpoints
+- Creating custom block editor extensions
+- Plugin manifest and permission system
+- Testing plugins with `@nodepress/testing`
 
 ## Questions?
 

@@ -2,8 +2,10 @@
 
 **Versi Dokumen:** 2.0
 **Tanggal:** 3 Juli 2026
-**Status:** Draft untuk Review
+**Status:** Living Document — v2.0 Implemented
 **Perubahan dari v1:** Menambahkan fitur yang terlewat, memperdalam Security/Performance/Scalability sebagai pilar utama, dan menambahkan blueprint lengkap untuk Open Source Contributor Experience.
+
+> **Note:** This document reflects the original v2.0 specification. All security, performance, and scalability requirements are implemented. See [PRD4.md](./PRD4.md) for current status.
 
 > Dokumen ini adalah **ekstensi** dari PRD v1 (`PRD-WordPress-NodeJS-Edition.md`). Section 1-8 di v1 tetap berlaku sebagai fondasi. PRD v2 fokus pada **gap analysis**, fitur baru, dan tiga pilar non-negotiable: **Kecepatan, Keamanan, Skalabilitas** — supaya siapapun developer bisa berkontribusi dengan aman dan percaya diri.
 
@@ -159,10 +161,14 @@ Karena plugin dari pihak ketiga berpotensi menjalankan kode arbitrary, NodePress
 ```json
 // plugin.json
 {
-	"name": "nodepress-plugin-analytics",
-	"version": "1.0.0",
-	"permissions": ["content:read", "hooks:content.afterPublish", "network:fetch:https://api.analytics-provider.com/*"],
-	"sandbox": "isolated-vm"
+  "name": "nodepress-plugin-analytics",
+  "version": "1.0.0",
+  "permissions": [
+    "content:read",
+    "hooks:content.afterPublish",
+    "network:fetch:https://api.analytics-provider.com/*"
+  ],
+  "sandbox": "isolated-vm"
 }
 ```
 

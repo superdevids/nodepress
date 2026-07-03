@@ -1,15 +1,19 @@
 {
   "name": "nodepress-plugin-file-editor",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "index.ts",
   "nodepress": {
+    "slug": "file-editor",
     "name": "File Editor",
     "description": "In-browser code editor for theme and plugin files (Monaco-based).",
-    "permissions": ["settings:read", "settings:write"],
-    "minCoreVersion": "0.0.1"
+    "minCoreVersion": "0.1.0"
   },
+  "permissions": [
+    "settings:read",
+    "settings:write"
+  ],
   "dependencies": {
     "@nodepress/plugin-sdk": "workspace:*"
   }

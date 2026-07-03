@@ -3,12 +3,20 @@
  * Allows plugins to define custom content types and fields.
  */
 
-import { z } from "zod";
-
 export type FieldType =
-  | "text" | "richtext" | "number" | "boolean" | "date"
-  | "email" | "url" | "media" | "relation" | "select"
-  | "multiselect" | "json" | "repeater";
+  | 'text'
+  | 'richtext'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'email'
+  | 'url'
+  | 'media'
+  | 'relation'
+  | 'select'
+  | 'multiselect'
+  | 'json'
+  | 'repeater';
 
 export interface FieldDefinition {
   type: FieldType;
@@ -51,7 +59,7 @@ export function registerContentType(def: ContentTypeDefinition): void {
 /**
  * Create a field definition.
  */
-export function defineField(type: FieldType, def: Omit<FieldDefinition, "type">): FieldDefinition {
+export function defineField(type: FieldType, def: Omit<FieldDefinition, 'type'>): FieldDefinition {
   return { ...def, type };
 }
 

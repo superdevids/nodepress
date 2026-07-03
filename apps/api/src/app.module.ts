@@ -1,23 +1,25 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+
 import { ContentModule } from './content/content.module';
 import { CommentsModule } from './comments/comments.module';
 import { MediaModule } from './media/media.module';
+import { TaxonomyModule } from './taxonomy/taxonomy.module';
+import { SeoModule } from './seo/seo.module';
+
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { InstallModule } from './install/install.module';
 import { FeedsModule } from './feeds/feeds.module';
 import { SearchModule } from './search/search.module';
 import { MenusModule } from './menus/menus.module';
-import { TaxonomyModule } from './taxonomy/taxonomy.module';
 import { PluginsModule } from './plugins/plugins.module';
 import { ThemesModule } from './themes/themes.module';
 import { SettingsModule } from './settings/settings.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { OEmbedModule } from './oembed/oembed.module';
-import { SeoModule } from './seo/seo.module';
-import { UsersModule } from './users/users.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminMenuModule } from './admin/admin-menu.module';
 import { GraphqlAppModule } from './graphql/graphql.module';
@@ -33,25 +35,32 @@ import { InstallCheckMiddleware } from './common/middleware/install-check.middle
 
 @Module({
   imports: [
+    // Core
     PrismaModule,
     ConfigModule,
+
+    // Auth & Users
     AuthModule,
     UsersModule,
+
+    // Content
     ContentModule,
     CommentsModule,
     MediaModule,
+    TaxonomyModule,
+    SeoModule,
+
+    // System
     HealthModule,
     InstallModule,
     FeedsModule,
     SearchModule,
     MenusModule,
-    TaxonomyModule,
     PluginsModule,
     ThemesModule,
     SettingsModule,
     WebhooksModule,
     OEmbedModule,
-    SeoModule,
     DashboardModule,
     AdminMenuModule,
     GraphqlAppModule,

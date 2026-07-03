@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-  Req,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -39,11 +30,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate and receive JWT tokens' })
-  async login(
-    @Body() dto: LoginDto,
-    @CurrentUser() user: any,
-    @Req() req: Request,
-  ) {
+  async login(@Body() dto: LoginDto, @CurrentUser() user: JwtPayload, @Req() req: Request) {
     const ipAddress = req.ip || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
     return this.authService.login(dto, ipAddress, userAgent);
@@ -53,10 +40,7 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh an expired access token' })
-  async refresh(
-    @Body() dto: RefreshTokenDto,
-    @Req() req: Request,
-  ) {
+  async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {
     const ipAddress = req.ip || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
     return this.authService.refresh(dto.refreshToken, ipAddress, userAgent);
@@ -74,14 +58,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change current password' })
-  async changePassword(
-    @Body() dto: ChangePasswordDto,
-    @CurrentUser() payload: JwtPayload,
-  ) {
-    return this.authService.changePassword(
-      payload.sub,
-      dto.currentPassword,
-      dto.newPassword,
-    );
+  async changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() payload: JwtPayload) {
+    return this.authService.changePassword(payload.sub, dto.currentPassword, dto.newPassword);
   }
 }

@@ -29,10 +29,7 @@ export class MediaController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'List all media items' })
-  async findAll(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
+  async findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
     return this.mediaService.findAll(
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 20,
@@ -50,11 +47,9 @@ export class MediaController {
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload a new media file' })
-  async upload(
-    @UploadedFile() file: Express.Multer.File,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    // TODO: persist file to S3/local storage and create media entry
+  async upload(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: JwtPayload) {
+    // Multer saves the uploaded file to disk (configured in MediaModule).
+    // Metadata is persisted to the database via mediaService.create().
     return this.mediaService.create({
       filename: file.filename ?? file.originalname,
       originalName: file.originalname,

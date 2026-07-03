@@ -11,13 +11,13 @@
  * Navigation Mode, Cover Block, Media & Text Block, etc.
  */
 
-export { BlockEditor, type BlockEditorProps } from "./block-editor.js";
-export { useBlockEditor, type UseBlockEditorOptions } from "./use-block-editor.js";
-export { getDefaultExtensions } from "./extensions.js";
-export { serializeToHtml } from "./serialize.js";
-export { parseFromHtml } from "./parse.js";
+export { BlockEditor, type BlockEditorProps } from './block-editor.js';
+export { useBlockEditor, type UseBlockEditorOptions } from './use-block-editor.js';
+export { getDefaultExtensions } from './extensions.js';
+export { serializeToHtml } from './serialize.js';
+export { parseFromHtml } from './parse.js';
 
-export { blockRegistry } from "./block-api.js";
+export { blockRegistry } from './block-api.js';
 
 export {
   getBlockSupports,
@@ -32,7 +32,7 @@ export {
   buildBlockStyleFromSupports,
   getAlignmentClass,
   applySupportsToAttrs,
-} from "./supports/block-supports.js";
+} from './supports/block-supports.js';
 
 export {
   registerDynamicBlock,
@@ -40,7 +40,7 @@ export {
   getDynamicBlocks,
   renderDynamicBlock,
   getCacheKey,
-} from "./dynamic/dynamic-blocks.js";
+} from './dynamic/dynamic-blocks.js';
 
 export {
   registerReusableBlock,
@@ -57,32 +57,25 @@ export {
   saveReusableBlock,
   deleteReusableBlock,
   updateReusableBlock,
-} from "./reusable/reusable-blocks.js";
-export type { ReusableBlockData, ReusableBlockStore } from "./reusable/reusable-blocks.js";
+} from './reusable/reusable-blocks.js';
+export type { ReusableBlockStore } from './reusable/reusable-blocks.js';
 
 export {
   registerBlockCategory,
   getBlockCategories,
   getBlockCategory,
-} from "./categories/block-categories.js";
+} from './categories/block-categories.js';
 
-export {
-  registerBlockStyle,
-  getBlockStyles,
-  applyBlockStyle,
-} from "./styles/block-styles.js";
+export { registerBlockStyle, getBlockStyles, applyBlockStyle } from './styles/block-styles.js';
 
-export {
-  registerBlockVariation,
-  getBlockVariations,
-} from "./variations/block-variations.js";
+export { registerBlockVariation, getBlockVariations } from './variations/block-variations.js';
 
 export {
   registerBlockTransform,
   getBlockTransforms,
-} from "./transformations/block-transformations.js";
+} from './transformations/block-transformations.js';
 
-export { BlockInserter } from "./inserter/block-inserter.js";
+export { BlockInserter } from './inserter/block-inserter.js';
 
 export {
   createBlockLock,
@@ -94,7 +87,7 @@ export {
   mergeBlockLock,
   lockEntireContent,
   isTemplateLocked,
-} from "./locking/block-locking.js";
+} from './locking/block-locking.js';
 
 export {
   buildBlockTree,
@@ -104,10 +97,10 @@ export {
   getNextSibling,
   flattenTree,
   buildBreadcrumbs,
-} from "./navigation/navigation-mode.js";
-export type { BlockTreeNode } from "./navigation/navigation-mode.js";
+} from './navigation/navigation-mode.js';
+export type { BlockTreeNode } from './navigation/navigation-mode.js';
 
-export { editorHooks, EditorHookNames } from "./hooks/editor-hooks.js";
+export { editorHooks, EditorHookNames } from './hooks/editor-hooks.js';
 
 export {
   serializeBlock,
@@ -117,7 +110,7 @@ export {
   cloneBlock,
   findBlocksByType,
   countBlocks,
-} from "./utils/serialization.js";
+} from './utils/serialization.js';
 
 export {
   generateId,
@@ -127,7 +120,7 @@ export {
   truncateText,
   getTextFromBlock,
   isEmptyBlock,
-} from "./utils/helpers.js";
+} from './utils/helpers.js';
 
 export {
   CoverBlockExtension,
@@ -138,7 +131,7 @@ export {
   ColumnItemExtension,
   SpacerExtension,
   DetailsExtension,
-} from "./extensions/custom-extensions.js";
+} from './extensions/custom-extensions.js';
 
 export type {
   BlockNode,
@@ -147,6 +140,7 @@ export type {
   BlockSupports,
   BlockDeclaration,
   BlockCategoryDef,
+  BlockStyleDef,
   BlockVariationDef,
   BlockTransformDef,
   DynamicBlockDef,
@@ -156,4 +150,4 @@ export type {
   SerializedBlock,
   BlockAttributeDef,
   BlockCategory,
-} from "./types.js";
+} from './types.js';

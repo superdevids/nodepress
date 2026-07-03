@@ -2,8 +2,10 @@
 
 **Versi Dokumen:** 1.0
 **Tanggal:** 3 Juli 2026
-**Status:** Draft untuk Review
+**Status:** Living Document — v1.0 Implemented
 **Author:** Product & Engineering Team
+
+> **Note:** This document reflects the original v1.0 specification. All Must Have features are implemented. See [PRD4.md](./PRD4.md) for current status.
 
 ---
 
@@ -238,17 +240,17 @@ nodepress/
 ```typescript
 // contoh: content-types/product.contenttype.ts
 export const ProductType = defineContentType({
-	name: "product",
-	label: { singular: "Product", plural: "Products" },
-	fields: {
-		title: field.text({ required: true }),
-		description: field.richtext(),
-		price: field.number({ required: true, min: 0 }),
-		images: field.media({ multiple: true }),
-		category: field.relation({ to: "product_category", many: false }),
-	},
-	taxonomies: ["product_category"],
-	supports: ["revisions", "seo", "comments"],
+  name: 'product',
+  label: { singular: 'Product', plural: 'Products' },
+  fields: {
+    title: field.text({ required: true }),
+    description: field.richtext(),
+    price: field.number({ required: true, min: 0 }),
+    images: field.media({ multiple: true }),
+    category: field.relation({ to: 'product_category', many: false }),
+  },
+  taxonomies: ['product_category'],
+  supports: ['revisions', 'seo', 'comments'],
 });
 ```
 
@@ -276,14 +278,15 @@ export const ProductType = defineContentType({
 ### 8.3 Authentication & Authorization (RBAC)
 
 **Role bawaan (default, terinspirasi WP):**
-| Role | Kapabilitas |
-|---|---|
-| Super Admin | Full akses, termasuk manage plugin & settings sistem |
-| Admin | Manage semua content & user (kecuali Super Admin) |
-| Editor | Manage & publish semua content (termasuk milik user lain) |
-| Author | Manage & publish content milik sendiri |
-| Contributor | Buat draft, tidak bisa publish sendiri |
-| Subscriber | Hanya baca, manage profil sendiri (untuk site dengan komentar/user area) |
+
+| Role        | Kapabilitas                                                              |
+| ----------- | ------------------------------------------------------------------------ |
+| Super Admin | Full akses, termasuk manage plugin & settings sistem                     |
+| Admin       | Manage semua content & user (kecuali Super Admin)                        |
+| Editor      | Manage & publish semua content (termasuk milik user lain)                |
+| Author      | Manage & publish content milik sendiri                                   |
+| Contributor | Buat draft, tidak bisa publish sendiri                                   |
+| Subscriber  | Hanya baca, manage profil sendiri (untuk site dengan komentar/user area) |
 
 **Sistem permission:** capability-based (bukan hanya role-based), setiap capability adalah string granular (`content:product:create`, `content:product:publish`, dst) supaya plugin bisa daftar capability custom — mirip `current_user_can()` di WP.
 
@@ -313,16 +316,16 @@ export const ProductType = defineContentType({
 
 ```typescript
 // Actions — untuk side effect (mirip do_action / add_action)
-hooks.addAction("content.afterPublish", async (entry) => {
-	await sendNotification(entry);
+hooks.addAction('content.afterPublish', async (entry) => {
+  await sendNotification(entry);
 });
 
 // Filters — untuk memodifikasi data (mirip apply_filters / add_filter)
-hooks.addFilter("content.beforeSave", (data, contentType) => {
-	if (contentType === "post") {
-		data.readingTime = calculateReadingTime(data.body);
-	}
-	return data;
+hooks.addFilter('content.beforeSave', (data, contentType) => {
+  if (contentType === 'post') {
+    data.readingTime = calculateReadingTime(data.body);
+  }
+  return data;
 });
 ```
 

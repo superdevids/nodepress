@@ -1,102 +1,97 @@
 /**
- * @nodepress/core
+ * @nodepress/core - NodePress Business Logic Engine
  *
- * The business logic engine for NodePress.
- * Orchestrates content management, plugin lifecycle, authentication,
- * media handling, caching, and all core CMS operations.
+ * Central orchestrator for all CMS operations:
+ * - Content modeling & management
+ * - Plugin system (hooks, lifecycle, sandboxing)
+ * - Theme engine (templates, customizer, widgets)
+ * - Authentication & authorization (RBAC)
+ * - Security (encryption, 2FA, password policy)
+ * - Media & file handling
+ * - SEO, shortcodes, oEmbed
+ * - Mail, backup, logging, i18n, cron, scheduler
  */
 
-// ─── Content Engine ────────────────────────────────────────
-export {
-  ContentEngine,
-  defineContentType,
-  field,
-  type ContentTypeDefinition,
-  type FieldDefinition,
-  type FieldType,
+// ─── Content Engine ─────────────────────────────────────
+export { ContentEngine, defineContentType, field } from './content/content-engine.js';
+export type {
+  ContentTypeDefinition,
+  FieldDefinition,
+  FieldType,
 } from './content/content-engine.js';
 
-// ─── Post Formats (Gap A-04) ───────────────────────────────
 export {
   PostFormats,
   PostFormat,
   POST_FORMATS,
   POST_FORMAT_LABELS,
   isPostFormat,
-  type PostFormatValidation,
 } from './content/post-formats.js';
+export type { PostFormatValidation } from './content/post-formats.js';
 
-// ─── Sticky Posts (Gap A-05) ───────────────────────────────
-export { StickyPosts, type StickyPostEntry } from './content/sticky-posts.js';
+export { StickyPosts } from './content/sticky-posts.js';
+export type { StickyPostEntry } from './content/sticky-posts.js';
 
-// ─── Password Content (Gap A-06) ───────────────────────────
-export {
-  PasswordContent,
-  type PasswordContentEntry,
-  type UnlockResult,
-} from './content/password-content.js';
+export { PasswordContent } from './content/password-content.js';
+export type { PasswordContentEntry, UnlockResult } from './content/password-content.js';
 
-// ─── Featured Image (Gap A-08) ─────────────────────────────
-export {
-  FeaturedImage,
-  type FeaturedImageData,
-  type ThumbnailSize,
-} from './content/featured-image.js';
+export { FeaturedImage } from './content/featured-image.js';
+export type { FeaturedImageData, ThumbnailSize } from './content/featured-image.js';
 
-// ─── Page Templates (Gap A-09) ─────────────────────────────
-export {
-  PageTemplateRegistry,
-  PageTemplateResolver,
-  type PageTemplate,
-  type PageTemplateData,
-} from './content/page-templates.js';
+export { PageTemplateRegistry, PageTemplateResolver } from './content/page-templates.js';
+export type { PageTemplate, PageTemplateData } from './content/page-templates.js';
 
-// ─── Plugin System ─────────────────────────────────────────
-export { PluginEngine, type PluginManifest, type PluginLifecycle } from './plugin/plugin-engine.js';
+// ─── Plugin System ──────────────────────────────────────
+export { PluginEngine } from './plugin/plugin-engine.js';
+export type { PluginManifest, PluginLifecycle, PluginBootContext } from './plugin/plugin-engine.js';
 
-export { HookRegistry, type HookEvent } from './plugin/hook-registry.js';
+export { HookRegistry } from './plugin/hook-registry.js';
+export type { HookEvent } from './plugin/hook-registry.js';
+export { DependencyResolver } from './plugin/dependency-resolver.js';
+export { SandboxManager } from './plugin/sandbox-manager.js';
+export { SettingsApi } from './plugin/settings-api.js';
+export { CronApi } from './plugin/cron-api.js';
+export { AssetRegistry } from './plugin/asset-registry.js';
+export { AutoUpdater } from './plugin/auto-updater.js';
+export { CapabilityRegistrar } from './plugin/capability-registrar.js';
+export { DbMigrationManager } from './plugin/db-migration.js';
+export { MuPluginLoader } from './plugin/mu-plugin-loader.js';
+export { RollbackManager } from './plugin/rollback-manager.js';
+export { UninstallManager } from './plugin/uninstall-manager.js';
+export { ActivationHookManager } from './plugin/activation-hooks.js';
+export { RegistryClient } from './plugin/registry-client.js';
+export { PluginI18n } from './plugin/plugin-i18n.js';
+export { FileEditor } from './plugin/file-editor.js';
 
-// ─── Theme Engine ──────────────────────────────────────────
-export { ThemeEngine, type ThemeManifest, type TemplateHierarchy } from './theme/theme-engine.js';
+// ─── Theme Engine ───────────────────────────────────────
+export { ThemeEngine } from './theme/theme-engine.js';
+export type { ThemeManifest, TemplateHierarchy } from './theme/theme-engine.js';
 
-// ─── Theme Subsystems (Phase 5) ────────────────────────────
+export { ChildThemeResolver } from './theme/child-theme-resolver.js';
+export type { ChildThemeManifest, ResolvedTemplatePath } from './theme/child-theme-resolver.js';
 
-// Child Theme System (Gap D-01)
-export {
-  ChildThemeResolver,
-  generateChildThemeConfig,
-  type ChildThemeManifest,
-  type ResolvedTemplatePath,
-} from './theme/child-theme-resolver.js';
-
-// theme.json Parser (Gap D-02)
-export {
-  ThemeJsonParser,
-  type ThemeJson,
-  type ThemeJsonSettings,
-  type ThemeJsonStyles,
-  type ThemeJsonColorPalette,
-  type ThemeJsonGradient,
-  type ThemeJsonFontSize,
-  type ThemeJsonFontFamily,
-  type ThemeJsonTypographySettings,
-  type ThemeJsonColorSettings,
-  type ThemeJsonSpacingSettings,
-  type ThemeJsonLayoutSettings,
-  type ThemeJsonBlockStyles,
-  type ThemeJsonCustomTemplate,
-  type ThemeJsonStyleVariation,
-  type CssCustomProperty,
+export { ThemeJsonParser } from './theme/theme-json-parser.js';
+export type {
+  ThemeJson,
+  ThemeJsonSettings,
+  ThemeJsonStyles,
+  ThemeJsonColorPalette,
+  ThemeJsonGradient,
+  ThemeJsonFontSize,
+  ThemeJsonFontFamily,
+  ThemeJsonTypographySettings,
+  ThemeJsonColorSettings,
+  ThemeJsonSpacingSettings,
+  ThemeJsonLayoutSettings,
+  ThemeJsonBlockStyles,
+  ThemeJsonCustomTemplate,
+  ThemeJsonStyleVariation,
+  CssCustomProperty,
 } from './theme/theme-json-parser.js';
 
-// Template Parts (Gap D-05)
-export {
-  TemplatePartsManager,
-  type TemplatePartDefinition,
-  type TemplatePartRecord,
-} from './theme/template-parts.js';
+export { TemplatePartsManager } from './theme/template-parts.js';
+export type { TemplatePartDefinition, TemplatePartRecord } from './theme/template-parts.js';
 
-// Block Patterns (Gap D-04)
 export {
   BlockPatternsManager,
   type BlockPatternDefinition,
@@ -105,145 +100,93 @@ export {
   type BlockPatternCategoryDef,
 } from './theme/block-patterns.js';
 
-// Theme Customizer (Gap D-03)
-export {
-  ThemeCustomizer,
-  type CustomizerField,
-  type CustomizerFieldType,
-  type CustomizerSection,
-  type CustomizerPanel,
-  type SelectiveRefreshRule,
-  type PreviewDevice,
-  type ThemePreviewState,
-} from './theme/theme-customizer.js';
+export { BlockAreasManager, BlockAreaRenderer } from './theme/block-areas.js';
+export type { BlockAreaDefinition, BlockAreaRecord } from './theme/block-areas.js';
 
-// Block Areas / Widget Areas (Gap D-08)
-export {
-  BlockAreasManager,
-  BlockAreaRenderer,
-  type BlockAreaDefinition,
-  type BlockAreaRecord,
-} from './theme/block-areas.js';
-
-// Theme Setup Functions (Gap D-07)
-export {
-  ThemeSetupManager,
-  type ThemeSetupContext,
-  type ThemeSetupFn,
-  type ThemeSetupConfig,
-  type ThemeSetupImageSize,
+export { ThemeSetupManager } from './theme/theme-setup.js';
+export type {
+  ThemeSetupContext,
+  ThemeSetupFn,
+  ThemeSetupConfig,
+  ThemeSetupImageSize,
 } from './theme/theme-setup.js';
 
-// Theme Feature Support (Gap D-09)
-export {
-  ThemeSupportsManager,
-  ThemeFeature,
-  type ThemeFeatureEffect,
-} from './theme/theme-supports.js';
+export { ThemeSupportsManager, ThemeFeature } from './theme/theme-supports.js';
+export type { ThemeFeatureEffect } from './theme/theme-supports.js';
 
-// Navigation Menu Locations (Gap D-10)
-export {
-  NavMenuLocationsManager,
-  type NavMenuLocationDef,
-  type NavMenuLocationRecord,
-  type NavMenuTreeItem,
-  type NavMenuTree,
+export { NavMenuLocationsManager } from './theme/nav-menu-locations.js';
+export type {
+  NavMenuLocationDef,
+  NavMenuLocationRecord,
+  NavMenuTreeItem,
+  NavMenuTree,
 } from './theme/nav-menu-locations.js';
 
-// Widget Areas / Block Areas (Gap D-08 — WordPress Widget equivalent)
-export {
-  WidgetAreaManager,
-  widgetAreaManager,
-  type WidgetArea,
-  type WidgetBlock,
-} from './theme/widget-areas.js';
+export { WidgetAreaManager, widgetAreaManager } from './theme/widget-areas.js';
+export type { WidgetArea, WidgetBlock } from './theme/widget-areas.js';
 
-// Theme Customizer Panels (WordPress Customizer panel equivalent)
 export {
   ThemeCustomizer as PanelThemeCustomizer,
   registerDefaultCustomizerPanels,
   themeCustomizer,
-  type CustomizerPanel,
-  type CustomizerSection,
-  type CustomizerControl,
+} from './theme/theme-customizer-panel.js';
+export type {
+  CustomizerPanel,
+  CustomizerSection,
+  CustomizerControl,
 } from './theme/theme-customizer-panel.js';
 
-// Editor Block Patterns (20+ WordPress Block Patterns equivalent)
-export {
-  BLOCK_PATTERNS,
-  getPatternsByCategory,
-  getPatternByName,
-  PATTERN_CATEGORIES,
-  type EditorPattern,
-} from './editor/block-patterns.js';
+export { ThemeBrandingManager } from './theme/theme-branding.js';
+export type { ThemeBrandingSettings, ThemeModValue, ThemeModKey } from './theme/theme-branding.js';
 
-// Theme Branding (Gap D-11)
-export {
-  ThemeBrandingManager,
-  type ThemeBrandingSettings,
-  type ThemeModValue,
-  type ThemeModKey,
-} from './theme/theme-branding.js';
-
-// Theme Auto-Update (Gap D-13)
-export {
-  ThemeAutoUpdater,
-  type ThemeAutoUpdateConfig,
-  type ThemeUpdateInfo,
-  type ThemeUpdateResult,
-  type AutoUpdateMode,
+export { ThemeAutoUpdater } from './theme/theme-auto-updater.js';
+export type {
+  ThemeAutoUpdateConfig,
+  ThemeUpdateInfo,
+  ThemeUpdateResult,
+  AutoUpdateMode,
 } from './theme/theme-auto-updater.js';
 
-// Theme Preview (Gap D-14)
-export {
-  ThemePreviewManager,
-  parsePreviewCookie,
-  PREVIEW_COOKIE_NAME,
-  type ThemePreviewState,
-} from './theme/theme-preview.js';
+export { ThemePreviewManager } from './theme/theme-preview.js';
+export type { ThemePreviewState } from './theme/theme-preview.js';
 
-// Style Variations (Gap D-16)
-export {
-  StyleVariationsManager,
-  type StyleVariationDef,
-  type StyleVariationRecord,
-} from './theme/style-variations.js';
+export { StyleVariationsManager } from './theme/style-variations.js';
+export type { StyleVariationDef, StyleVariationRecord } from './theme/style-variations.js';
 
-// Full Template Hierarchy (Gap D-19)
-export {
-  TemplateHierarchyResolver,
-  type TemplateType,
-  type TemplateResolutionContext,
-  type ResolvedTemplate,
+export { TemplateHierarchyResolver } from './theme/template-hierarchy.js';
+export type {
+  TemplateType,
+  TemplateResolutionContext,
+  ResolvedTemplate,
 } from './theme/template-hierarchy.js';
 
-// ─── Authentication ────────────────────────────────────────
-export {
-  AuthService,
-  type AuthTokens,
-  type LoginInput,
-  type RegisterInput,
-} from './auth/auth-service.js';
+// ─── Authentication & Authorization ─────────────────────
+export { AuthService } from './auth/auth-service.js';
+export type { AuthTokens, LoginInput, RegisterInput } from './auth/auth-service.js';
 
-export {
-  CapabilityService,
-  type Capability,
-  type RoleDefinition,
-} from './auth/capability-service.js';
+export { CapabilityService } from './auth/capability-service.js';
+export type { Capability, RoleDefinition } from './auth/capability-service.js';
 
-// ─── Media ─────────────────────────────────────────────────
-export { MediaService, type MediaUploadOptions, type ImageSize } from './media/media-service.js';
+// ─── Security ───────────────────────────────────────────
+export { SecurityService } from './security/security-service.js';
+export type { SecurityKeys } from './security/security-service.js';
+export { RecoveryMode } from './security/recovery-mode.js';
+export type { PluginErrorRecord } from './security/recovery-mode.js';
+export { ApplicationPasswordsEngine } from './security/application-passwords.js';
+export type { AppPasswordData } from './security/application-passwords.js';
+export { PasswordPolicyEngine } from './security/password-policy.js';
+export type {
+  PasswordPolicyConfig,
+  PasswordStrengthResult,
+  PasswordValidationResult,
+} from './security/password-policy.js';
+export { DbEncryption, getDbEncryption } from './security/db-encryption.js';
+export { PasswordResetEngine } from './security/password-reset.js';
+export type { PasswordResetTokenData } from './security/password-reset.js';
+export { TwoFactorEngine } from './security/two-factor.js';
+export type { TwoFactorSecretData, BackupCodesData } from './security/two-factor.js';
 
-// ─── Cache (Gap G-01) ──────────────────────────────────────
-export {
-  CacheService,
-  type CacheOptions,
-  type CacheEntry,
-  type ObjectCache,
-  type CacheStats,
-} from './cache/cache-service.js';
-
-// ─── Shortcode (Gap A-01) ──────────────────────────────────
+// ─── Shortcodes ─────────────────────────────────────────
 export {
   ShortcodeEngine,
   ShortcodeRegistry,
@@ -251,20 +194,19 @@ export {
   doShortcode,
   stripShortcodes,
   registerShortcode,
-  type ShortcodeHandler,
 } from './shortcode/shortcode-engine.js';
+export type { ShortcodeHandler } from './shortcode/shortcode-engine.js';
 
-// ─── oEmbed (Gap A-02) ─────────────────────────────────────
+// ─── oEmbed ─────────────────────────────────────────────
 export {
   OEmbedService,
   OEmbedRegistry,
   OEmbedResolver,
   OEmbedProxy,
-  type OEmbedProviderConfig,
-  type OEmbedResult,
 } from './oembed/oembed-service.js';
+export type { OEmbedProviderConfig, OEmbedResult } from './oembed/oembed-service.js';
 
-// ─── Permalink (Gap A-03) ──────────────────────────────────
+// ─── Permalink ──────────────────────────────────────────
 export {
   PermalinkService,
   PermalinkManager,
@@ -274,145 +216,116 @@ export {
   isValidTag,
   getDefaultStructures,
   PERMALINK_TAGS,
-  type PermalinkTag,
-  type PermalinkParts,
-  type ParsedStructure,
-  type PermalinkSettings,
-  type PermalinkStorage,
+} from './permalink/permalink-service.js';
+export type {
+  PermalinkTag,
+  PermalinkParts,
+  ParsedStructure,
+  PermalinkSettings,
+  PermalinkStorage,
 } from './permalink/permalink-service.js';
 
-// ─── Comments (Gap A-13) ───────────────────────────────────
+// ─── Comments ───────────────────────────────────────────
 export {
   CommentService,
   CommentModeration,
   CommentWhitelist,
   CommentStatus,
-  type CommentData,
-  type CommentTree,
-  type ModerationRule,
-  type ModerationResult,
-  type WhitelistedCommenter,
+} from './comments/index.js';
+export type {
+  CommentData,
+  CommentTree,
+  ModerationRule,
+  ModerationResult,
+  WhitelistedCommenter,
 } from './comments/index.js';
 
-// ─── Security (Gap F-01) ───────────────────────────────────
-export { SecurityService, type SecurityKeys } from './security/security-service.js';
+// ─── Media ──────────────────────────────────────────────
+export { MediaService } from './media/media-service.js';
+export type { MediaUploadOptions, ImageSize } from './media/media-service.js';
 
-// ─── Recovery Mode (Gap F-02) ──────────────────────────────
-export { RecoveryMode, type PluginErrorRecord } from './security/recovery-mode.js';
+// ─── Cache ──────────────────────────────────────────────
+export { CacheService } from './cache/cache-service.js';
+export type { CacheOptions, CacheEntry, ObjectCache, CacheStats } from './cache/cache-service.js';
 
-// ─── Application Passwords (Gap F-04) ──────────────────────
-export {
-  ApplicationPasswordsEngine,
-  type AppPasswordData,
-} from './security/application-passwords.js';
+// ─── Config ─────────────────────────────────────────────
+export { ConfigService } from './config/config-service.js';
 
-// ─── Password Policy (Gap F-06) ────────────────────────────
-export {
-  PasswordPolicyEngine,
-  defaultPasswordPolicy,
-  type PasswordPolicyConfig,
-  type PasswordStrengthResult,
-  type PasswordValidationResult,
-} from './security/password-policy.js';
-
-// ─── Database Encryption (Gap F-15) ────────────────────────
-export {
-  DbEncryption,
-  getDbEncryption,
-  encryptField,
-  decryptField,
-} from './security/db-encryption.js';
-
-// ─── Password Reset ────────────────────────────────────────
-export { PasswordResetEngine, type PasswordResetTokenData } from './security/password-reset.js';
-
-// ─── Two-Factor Auth ───────────────────────────────────────
-export {
-  TwoFactorEngine,
-  type TwoFactorSecretData,
-  type BackupCodesData,
-} from './security/two-factor.js';
-
-// ─── SEO ───────────────────────────────────────────────────
+// ─── SEO ────────────────────────────────────────────────
 export { SeoService } from './seo/seo-service.js';
 export type { SeoMetadata, SeoContentEntry } from './seo/seo-service.js';
 
-// ─── Config ────────────────────────────────────────────────
-export { ConfigService } from './config/config-service.js';
-
-// ─── Phase 8 — Operational Full ──────────────────────────────
-
-// Upgrade Manager (Gap I-01)
+// ─── Editor Patterns ────────────────────────────────────
 export {
-  UpgradeManager,
-  type VersionInfo,
-  type MigrationResult,
-  type UpgradeOptions,
-} from './upgrade/upgrade-manager.js';
+  BLOCK_PATTERNS,
+  getPatternsByCategory,
+  getPatternByName,
+  PATTERN_CATEGORIES,
+} from './editor/block-patterns.js';
+export type { EditorPattern } from './editor/block-patterns.js';
 
-// Backup Manager (Gap I-02)
-export {
-  BackupManager,
-  LocalStorageProvider,
-  S3StorageProvider,
-  type BackupRecord,
-  type BackupOptions,
-  type BackupType,
-  type BackupStatus,
-  type StorageProvider,
-  type RetentionConfig,
+// ─── Operational ────────────────────────────────────────
+export { UpgradeManager } from './upgrade/upgrade-manager.js';
+export type { VersionInfo, MigrationResult, UpgradeOptions } from './upgrade/upgrade-manager.js';
+
+export { BackupManager } from './backup/backup-manager.js';
+export type {
+  BackupRecord,
+  BackupOptions,
+  BackupType,
+  BackupStatus,
+  StorageProvider,
+  RetentionConfig,
 } from './backup/backup-manager.js';
 
-// Log Manager (Gap I-10)
+export { MailManager } from './mail/mail-manager.js';
+export type { MailOptions, MailResult, MailProvider, MailLog } from './mail/mail-manager.js';
+
+export { LogManager } from './logging/log-manager.js';
+export type { LogEntry, LogLevel, LogFilter, LogFileInfo } from './logging/log-manager.js';
+
+export { I18nEngine } from './i18n/i18n-engine.js';
+export type { I18nOptions, LocaleInfo } from './i18n/i18n-engine.js';
+
+export { CronViewer } from './cron/cron-viewer.js';
+export type { CronEvent, CronStatus, CronEventFilter } from './cron/cron-viewer.js';
+
+export { DbOptimizer } from './db/db-optimizer.js';
+export type { TableInfo, CleanupResult, CleanupOptions } from './db/db-optimizer.js';
+
+export { SchedulerService } from './scheduler/scheduler.js';
+export type { ScheduledJob, JobExecution, QueueStats } from './scheduler/scheduler.js';
+
+// ─── Developer Tools ────────────────────────────────────
 export {
-  LogManager,
-  type LogEntry,
-  type LogLevel,
-  type LogFilter,
-  type LogFileInfo,
-} from './logging/log-manager.js';
+  queryMonitor,
+  installQueryMonitor,
+  getQueryStats,
+  getNplusOnePatterns,
+  clearQueryHistory,
+} from './dev/index.js';
+export type { QueryRecord, QueryMonitorStats } from './dev/index.js';
 
-// i18n / Translation (Gap I-13)
-export { I18nEngine, type I18nOptions, type LocaleInfo } from './i18n/i18n-engine.js';
-
-// Cron Viewer (Gap I-14)
+// ─── Errors ─────────────────────────────────────────────
 export {
-  CronViewer,
-  type CronEvent,
-  type CronStatus,
-  type CronEventFilter,
-} from './cron/cron-viewer.js';
+  LeveledError,
+  WarningError,
+  DeprecationError,
+  StrictModeError,
+  NoticeError,
+  deprecate,
+  triggerDeprecationWarning,
+  resetDeprecationCache,
+  suppressErrors,
+  isDebugMode,
+} from './errors/error-levels.js';
+export type {
+  ErrorLevel,
+  ErrorLevelOptions,
+  DeprecationWarningOptions,
+} from './errors/error-levels.js';
 
-// DB Optimizer (Gap I-12)
-export {
-  DbOptimizer,
-  type TableInfo,
-  type CleanupResult,
-  type CleanupOptions,
-} from './db/db-optimizer.js';
-
-// Mail / Email System (Gap I-03)
-export {
-  MailManager,
-  SmtpProvider,
-  ResendProvider,
-  SendGridProvider,
-  SesProvider,
-  type MailOptions,
-  type MailResult,
-  type MailProvider,
-  type MailLog,
-} from './mail/mail-manager.js';
-
-// Scheduler Service
-export {
-  SchedulerService,
-  type ScheduledJob,
-  type JobExecution,
-  type QueueStats,
-} from './scheduler/scheduler.js';
-
-// ─── Core Engine ───────────────────────────────────────────
+// ─── Core Engine ────────────────────────────────────────
 
 import { ContentEngine } from './content/content-engine.js';
 import { PluginEngine } from './plugin/plugin-engine.js';

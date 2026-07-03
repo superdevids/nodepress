@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  UnauthorizedException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -36,17 +31,14 @@ export class AuthService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any | null> {
+  async validateUser(email: string, password: string): Promise<Record<string, unknown> | null> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.passwordHash) return null;
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (valid) return this.sanitizeUser(user);
 
-    const appPasswordValid = await this.appPasswordsService.verify(
-      user.id,
-      password,
-    );
+    const appPasswordValid = await this.appPasswordsService.verify(user.id, password);
     if (appPasswordValid) return this.sanitizeUser(user);
 
     return null;
@@ -110,10 +102,7 @@ export class AuthService {
     const twoFactorEnabled = await this.twoFactorService.isEnabled(user.id);
 
     if (dto.twoFactorCode) {
-      const twoFactorValid = await this.twoFactorService.verifyToken(
-        user.id,
-        dto.twoFactorCode,
-      );
+      const twoFactorValid = await this.twoFactorService.verifyToken(user.id, dto.twoFactorCode);
       if (!twoFactorValid) {
         throw new UnauthorizedException('Invalid 2FA code');
       }
@@ -232,7 +221,7 @@ export class AuthService {
   }
 
   private async generateTokenPair(
-    user: any,
+    user: Record<string, unknown>,
     sessionInfo?: { ipAddress: string; userAgent: string; rememberMe: boolean },
   ) {
     const payload: JwtPayload = {
@@ -268,7 +257,7 @@ export class AuthService {
     return { accessToken, refreshToken, sessionId: '' };
   }
 
-  private sanitizeUser(user: any) {
+  private sanitizeUser(user: Record<string, unknown>) {
     const { passwordHash, ...rest } = user;
     return rest;
   }

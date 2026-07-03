@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
@@ -32,11 +27,7 @@ export class ContentService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    type: string,
-    dto: CreateContentDto,
-    authorId: string,
-  ): Promise<ContentEntry> {
+  async create(type: string, dto: CreateContentDto, authorId: string): Promise<ContentEntry> {
     const contentType = await this.prisma.contentType.findFirst({
       where: { name: type },
     });
@@ -178,10 +169,16 @@ export class ContentService {
   }
 
   private toContentEntry(entry: {
-    id: string; contentType: { name: string }; slug: string;
-    status: string; data: unknown; excerpt: string | null;
-    authorId: string; publishedAt: Date | null;
-    createdAt: Date; updatedAt: Date;
+    id: string;
+    contentType: { name: string };
+    slug: string;
+    status: string;
+    data: unknown;
+    excerpt: string | null;
+    authorId: string;
+    publishedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
   }): ContentEntry {
     const data = entry.data as Record<string, unknown>;
     return {
