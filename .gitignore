@@ -33,9 +33,6 @@ logs/
 # Test coverage
 coverage/
 
-# Prisma
-packages/db/prisma/migrations/
-
 # Database
 *.db
 *.sqlite

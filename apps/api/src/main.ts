@@ -67,41 +67,28 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  app.useGlobalInterceptors(
-    new LoggingInterceptor(),
-    new TransformInterceptor(),
-  );
+  app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle(NODEPRESS_SWAGGER_TITLE)
     .setDescription(NODEPRESS_SWAGGER_DESCRIPTION)
     .setVersion(NODEPRESS_SWAGGER_VERSION)
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-      'access-token',
-    )
-    .addServer(
-      process.env.SWAGGER_SERVER_URL || `http://localhost:${process.env.PORT || 3000}`,
-    )
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
+    .addServer(process.env.SWAGGER_SERVER_URL || `http://localhost:${process.env.PORT || 3001}`)
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup(
-    process.env.SWAGGER_PATH || NODEPRESS_SWAGGER_PATH,
-    app,
-    document,
-    {
-      customSiteTitle: NODEPRESS_SWAGGER_TITLE,
-      swaggerOptions: {
-        persistAuthorization: true,
-        docExpansion: 'list',
-        filter: true,
-        showRequestDuration: true,
-      },
+  SwaggerModule.setup(process.env.SWAGGER_PATH || NODEPRESS_SWAGGER_PATH, app, document, {
+    customSiteTitle: NODEPRESS_SWAGGER_TITLE,
+    swaggerOptions: {
+      persistAuthorization: true,
+      docExpansion: 'list',
+      filter: true,
+      showRequestDuration: true,
     },
-  );
+  });
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3001;
   await app.listen(port);
 
   logger.log(`NodePress API is running on http://localhost:${port}/${globalPrefix}`);
