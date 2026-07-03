@@ -9,13 +9,13 @@
 #   docker compose down -v                  # Stop & remove volumes
 # ============================================================
 
-version: "3.9"
+version: '3.9'
 
 x-logging: &default-logging
-  driver: "json-file"
+  driver: 'json-file'
   options:
-    max-size: "10m"
-    max-file: "3"
+    max-size: '10m'
+    max-file: '3'
 
 x-healthcheck-api: &healthcheck-api
   interval: 15s
@@ -29,39 +29,39 @@ services:
     container_name: nodepress-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
       POSTGRES_USER: nodepress
       POSTGRES_PASSWORD: nodepress
       POSTGRES_DB: nodepress
-      POSTGRES_INITDB_ARGS: "--data-checksums"
+      POSTGRES_INITDB_ARGS: '--data-checksums'
     command:
-      - "postgres"
-      - "-c"
-      - "max_connections=200"
-      - "-c"
-      - "shared_buffers=256MB"
-      - "-c"
-      - "effective_cache_size=768MB"
-      - "-c"
-      - "work_mem=16MB"
-      - "-c"
-      - "maintenance_work_mem=64MB"
-      - "-c"
-      - "random_page_cost=1.1"
-      - "-c"
-      - "effective_io_concurrency=200"
-      - "-c"
-      - "wal_level=replica"
-      - "-c"
-      - "max_wal_senders=4"
-      - "-c"
-      - "max_replication_slots=4"
+      - 'postgres'
+      - '-c'
+      - 'max_connections=200'
+      - '-c'
+      - 'shared_buffers=256MB'
+      - '-c'
+      - 'effective_cache_size=768MB'
+      - '-c'
+      - 'work_mem=16MB'
+      - '-c'
+      - 'maintenance_work_mem=64MB'
+      - '-c'
+      - 'random_page_cost=1.1'
+      - '-c'
+      - 'effective_io_concurrency=200'
+      - '-c'
+      - 'wal_level=replica'
+      - '-c'
+      - 'max_wal_senders=4'
+      - '-c'
+      - 'max_replication_slots=4'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./packages/db/prisma/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nodepress -d nodepress"]
+      test: ['CMD-SHELL', 'pg_isready -U nodepress -d nodepress']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -75,7 +75,7 @@ services:
     container_name: nodepress-pgbouncer
     restart: unless-stopped
     ports:
-      - "6432:6432"
+      - '6432:6432'
     environment:
       POSTGRESQL_HOST: postgres
       POSTGRESQL_PORT: 5432
@@ -101,20 +101,20 @@ services:
     container_name: nodepress-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - '6379:6379'
     command:
-      - "redis-server"
-      - "--appendonly"
-      - "yes"
-      - "--save"
-      - "60"
-      - "1"
-      - "--loglevel"
-      - "notice"
+      - 'redis-server'
+      - '--appendonly'
+      - 'yes'
+      - '--save'
+      - '60'
+      - '1'
+      - '--loglevel'
+      - 'notice'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 5
@@ -128,20 +128,20 @@ services:
     container_name: nodepress-minio
     restart: unless-stopped
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - '9000:9000'
+      - '9001:9001'
     environment:
       MINIO_ROOT_USER: nodepress
       MINIO_ROOT_PASSWORD: nodepress123
     command:
-      - "server"
-      - "/data"
-      - "--console-address"
-      - ":9001"
+      - 'server'
+      - '/data'
+      - '--console-address'
+      - ':9001'
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
       interval: 15s
       timeout: 5s
       retries: 5
@@ -153,7 +153,7 @@ services:
   minio-init:
     image: minio/mc:latest
     container_name: nodepress-minio-init
-    restart: "no"
+    restart: 'no'
     depends_on:
       minio:
         condition: service_healthy
@@ -182,7 +182,7 @@ services:
     container_name: nodepress-api
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - '3001:3001'
     env_file:
       - .env
     environment:
@@ -199,7 +199,7 @@ services:
       APP_URL: http://localhost:3000
       API_URL: http://localhost:3001
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
-      NODEPRESS_DEBUG: "true"
+      NODEPRESS_DEBUG: 'true'
       LOG_LEVEL: debug
     volumes:
       - ./apps/api/src:/app/apps/api/src:delegated
@@ -217,7 +217,7 @@ services:
         condition: service_completed_successfully
     healthcheck:
       <<: *healthcheck-api
-      test: ["CMD", "curl", "-f", "http://localhost:3001/healthz"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/healthz']
     networks:
       - nodepress-network
     logging: *default-logging
@@ -231,7 +231,7 @@ services:
     container_name: nodepress-admin
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - '3000:3000'
     env_file:
       - .env
     environment:
@@ -250,11 +250,13 @@ services:
       - /app/node_modules
       - /app/.turbo
     depends_on:
-      api:
-        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       <<: *healthcheck-api
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/admin']
     networks:
       - nodepress-network
     logging: *default-logging

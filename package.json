@@ -4,6 +4,11 @@
   "private": true,
   "description": "WordPress-compatible CMS built with Node.js / TypeScript",
   "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "setup:win": "powershell -ExecutionPolicy Bypass -File scripts/setup.ps1",
+    "go": "pnpm setup && pnpm dev",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "test": "turbo run test",

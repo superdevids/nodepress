@@ -39,23 +39,48 @@ plugins/ (13 WordPress-equivalent plugins)
 └── multilingual/ → WPML-equivalent (11 languages, auto-translate)
 ```
 
-## Quick Start
+## 🚀 Quick Start (1 Command)
+
+### Option A: Local Development
 
 ```bash
-# Clone & install
-git clone https://github.com/superdevids/nodepress.git
-cd nodepress
-pnpm install
+# First time setup (install + migrate + seed)
+pnpm setup
 
-# Start development environment
-docker compose up -d    # PostgreSQL, Redis, MinIO
-pnpm db:migrate         # Run database migrations
-pnpm db:seed            # Seed default data
-pnpm dev                # Start API (3001) + Admin (3000)
-
-# Or single command
-docker compose up       # Everything in containers
+# Start developing (API:3001 + Admin:3000)
+pnpm dev
 ```
+
+### Option B: Docker (Everything in containers)
+
+```bash
+# Single command - starts infrastructure + apps
+docker compose up
+```
+
+### Option C: One-Command Setup + Dev
+
+```bash
+# Setup + Start in one go
+pnpm go
+```
+
+### Prerequisites
+
+- **Node.js 20+** (see `.nvmrc`)
+- **pnpm 9+** (`npm i -g pnpm`)
+- **Docker** (for PostgreSQL + Redis + MinIO)
+
+### What You Get
+
+| Service            | URL                        | Default Credentials           |
+| ------------------ | -------------------------- | ----------------------------- |
+| Admin Panel        | http://localhost:3000      | admin@nodepress.local / admin |
+| REST API           | http://localhost:3001      | —                             |
+| API Docs (Swagger) | http://localhost:3001/docs | —                             |
+| PostgreSQL         | localhost:5432             | nodepress / nodepress         |
+| Redis              | localhost:6379             | —                             |
+| MinIO (S3)         | http://localhost:9000      | nodepress / nodepress123      |
 
 ## Tech Stack
 
