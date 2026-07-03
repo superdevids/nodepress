@@ -1,0 +1,20 @@
+{
+  "posts": [
+    {
+      "title": "Hello World",
+      "slug": "hello-world",
+      "status": "PUBLISHED",
+      "content": "<p>Welcome to NodePress!</p>",
+      "excerpt": "First post",
+      "commentStatus": "open"
+    },
+    {
+      "title": "Getting Started with NodePress",
+      "slug": "getting-started",
+      "status": "PUBLISHED",
+      "content": "<p>A guide to getting started.</p>",
+      "excerpt": "Getting started guide",
+      "commentStatus": "open"
+    }
+  ]
+}

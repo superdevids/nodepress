@@ -1,0 +1,16 @@
+{
+  "name": "nodepress-plugin-forms",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "name": "Forms",
+    "description": "Drag-and-drop form builder with contact forms, surveys, and payment collection.",
+    "permissions": ["content:read", "content:write", "settings:read", "settings:write"],
+    "minCoreVersion": "0.0.1"
+  },
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*"
+  }
+}

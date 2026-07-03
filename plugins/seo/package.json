@@ -1,0 +1,16 @@
+{
+  "name": "nodepress-plugin-seo",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "name": "SEO",
+    "description": "Advanced SEO tools for NodePress — meta tags, sitemap, schema.org, and more.",
+    "permissions": ["content:read", "content:write", "settings:read", "settings:write"],
+    "minCoreVersion": "0.0.1"
+  },
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*"
+  }
+}

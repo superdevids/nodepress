@@ -1,0 +1,76 @@
+﻿# ============================================================
+# NodePress - Development Dockerfile (Hot-Reload)
+# WordPress-compatible CMS built with Node.js / TypeScript
+# ============================================================
+# Usage:
+#   docker compose up -d api     # Starts API with hot-reload
+#   docker compose up -d admin   # Starts Admin with hot-reload
+#
+# Build args:
+#   SERVICE = api | admin
+# ============================================================
+
+ARG PNPM_VERSION=9.1.4
+
+# ---- Base Stage ----
+FROM node:20-alpine AS base
+
+RUN apk add --no-cache libc6-compat curl \
+    && corepack enable \
+    && corepack prepare pnpm@${PNPM_VERSION} --activate \
+    && pnpm --version
+
+WORKDIR /app
+
+# ---- Dependencies Stage ----
+FROM base AS deps
+
+ARG SERVICE
+
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
+COPY turbo.json ./
+COPY pnpm-lock.yaml* ./
+
+COPY apps/api/package.json ./apps/api/
+COPY apps/admin/package.json ./apps/admin/
+COPY packages/core/package.json ./packages/core/
+COPY packages/db/package.json ./packages/db/
+COPY packages/plugin-sdk/package.json ./packages/plugin-sdk/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/editor/package.json ./packages/editor/
+COPY packages/config/package.json ./packages/config/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/testing/package.json ./packages/testing/
+
+RUN pnpm install --frozen-lockfile
+
+COPY packages/db/prisma ./packages/db/prisma
+RUN cd packages/db && pnpm exec prisma generate
+
+# ---- Development Stage ----
+FROM deps AS dev
+
+ARG SERVICE
+
+COPY . .
+
+EXPOSE 9229
+
+ENV NODE_ENV=development
+ENV NODEPRESS_DEBUG=true
+
+# === API Service Target ===
+FROM dev AS api
+
+WORKDIR /app/apps/api
+
+CMD ["pnpm", "exec", "nest", "start", "--watch", "--preserveWatchOutput"]
+
+# === Admin Service Target ===
+FROM dev AS admin
+
+WORKDIR /app/apps/admin
+
+CMD ["pnpm", "exec", "next", "dev", "--turbo", "-p", "3000"]
+

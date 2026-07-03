@@ -1,0 +1,50 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local"],
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "dist/**", "!.next/cache/**"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig.json", "tsconfig*.json"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig.json", "tsconfig*.json"],
+      "outputs": []
+    },
+    "lint": {
+      "dependsOn": [],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig.json", "tsconfig*.json"],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": [],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig.json", "tsconfig*.json"],
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
+    },
+    "db:generate": {
+      "dependsOn": [],
+      "cache": false
+    },
+    "db:push": {
+      "dependsOn": ["db:generate"],
+      "cache": false
+    },
+    "db:migrate": {
+      "dependsOn": ["db:generate"],
+      "cache": false
+    },
+    "db:seed": {
+      "dependsOn": ["db:generate"],
+      "cache": false
+    }
+  }
+}

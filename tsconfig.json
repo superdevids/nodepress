@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {},
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/db" },
+    { "path": "./packages/plugin-sdk" },
+    { "path": "./packages/ui" },
+    { "path": "./packages/editor" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/config" },
+    { "path": "./packages/testing" },
+    { "path": "./apps/admin" },
+    { "path": "./apps/web-starter" }
+  ]
+}

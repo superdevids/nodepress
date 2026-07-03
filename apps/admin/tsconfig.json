@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "preserve",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@nodepress/core": ["../../packages/core/src"],
+      "@nodepress/core/*": ["../../packages/core/src/*"],
+      "@nodepress/config": ["../../packages/config/src"],
+      "@nodepress/config/*": ["../../packages/config/src/*"],
+      "@nodepress/ui": ["../../packages/ui/src"],
+      "@nodepress/ui/*": ["../../packages/ui/src/*"],
+      "@nodepress/editor": ["../../packages/editor/src"],
+      "@nodepress/editor/*": ["../../packages/editor/src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,22 @@
+{
+  "users": [
+    {
+      "email": "admin@nodepress.dev",
+      "name": "Admin User",
+      "role": "ADMIN",
+      "capabilities": ["manage_options", "edit_posts", "publish_posts"]
+    },
+    {
+      "email": "editor@nodepress.dev",
+      "name": "Editor User",
+      "role": "EDITOR",
+      "capabilities": ["edit_posts", "publish_posts"]
+    },
+    {
+      "email": "subscriber@nodepress.dev",
+      "name": "Subscriber User",
+      "role": "SUBSCRIBER",
+      "capabilities": []
+    }
+  ]
+}

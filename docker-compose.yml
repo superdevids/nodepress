@@ -1,0 +1,273 @@
+﻿# ============================================================
+# NodePress - Docker Compose (Development Environment)
+# WordPress-compatible CMS built with Node.js / TypeScript
+# ============================================================
+# Usage:
+#   docker compose up -d                    # Start all services
+#   docker compose up -d api                # Start only API
+#   docker compose logs -f api              # Follow API logs
+#   docker compose down -v                  # Stop & remove volumes
+# ============================================================
+
+version: "3.9"
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-healthcheck-api: &healthcheck-api
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nodepress-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: nodepress
+      POSTGRES_PASSWORD: nodepress
+      POSTGRES_DB: nodepress
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=768MB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "wal_level=replica"
+      - "-c"
+      - "max_wal_senders=4"
+      - "-c"
+      - "max_replication_slots=4"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./packages/db/prisma/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nodepress -d nodepress"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - nodepress-network
+    logging: *default-logging
+
+  pgbouncer:
+    image: bitnami/pgbouncer:1.23
+    container_name: nodepress-pgbouncer
+    restart: unless-stopped
+    ports:
+      - "6432:6432"
+    environment:
+      POSTGRESQL_HOST: postgres
+      POSTGRESQL_PORT: 5432
+      POSTGRESQL_USERNAME: nodepress
+      POSTGRESQL_PASSWORD: nodepress
+      POSTGRESQL_DATABASE: nodepress
+      PGBOUNCER_MAX_CLIENT_CONN: 200
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_DEFAULT_POOL_SIZE: 25
+      PGBOUNCER_MIN_POOL_SIZE: 5
+      PGBOUNCER_RESERVE_POOL_SIZE: 5
+      PGBOUNCER_RESERVE_POOL_TIMEOUT: 3
+      PGBOUNCER_MAX_DB_CONNECTIONS: 50
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - nodepress-network
+    logging: *default-logging
+
+  redis:
+    image: redis:7-alpine
+    container_name: nodepress-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command:
+      - "redis-server"
+      - "--appendonly"
+      - "yes"
+      - "--save"
+      - "60"
+      - "1"
+      - "--loglevel"
+      - "notice"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - nodepress-network
+    logging: *default-logging
+
+  minio:
+    image: minio/minio:latest
+    container_name: nodepress-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: nodepress
+      MINIO_ROOT_PASSWORD: nodepress123
+    command:
+      - "server"
+      - "/data"
+      - "--console-address"
+      - ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - nodepress-network
+    logging: *default-logging
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: nodepress-minio-init
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO...';
+      sleep 3;
+      mc alias set local http://minio:9000 nodepress nodepress123;
+      if mc ls local/nodepress-media 2>/dev/null; then
+        echo 'Bucket nodepress-media already exists';
+      else
+        mc mb local/nodepress-media --region us-east-1;
+        mc anonymous set public local/nodepress-media;
+        echo 'Created bucket: nodepress-media';
+      fi;
+      "
+    networks:
+      - nodepress-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE: api
+    container_name: nodepress-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://nodepress:nodepress@pgbouncer:6432/nodepress
+      DATABASE_DIRECT_URL: postgresql://nodepress:nodepress@postgres:5432/nodepress
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: nodepress
+      S3_SECRET_KEY: nodepress123
+      S3_BUCKET: nodepress-media
+      S3_PUBLIC_URL: http://localhost:9000/nodepress-media
+      APP_URL: http://localhost:3000
+      API_URL: http://localhost:3001
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      NODEPRESS_DEBUG: "true"
+      LOG_LEVEL: debug
+    volumes:
+      - ./apps/api/src:/app/apps/api/src:delegated
+      - ./packages:/app/packages:delegated
+      - /app/apps/api/node_modules
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      <<: *healthcheck-api
+      test: ["CMD", "curl", "-f", "http://localhost:3001/healthz"]
+    networks:
+      - nodepress-network
+    logging: *default-logging
+
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE: admin
+    container_name: nodepress-admin
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      APP_URL: http://localhost:3000
+      API_URL: http://localhost:3001
+      DATABASE_URL: postgresql://nodepress:nodepress@pgbouncer:6432/nodepress
+      REDIS_URL: redis://redis:6379
+      DATABASE_DIRECT_URL: postgresql://nodepress:nodepress@postgres:5432/nodepress
+    volumes:
+      - ./apps/admin/src:/app/apps/admin/src:delegated
+      - ./apps/admin/public:/app/apps/admin/public:delegated
+      - ./packages:/app/packages:delegated
+      - /app/apps/admin/node_modules
+      - /app/node_modules
+      - /app/.turbo
+    depends_on:
+      api:
+        condition: service_started
+    healthcheck:
+      <<: *healthcheck-api
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+    networks:
+      - nodepress-network
+    logging: *default-logging
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  nodepress-network:
+    name: nodepress-network
+    driver: bridge

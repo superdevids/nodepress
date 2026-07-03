@@ -1,0 +1,17 @@
+{
+  "name": "nodepress-plugin-cache-redis",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "name": "Redis Cache",
+    "description": "Advanced Redis-based caching for API responses, pages, and database queries.",
+    "permissions": ["settings:read", "settings:write"],
+    "minCoreVersion": "0.0.1"
+  },
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*",
+    "ioredis": "^5.4.0"
+  }
+}

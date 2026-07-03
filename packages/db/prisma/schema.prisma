@@ -1,0 +1,1010 @@
+// ============================================================
+// NodePress — Prisma Schema v3 (Final)
+// WordPress-compatible CMS built with Node.js / TypeScript
+// PostgreSQL 16 — Full schema with indexes, relations & cascades
+// ============================================================
+// Generator & Datasource
+// ============================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm, uuid-ossp]
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  AUTHOR
+  CONTRIBUTOR
+  SUBSCRIBER
+}
+
+enum EntryStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  SCHEDULED
+  TRASHED
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  SPAM
+  TRASHED
+}
+
+enum ContentTypeSource {
+  CODE
+  UI
+}
+
+// ============================================================
+// MODELS — User & Auth
+// ============================================================
+
+model User {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  passwordHash       String?
+  name               String
+  displayName        String?
+  biography          String?
+  websiteUrl         String?
+  locale             String   @default("en_US")
+  role               Role     @default(SUBSCRIBER)
+  capabilities       String[]
+  avatar             String?
+  userStatus         Int      @default(0)
+  activationKey      String?
+  userRegistered     DateTime @default(now())
+  forcePasswordChange Boolean @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  entries              ContentEntry[]
+  comments             Comment[]
+  media                Media[]
+  notifications        Notification[]
+  sessions             Session[]
+  auditLogs            AuditLog[]
+  apiKeys              ApiKey[]
+  applicationPasswords ApplicationPassword[]
+  meta                 UserMeta[]
+  contentLocks         ContentLock[]
+  grantedPermissions   PluginPermission[] @relation("PermissionGrantor")
+
+  @@index([email])
+  @@index([role])
+  @@index([userStatus])
+  @@map("users")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model UserMeta {
+  id     String @id @default(cuid())
+  userId String
+  key    String
+  value  Json
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("user_meta")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model Session {
+  id        String   @id
+  userId    String
+  payload   Json
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model ApplicationPassword {
+  id             String    @id @default(cuid())
+  userId         String
+  name           String
+  hashedPassword String
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("application_passwords")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  hashedKey  String    @unique
+  scopes     String[]
+  createdBy  String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy])
+  @@map("api_keys")
+}
+
+// ============================================================
+// MODELS — Settings
+// ============================================================
+
+model Setting {
+  id        String   @id @default(cuid())
+  group     String   @default("general")
+  key       String
+  value     Json
+  autoload  Boolean  @default(true)
+  pluginId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plugin Plugin? @relation(fields: [pluginId], references: [id], onDelete: SetNull)
+
+  @@unique([group, key])
+  @@index([autoload])
+  @@index([group])
+  @@map("settings")
+}
+
+// ============================================================
+// MODELS — Content Modeling
+// ============================================================
+
+model ContentType {
+  id                String            @id @default(cuid())
+  name              String            @unique
+  label             Json
+  fields            Json
+  supports          String[]
+  source            ContentTypeSource @default(CODE)
+  menuIcon          String?
+  menuPosition      Int               @default(10)
+  showInMenu        Boolean           @default(true)
+  hasArchive        Boolean           @default(true)
+  publiclyQueryable Boolean           @default(true)
+  excludeFromSearch Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  entries ContentEntry[]
+
+  @@map("content_types")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model ContentEntry {
+  id              String      @id @default(cuid())
+  contentTypeId   String
+  slug            String
+  status          EntryStatus @default(DRAFT)
+  data            Json
+  seo             Json?
+  authorId        String
+  publishedAt     DateTime?
+  excerpt         String?
+  featuredImageId String?
+  commentStatus   String      @default("open")
+  pingStatus      String      @default("open")
+  postPassword    String?
+  menuOrder       Int         @default(0)
+  isSticky        Boolean     @default(false)
+  postFormat      String?
+  template        String?
+  customCss       String?
+  customJs        String?
+  searchVector    Unsupported("tsvector")?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  contentType   ContentType     @relation(fields: [contentTypeId], references: [id])
+  author        User            @relation(fields: [authorId], references: [id])
+  featuredImage Media?          @relation(fields: [featuredImageId], references: [id], onDelete: SetNull)
+  revisions     Revision[]
+  terms         TermRelation[]
+  comments      Comment[]
+  meta          ContentMeta[]
+  locks         ContentLock[]
+
+  // Constraints & Indexes
+  @@unique([contentTypeId, slug])
+  @@index([authorId, status, publishedAt])
+  @@index([contentTypeId, status, publishedAt])
+  @@index([slug, contentTypeId])
+  @@index([status, publishedAt])
+  @@index([contentTypeId, slug, status])
+  @@index([isSticky, status])
+  @@map("content_entries")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model Revision {
+  id        String   @id @default(cuid())
+  entryId   String
+  data      Json
+  createdBy String
+  autoSave  Boolean  @default(false)
+  note      String?
+  createdAt DateTime @default(now())
+
+  entry ContentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entryId, createdAt])
+  @@map("revisions")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model ContentMeta {
+  id      String @id @default(cuid())
+  entryId String
+  key     String
+  value   Json
+
+  entry ContentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, key])
+  @@index([key])
+  @@map("content_meta")
+}
+
+// ============================================================
+// MODELS — Taxonomies
+// ============================================================
+
+model Taxonomy {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  hierarchical Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  terms Term[]
+
+  @@map("taxonomies")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model Term {
+  id          String   @id @default(cuid())
+  taxonomyId  String
+  name        String
+  slug        String
+  parentId    String?
+  description String?
+  termGroup   Int      @default(0)
+  count       Int      @default(0)
+  termOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  taxonomy Taxonomy @relation(fields: [taxonomyId], references: [id])
+  parent   Term?    @relation("TermHierarchy", fields: [parentId], references: [id])
+  children Term[]   @relation("TermHierarchy")
+  entries  TermRelation[]
+  meta     TermMeta[]
+
+  @@unique([taxonomyId, slug])
+  @@index([parentId])
+  @@index([taxonomyId, parentId])
+  @@map("terms")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model TermRelation {
+  entryId String
+  termId  String
+
+  entry ContentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  term  Term         @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@id([entryId, termId])
+  @@index([termId, entryId])
+  @@map("term_relations")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model TermMeta {
+  id     String @id @default(cuid())
+  termId String
+  key    String
+  value  Json
+
+  term Term @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@unique([termId, key])
+  @@map("term_meta")
+}
+
+// ============================================================
+// MODELS — Media Library
+// ============================================================
+
+model Media {
+  id          String   @id @default(cuid())
+  url         String
+  sizes       Json?
+  mimeType    String
+  altText     String?
+  caption     String?
+  title       String?
+  description String?
+  width       Int?
+  height      Int?
+  fileSize    Int?
+  focalPoint  Json?
+  customSizes Json?
+  metadata    Json?
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  uploader   User           @relation(fields: [uploadedBy], references: [id])
+  featuredIn ContentEntry[]
+
+  @@index([mimeType])
+  @@index([uploadedBy])
+  @@index([createdAt])
+  @@map("media")
+}
+
+// ============================================================
+// MODELS — Comments
+// ============================================================
+
+model Comment {
+  id           String        @id @default(cuid())
+  entryId      String
+  userId       String?
+  authorName   String
+  authorEmail  String
+  content      String
+  status       CommentStatus @default(PENDING)
+  parentId     String?
+  userAgent    String?
+  ipAddress    String?
+  rating       Int?
+  commentType  String        @default("comment")
+  commentKarma Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  entry   ContentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  author  User?        @relation(fields: [userId], references: [id])
+  parent  Comment?     @relation("CommentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  replies Comment[]    @relation("CommentHierarchy")
+  meta    CommentMeta[]
+
+  @@index([entryId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([userId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model CommentMeta {
+  id        String @id @default(cuid())
+  commentId String
+  key       String
+  value     Json
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, key])
+  @@map("comment_meta")
+}
+
+// ============================================================
+// MODELS — Menus & Navigation
+// ============================================================
+
+model Menu {
+  id        String     @id @default(cuid())
+  location  String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  items MenuItem[]
+
+  @@map("menus")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model MenuItem {
+  id        String   @id @default(cuid())
+  menuId    String
+  label     String
+  url       String
+  order     Int
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  menu     Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent   MenuItem?  @relation("MenuItemHierarchy", fields: [parentId], references: [id])
+  children MenuItem[] @relation("MenuItemHierarchy")
+
+  @@index([menuId, order])
+  @@index([parentId])
+  @@map("menu_items")
+}
+
+// ============================================================
+// MODELS — Plugin System
+// ============================================================
+
+model Plugin {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  version       String
+  active        Boolean  @default(false)
+  settings      Json?
+  networkActive Boolean  @default(false)
+  locked        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  permissions       PluginPermission[]
+  settings_records  Setting[]
+
+  @@index([active])
+  @@map("plugins")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model PluginPermission {
+  id        String   @id @default(cuid())
+  pluginId  String
+  scope     String
+  grantedBy String
+  grantedAt DateTime @default(now())
+
+  plugin  Plugin @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+  grantor User   @relation("PermissionGrantor", fields: [grantedBy], references: [id])
+
+  @@index([pluginId])
+  @@map("plugin_permissions")
+}
+
+// ============================================================
+// MODELS — Webhooks
+// ============================================================
+
+model WebhookSubscription {
+  id        String   @id @default(cuid())
+  event     String
+  targetUrl String
+  secret    String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveries WebhookDelivery[]
+
+  @@index([event])
+  @@map("webhook_subscriptions")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model WebhookDelivery {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  payload        Json
+  status         String   @default("pending")
+  attempts       Int      @default(0)
+  lastError      String?
+  createdAt      DateTime @default(now())
+
+  subscription WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId, createdAt])
+  @@index([status])
+  @@map("webhook_deliveries")
+}
+
+// ============================================================
+// MODELS — Audit & Activity
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  targetType String?
+  targetId   String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
+
+model RecoveryToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("recovery_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+model PasswordHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  passwordHash String
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_history")
+}
+
+model TwoFactorSecret {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  secret        String
+  verified      Boolean  @default(false)
+  backupCodes   String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("two_factor_secrets")
+}
+
+model RateLimitLog {
+  id         String   @id @default(cuid())
+  identifier String
+  action     String
+  timestamp  DateTime @default(now())
+  blocked    Boolean  @default(false)
+
+  @@index([identifier, action, timestamp])
+  @@index([timestamp])
+  @@map("rate_limit_logs")
+}
+
+model LoginAudit {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  ipAddress String?
+  userAgent String?
+  success   Boolean
+  failReason String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([email, createdAt])
+  @@index([ipAddress])
+  @@map("login_audit")
+}
+
+model LoginCookie {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("login_cookies")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  payload   Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// MODELS — Content Locking
+// ============================================================
+
+model ContentLock {
+  entryId   String   @id
+  lockedBy  String
+  lockedAt  DateTime @default(now())
+  expiresAt DateTime
+
+  entry  ContentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  locker User         @relation(fields: [lockedBy], references: [id])
+
+  @@index([expiresAt])
+  @@map("content_locks")
+}
+
+// ============================================================
+// MODELS — Theme System
+// ============================================================
+
+model Theme {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  version     String   @default("1.0.0")
+  description String?
+  author      String?
+  template    String?  // Parent theme slug for child themes
+  tags        String[]
+  supports    String[]
+  active      Boolean  @default(false)
+  settings    Json?    // Merged theme.json settings + user overrides
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  templateParts      TemplatePart[]
+  blockPatterns      BlockPattern[]
+  blockAreas         BlockArea[]
+  navMenuLocations   NavMenuLocation[]
+  themeMods          ThemeMod[]
+  styleVariations    StyleVariation[]
+  setupRegistrations ThemeSetupRegistration[]
+
+  @@index([active])
+  @@map("themes")
+}
+
+model TemplatePart {
+  id        String   @id @default(cuid())
+  themeId   String
+  slug      String
+  name      String?
+  area      String?  // header, footer, sidebar, general
+  content   Json?    // BlockJSON
+  source    String   @default("theme") // "theme" | "user"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  theme Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([themeId, slug])
+  @@map("template_parts")
+}
+
+model BlockPattern {
+  id           String   @id @default(cuid())
+  themeId      String?
+  name         String   @unique
+  title        String
+  categories   String[]
+  content      Json     // BlockJSON array
+  previewImage String?
+  keywords     String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  theme Theme? @relation(fields: [themeId], references: [id], onDelete: SetNull)
+
+  @@index([themeId])
+  @@map("block_patterns")
+}
+
+model BlockArea {
+  id            String   @id @default(cuid())
+  themeId       String
+  slug          String
+  name          String
+  description   String?
+  content       Json?    // User-customized BlockJSON
+  defaultBlocks Json?    // Default blocks from theme
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  theme Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([themeId, slug])
+  @@map("block_areas")
+}
+
+model NavMenuLocation {
+  id        String   @id @default(cuid())
+  themeId   String
+  slug      String
+  name      String
+  maxDepth  Int      @default(3)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  theme Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([themeId, slug])
+  @@map("nav_menu_locations")
+}
+
+model ThemeMod {
+  id        String   @id @default(cuid())
+  themeId   String
+  key       String
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  theme Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([themeId, key])
+  @@map("theme_mods")
+}
+
+model StyleVariation {
+  id        String   @id @default(cuid())
+  themeId   String
+  title     String
+  slug      String
+  settings  Json?
+  styles    Json?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  theme Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([themeId, slug])
+  @@map("style_variations")
+}
+
+model ThemeSetupRegistration {
+  id        String   @id @default(cuid())
+  themeId   String
+  type      String   // "nav-menu" | "block-area" | "support" | "image-size"
+  key       String   // e.g., "primary", "post-thumbnails"
+  value     Json?    // Additional config (dimensions, label, etc.)
+  createdAt DateTime @default(now())
+
+  theme Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@index([themeId, type])
+  @@map("theme_setup_registrations")
+}
+
+// ============================================================
+// MODELS — Scheduling & Queue
+// ============================================================
+
+model ScheduledAction {
+  id          String    @id @default(cuid())
+  hook        String
+  args        Json?
+  status      String    @default("pending")
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, scheduledAt])
+  @@index([hook])
+  @@map("scheduled_actions")
+}
+
+// ============================================================
+// MODELS — Backup & Operational
+// ============================================================
+
+model BackupRecord {
+  id        String   @id @default(cuid())
+  path      String
+  size      Int      @default(0)
+  type      String   @default("full")
+  status    String   @default("completed")
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("backup_records")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model CronEvent {
+  id          String    @id @default(cuid())
+  hook        String
+  schedule    String
+  lastRun     DateTime?
+  nextRun     DateTime?
+  status      String    @default("active")
+  errorCount  Int       @default(0)
+  pluginId    String?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([nextRun])
+  @@index([hook])
+  @@map("cron_events")
+}
+
+// ────────────────────────────────────────────────────────────
+
+model MailLog {
+  id        String    @id @default(cuid())
+  to        String
+  subject   String
+  provider  String
+  status    String    @default("pending")
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("mail_logs")
+}
+
+// ============================================================
+// MIGRATION SQL (for reference)
+// ============================================================
+// Run these statements manually via `psql` or Prisma migrate after
+// the initial schema is deployed.
+//
+// -- 1. GIN JSONB indexes for JSON column query performance
+// CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_gin_content_entries_data
+//   ON content_entries USING GIN (data);
+// CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_gin_revisions_data
+//   ON revisions USING GIN (data);
+// CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_gin_content_meta_value
+//   ON content_meta USING GIN (value);
+// CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_gin_user_meta_value
+//   ON user_meta USING GIN (value);
+//
+// -- 2. Full-text search vector auto-population
+// CREATE OR REPLACE FUNCTION content_entries_tsvector_update()
+// RETURNS trigger AS $$
+// BEGIN
+//   NEW.search_vector := to_tsvector('english',
+//     COALESCE(NEW.data->>'title', '') || ' ' ||
+//     COALESCE(NEW.data->>'content', '') || ' ' ||
+//     COALESCE(NEW.excerpt, '')
+//   );
+//   RETURN NEW;
+// END;
+// $$ LANGUAGE plpgsql;
+//
+// CREATE TRIGGER trg_content_entries_tsvector
+//   BEFORE INSERT OR UPDATE ON content_entries
+//   FOR EACH ROW
+//   EXECUTE FUNCTION content_entries_tsvector_update();
+//
+// CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_content_entries_search
+//   ON content_entries USING GIN (search_vector);
+//
+// -- 3. Partial indexes for common query patterns
+// CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_entries_published
+//   ON content_entries (content_type_id, published_at DESC)
+//   WHERE status = 'PUBLISHED';
+// CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_entries_drafts
+//   ON content_entries (author_id, updated_at DESC)
+//   WHERE status IN ('DRAFT', 'PENDING_REVIEW');
+// CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_entries_trashed
+//   ON content_entries (updated_at DESC)
+//   WHERE status = 'TRASHED';
+//
+// -- 4. Phase 8 — Operational Full tables
+// CREATE TABLE IF NOT EXISTS backup_records (
+//   id TEXT PRIMARY KEY,
+//   path TEXT NOT NULL,
+//   size BIGINT DEFAULT 0,
+//   type TEXT DEFAULT 'full',
+//   status TEXT DEFAULT 'completed',
+//   metadata JSONB,
+//   created_at TIMESTAMPTZ DEFAULT NOW()
+// );
+// CREATE INDEX IF NOT EXISTS idx_backup_records_status ON backup_records(status);
+// CREATE INDEX IF NOT EXISTS idx_backup_records_created ON backup_records(created_at);
+//
+// CREATE TABLE IF NOT EXISTS cron_events (
+//   id TEXT PRIMARY KEY,
+//   hook TEXT NOT NULL,
+//   schedule TEXT NOT NULL,
+//   last_run TIMESTAMPTZ,
+//   next_run TIMESTAMPTZ,
+//   status TEXT DEFAULT 'active',
+//   error_count INT DEFAULT 0,
+//   plugin_id TEXT,
+//   description TEXT,
+//   created_at TIMESTAMPTZ DEFAULT NOW(),
+//   updated_at TIMESTAMPTZ DEFAULT NOW()
+// );
+// CREATE INDEX IF NOT EXISTS idx_cron_events_status ON cron_events(status);
+// CREATE INDEX IF NOT EXISTS idx_cron_events_next ON cron_events(next_run);
+// CREATE INDEX IF NOT EXISTS idx_cron_events_hook ON cron_events(hook);
+//
+// CREATE TABLE IF NOT EXISTS mail_logs (
+//   id TEXT PRIMARY KEY,
+//   "to" TEXT NOT NULL,
+//   subject TEXT NOT NULL,
+//   provider TEXT NOT NULL,
+//   status TEXT DEFAULT 'pending',
+//   error TEXT,
+//   sent_at TIMESTAMPTZ,
+//   created_at TIMESTAMPTZ DEFAULT NOW()
+// );
+// CREATE INDEX IF NOT EXISTS idx_mail_logs_status ON mail_logs(status);
+// CREATE INDEX IF NOT EXISTS idx_mail_logs_created ON mail_logs(created_at);
+//
+// ============================================================
+// END OF SCHEMA v3 — Phase 8 Operational Full
+// ============================================================
