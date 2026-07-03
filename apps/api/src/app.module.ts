@@ -16,7 +16,9 @@ import { ThemesModule } from './themes/themes.module';
 import { SettingsModule } from './settings/settings.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { OEmbedModule } from './oembed/oembed.module';
+import { SeoModule } from './seo/seo.module';
 import { UsersModule } from './users/users.module';
+import { GraphqlAppModule } from './graphql/graphql.module';
 import { PrismaModule } from './common/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -47,6 +49,8 @@ import { InstallCheckMiddleware } from './common/middleware/install-check.middle
     SettingsModule,
     WebhooksModule,
     OEmbedModule,
+    SeoModule,
+    GraphqlAppModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

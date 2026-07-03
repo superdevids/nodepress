@@ -22,6 +22,7 @@
     "build": "tsup src/index.ts --format esm --dts --outDir dist --clean",
     "dev": "tsup src/index.ts --format esm --dts --outDir dist --watch",
     "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist node_modules"
@@ -40,6 +41,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
-    "vitest": "^1.4.0"
+    "vitest": "^1.4.0",
+    "@vitest/coverage-v8": "^1.4.0"
   }
 }

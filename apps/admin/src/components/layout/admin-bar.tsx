@@ -1,23 +1,16 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import { getInitials } from "@/lib/utils";
 
-/**
- * Admin Bar — floating top toolbar (Gap I-03)
- *
- * WordPress-compatible admin bar that appears at the top of the page
- * for logged-in users. Provides quick access to:
- * - NodePress logo / home
- * - Content counts and quick actions
- * - User menu (profile, logout)
- * - Frontend preview link
- * - Screen options toggle
- */
 export function AdminBar() {
-  // TODO: Wire up actual auth state
-  const isLoggedIn = true;
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
-  if (!isLoggedIn) return null;
+  if (isLoading) return null;
+  if (!isAuthenticated) return null;
+
+  const initials = user ? getInitials(user.name) : "?";
 
   return (
     <div
@@ -28,7 +21,6 @@ export function AdminBar() {
       )}
     >
       <div className="flex h-full items-center px-2">
-        {/* Logo */}
         <a
           href="/admin"
           className="flex h-full items-center gap-1.5 px-2 hover:bg-sidebar-accent"
@@ -40,7 +32,6 @@ export function AdminBar() {
         </a>
       </div>
 
-      {/* Left section — quick links */}
       <div className="flex h-full items-center">
         <a
           href="/admin/content/new"
@@ -63,12 +54,9 @@ export function AdminBar() {
         </a>
       </div>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Right section — user menu */}
       <div className="flex h-full items-center">
-        {/* Frontend link */}
         <a
           href="/"
           target="_blank"
@@ -92,7 +80,6 @@ export function AdminBar() {
           <span>View Site</span>
         </a>
 
-        {/* Notifications */}
         <button className="flex h-full items-center px-3 hover:bg-sidebar-accent">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -109,13 +96,37 @@ export function AdminBar() {
           </svg>
         </button>
 
-        {/* User avatar & name */}
-        <button className="flex h-full items-center gap-1.5 px-3 hover:bg-sidebar-accent">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-            A
-          </span>
-          <span>Admin</span>
-        </button>
+        <div className="group relative flex h-full items-center">
+          <button className="flex h-full items-center gap-1.5 px-3 hover:bg-sidebar-accent">
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="h-5 w-5 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                {initials}
+              </span>
+            )}
+            <span>{user?.name || "User"}</span>
+          </button>
+          <div className="absolute right-0 top-full hidden min-w-[160px] rounded-md border bg-popover p-1 shadow-md group-hover:block">
+            <a
+              href="/admin/profile"
+              className="block rounded-sm px-3 py-1.5 text-xs hover:bg-muted"
+            >
+              Profile
+            </a>
+            <button
+              type="button"
+              onClick={logout}
+              className="w-full rounded-sm px-3 py-1.5 text-left text-xs hover:bg-muted"
+            >
+              Log Out
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

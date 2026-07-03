@@ -19,6 +19,7 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@nodepress/core": ["../../packages/core/src"],
+      "@nodepress/core/*": ["../../packages/core/src/*"],
       "@nodepress/db": ["../../packages/db/src"]
     }
   },

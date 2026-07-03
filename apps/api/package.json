@@ -6,7 +6,9 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main",
-    "start:prod": "node dist/main"
+    "start:prod": "node dist/main",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
@@ -31,7 +33,8 @@
     "class-validator": "^0.14.0",
     "class-transformer": "^0.5.1",
     "graphql": "^16.8.0",
-    "apollo-server-express": "^3.13.0"
+    "apollo-server-express": "^3.13.0",
+    "graphql-type-json": "^0.3.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",
@@ -48,6 +51,7 @@
     "ts-jest": "^29.1.2",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
   }
 }

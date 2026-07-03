@@ -333,6 +333,10 @@ export {
   type BackupCodesData,
 } from "./security/two-factor.js";
 
+// ─── SEO ───────────────────────────────────────────────────
+export { SeoService } from "./seo/seo-service.js";
+export type { SeoMetadata, SeoContentEntry } from "./seo/seo-service.js";
+
 // ─── Config ────────────────────────────────────────────────
 export { ConfigService } from "./config/config-service.js";
 

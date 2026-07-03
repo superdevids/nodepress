@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { MediaController } from './media.controller';
 import { MediaService } from './media.service';
+import { ImageProcessorService } from './image-processor.service';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { MediaService } from './media.service';
     }),
   ],
   controllers: [MediaController],
-  providers: [MediaService],
-  exports: [MediaService],
+  providers: [MediaService, ImageProcessorService],
+  exports: [MediaService, ImageProcessorService],
 })
 export class MediaModule {}

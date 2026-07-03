@@ -104,28 +104,29 @@ jobs:
 
       - name: Check coverage threshold (>80%)
         run: |
-          $coverage = Get-ChildItem -Recurse -Filter "coverage-summary.json" | Select-Object -First 1
-          if (-not $coverage) { echo "Coverage file not found"; exit 1 }
-          $summary = Get-Content $coverage.FullName | ConvertFrom-Json
-          $total = $summary.total.lines.pct
-          if ($total -lt 80) {
-            echo "Coverage $total% is below threshold of 80%"
+          SUMMARY=$(find . -name "coverage-summary.json" -type f | head -1)
+          if [ -z "$SUMMARY" ]; then
+            echo "Coverage summary file not found"
             exit 1
-          }
-          echo "Coverage: $total% — threshold met"
-        shell: pwsh
+          fi
+          PCT=$(jq -r '.total.lines.pct // 0' "$SUMMARY")
+          echo "Total line coverage: ${PCT}%"
+          if (( $(echo "$PCT < 80" | bc -l) )); then
+            echo "Coverage ${PCT}% is below threshold of 80%"
+            exit 1
+          fi
+          echo "Coverage: ${PCT}% — threshold met"
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
-          directory: ./coverage
           fail_ci_if_error: false
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [lint-typecheck]
+    needs: [lint-typecheck, test]
     steps:
       - uses: actions/checkout@v4
 
