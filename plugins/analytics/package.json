@@ -1,0 +1,21 @@
+{
+  "name": "nodepress-plugin-analytics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "slug": "analytics",
+    "name": "Analytics",
+    "description": "Google Analytics 4 integration with dashboard widgets, event tracking, and GDPR consent mode.",
+    "minCoreVersion": "0.1.0"
+  },
+  "permissions": [
+    "settings:read",
+    "settings:write",
+    "hooks:content.render"
+  ],
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "nodepress-plugin-backup",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "slug": "backup",
+    "name": "Backup",
+    "description": "Scheduled backups with database dumps, file archives, cloud storage destinations (S3, GDrive, Dropbox), and one-click restore.",
+    "minCoreVersion": "0.1.0"
+  },
+  "permissions": [
+    "settings:read",
+    "settings:write",
+    "content:read"
+  ],
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*"
+  }
+}

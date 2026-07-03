@@ -1,0 +1,21 @@
+{
+  "name": "nodepress-plugin-redirection",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "slug": "redirection",
+    "name": "Redirection",
+    "description": "301/302/307/308 redirect management with regex support, 404 tracking, CSV import/export, and redirect analytics.",
+    "minCoreVersion": "0.1.0"
+  },
+  "permissions": [
+    "settings:read",
+    "settings:write",
+    "hooks:content.render"
+  ],
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*"
+  }
+}

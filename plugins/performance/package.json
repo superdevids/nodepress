@@ -1,0 +1,21 @@
+{
+  "name": "nodepress-plugin-performance",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "slug": "performance",
+    "name": "Performance",
+    "description": "Page caching, HTML/CSS/JS minification, file combining, deferred JS, lazy loading, CDN integration, and database optimization.",
+    "minCoreVersion": "0.1.0"
+  },
+  "permissions": [
+    "settings:read",
+    "settings:write",
+    "hooks:content.render"
+  ],
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*"
+  }
+}

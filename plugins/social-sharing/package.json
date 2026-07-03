@@ -1,0 +1,21 @@
+{
+  "name": "nodepress-plugin-social-sharing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "slug": "social-sharing",
+    "name": "Social Sharing",
+    "description": "Social share buttons, floating bar, inline placement, Open Graph tags, and share count tracking.",
+    "minCoreVersion": "0.1.0"
+  },
+  "permissions": [
+    "settings:read",
+    "settings:write",
+    "hooks:content.render"
+  ],
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*"
+  }
+}

@@ -18,6 +18,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { OEmbedModule } from './oembed/oembed.module';
 import { SeoModule } from './seo/seo.module';
 import { UsersModule } from './users/users.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { AdminMenuModule } from './admin/admin-menu.module';
 import { GraphqlAppModule } from './graphql/graphql.module';
 import { PrismaModule } from './common/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -50,6 +52,8 @@ import { InstallCheckMiddleware } from './common/middleware/install-check.middle
     WebhooksModule,
     OEmbedModule,
     SeoModule,
+    DashboardModule,
+    AdminMenuModule,
     GraphqlAppModule,
   ],
   providers: [

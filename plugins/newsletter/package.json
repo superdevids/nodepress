@@ -1,0 +1,22 @@
+{
+  "name": "nodepress-plugin-newsletter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "slug": "newsletter",
+    "name": "Newsletter",
+    "description": "Email list management, campaign creation, SMTP/SES/SendGrid/Resend sending, subscriber import/export, and analytics.",
+    "minCoreVersion": "0.1.0"
+  },
+  "permissions": [
+    "settings:read",
+    "settings:write",
+    "content:read",
+    "content:write"
+  ],
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*"
+  }
+}

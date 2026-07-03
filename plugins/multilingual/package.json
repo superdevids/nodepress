@@ -1,0 +1,23 @@
+{
+  "name": "nodepress-plugin-multilingual",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "nodepress": {
+    "slug": "multilingual",
+    "name": "Multilingual",
+    "description": "Multi-language support with language switcher, automatic translation (DeepL/Google), locale detection, and RTL support.",
+    "minCoreVersion": "0.1.0"
+  },
+  "permissions": [
+    "settings:read",
+    "settings:write",
+    "content:read",
+    "content:write",
+    "hooks:content.render"
+  ],
+  "dependencies": {
+    "@nodepress/plugin-sdk": "workspace:*"
+  }
+}

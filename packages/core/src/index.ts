@@ -14,7 +14,7 @@ export {
   type ContentTypeDefinition,
   type FieldDefinition,
   type FieldType,
-} from "./content/content-engine.js";
+} from './content/content-engine.js';
 
 // ─── Post Formats (Gap A-04) ───────────────────────────────
 export {
@@ -24,27 +24,24 @@ export {
   POST_FORMAT_LABELS,
   isPostFormat,
   type PostFormatValidation,
-} from "./content/post-formats.js";
+} from './content/post-formats.js';
 
 // ─── Sticky Posts (Gap A-05) ───────────────────────────────
-export {
-  StickyPosts,
-  type StickyPostEntry,
-} from "./content/sticky-posts.js";
+export { StickyPosts, type StickyPostEntry } from './content/sticky-posts.js';
 
 // ─── Password Content (Gap A-06) ───────────────────────────
 export {
   PasswordContent,
   type PasswordContentEntry,
   type UnlockResult,
-} from "./content/password-content.js";
+} from './content/password-content.js';
 
 // ─── Featured Image (Gap A-08) ─────────────────────────────
 export {
   FeaturedImage,
   type FeaturedImageData,
   type ThumbnailSize,
-} from "./content/featured-image.js";
+} from './content/featured-image.js';
 
 // ─── Page Templates (Gap A-09) ─────────────────────────────
 export {
@@ -52,26 +49,15 @@ export {
   PageTemplateResolver,
   type PageTemplate,
   type PageTemplateData,
-} from "./content/page-templates.js";
+} from './content/page-templates.js';
 
 // ─── Plugin System ─────────────────────────────────────────
-export {
-  PluginEngine,
-  type PluginManifest,
-  type PluginLifecycle,
-} from "./plugin/plugin-engine.js";
+export { PluginEngine, type PluginManifest, type PluginLifecycle } from './plugin/plugin-engine.js';
 
-export {
-  HookRegistry,
-  type HookEvent,
-} from "./plugin/hook-registry.js";
+export { HookRegistry, type HookEvent } from './plugin/hook-registry.js';
 
 // ─── Theme Engine ──────────────────────────────────────────
-export {
-  ThemeEngine,
-  type ThemeManifest,
-  type TemplateHierarchy,
-} from "./theme/theme-engine.js";
+export { ThemeEngine, type ThemeManifest, type TemplateHierarchy } from './theme/theme-engine.js';
 
 // ─── Theme Subsystems (Phase 5) ────────────────────────────
 
@@ -81,7 +67,7 @@ export {
   generateChildThemeConfig,
   type ChildThemeManifest,
   type ResolvedTemplatePath,
-} from "./theme/child-theme-resolver.js";
+} from './theme/child-theme-resolver.js';
 
 // theme.json Parser (Gap D-02)
 export {
@@ -101,14 +87,14 @@ export {
   type ThemeJsonCustomTemplate,
   type ThemeJsonStyleVariation,
   type CssCustomProperty,
-} from "./theme/theme-json-parser.js";
+} from './theme/theme-json-parser.js';
 
 // Template Parts (Gap D-05)
 export {
   TemplatePartsManager,
   type TemplatePartDefinition,
   type TemplatePartRecord,
-} from "./theme/template-parts.js";
+} from './theme/template-parts.js';
 
 // Block Patterns (Gap D-04)
 export {
@@ -117,7 +103,7 @@ export {
   type BlockPatternRecord,
   type BlockPatternCategory,
   type BlockPatternCategoryDef,
-} from "./theme/block-patterns.js";
+} from './theme/block-patterns.js';
 
 // Theme Customizer (Gap D-03)
 export {
@@ -129,7 +115,7 @@ export {
   type SelectiveRefreshRule,
   type PreviewDevice,
   type ThemePreviewState,
-} from "./theme/theme-customizer.js";
+} from './theme/theme-customizer.js';
 
 // Block Areas / Widget Areas (Gap D-08)
 export {
@@ -137,7 +123,7 @@ export {
   BlockAreaRenderer,
   type BlockAreaDefinition,
   type BlockAreaRecord,
-} from "./theme/block-areas.js";
+} from './theme/block-areas.js';
 
 // Theme Setup Functions (Gap D-07)
 export {
@@ -146,14 +132,14 @@ export {
   type ThemeSetupFn,
   type ThemeSetupConfig,
   type ThemeSetupImageSize,
-} from "./theme/theme-setup.js";
+} from './theme/theme-setup.js';
 
 // Theme Feature Support (Gap D-09)
 export {
   ThemeSupportsManager,
   ThemeFeature,
   type ThemeFeatureEffect,
-} from "./theme/theme-supports.js";
+} from './theme/theme-supports.js';
 
 // Navigation Menu Locations (Gap D-10)
 export {
@@ -162,7 +148,34 @@ export {
   type NavMenuLocationRecord,
   type NavMenuTreeItem,
   type NavMenuTree,
-} from "./theme/nav-menu-locations.js";
+} from './theme/nav-menu-locations.js';
+
+// Widget Areas / Block Areas (Gap D-08 — WordPress Widget equivalent)
+export {
+  WidgetAreaManager,
+  widgetAreaManager,
+  type WidgetArea,
+  type WidgetBlock,
+} from './theme/widget-areas.js';
+
+// Theme Customizer Panels (WordPress Customizer panel equivalent)
+export {
+  ThemeCustomizer as PanelThemeCustomizer,
+  registerDefaultCustomizerPanels,
+  themeCustomizer,
+  type CustomizerPanel,
+  type CustomizerSection,
+  type CustomizerControl,
+} from './theme/theme-customizer-panel.js';
+
+// Editor Block Patterns (20+ WordPress Block Patterns equivalent)
+export {
+  BLOCK_PATTERNS,
+  getPatternsByCategory,
+  getPatternByName,
+  PATTERN_CATEGORIES,
+  type EditorPattern,
+} from './editor/block-patterns.js';
 
 // Theme Branding (Gap D-11)
 export {
@@ -170,7 +183,7 @@ export {
   type ThemeBrandingSettings,
   type ThemeModValue,
   type ThemeModKey,
-} from "./theme/theme-branding.js";
+} from './theme/theme-branding.js';
 
 // Theme Auto-Update (Gap D-13)
 export {
@@ -179,7 +192,7 @@ export {
   type ThemeUpdateInfo,
   type ThemeUpdateResult,
   type AutoUpdateMode,
-} from "./theme/theme-auto-updater.js";
+} from './theme/theme-auto-updater.js';
 
 // Theme Preview (Gap D-14)
 export {
@@ -187,14 +200,14 @@ export {
   parsePreviewCookie,
   PREVIEW_COOKIE_NAME,
   type ThemePreviewState,
-} from "./theme/theme-preview.js";
+} from './theme/theme-preview.js';
 
 // Style Variations (Gap D-16)
 export {
   StyleVariationsManager,
   type StyleVariationDef,
   type StyleVariationRecord,
-} from "./theme/style-variations.js";
+} from './theme/style-variations.js';
 
 // Full Template Hierarchy (Gap D-19)
 export {
@@ -202,7 +215,7 @@ export {
   type TemplateType,
   type TemplateResolutionContext,
   type ResolvedTemplate,
-} from "./theme/template-hierarchy.js";
+} from './theme/template-hierarchy.js';
 
 // ─── Authentication ────────────────────────────────────────
 export {
@@ -210,20 +223,16 @@ export {
   type AuthTokens,
   type LoginInput,
   type RegisterInput,
-} from "./auth/auth-service.js";
+} from './auth/auth-service.js';
 
 export {
   CapabilityService,
   type Capability,
   type RoleDefinition,
-} from "./auth/capability-service.js";
+} from './auth/capability-service.js';
 
 // ─── Media ─────────────────────────────────────────────────
-export {
-  MediaService,
-  type MediaUploadOptions,
-  type ImageSize,
-} from "./media/media-service.js";
+export { MediaService, type MediaUploadOptions, type ImageSize } from './media/media-service.js';
 
 // ─── Cache (Gap G-01) ──────────────────────────────────────
 export {
@@ -232,7 +241,7 @@ export {
   type CacheEntry,
   type ObjectCache,
   type CacheStats,
-} from "./cache/cache-service.js";
+} from './cache/cache-service.js';
 
 // ─── Shortcode (Gap A-01) ──────────────────────────────────
 export {
@@ -243,7 +252,7 @@ export {
   stripShortcodes,
   registerShortcode,
   type ShortcodeHandler,
-} from "./shortcode/shortcode-engine.js";
+} from './shortcode/shortcode-engine.js';
 
 // ─── oEmbed (Gap A-02) ─────────────────────────────────────
 export {
@@ -253,7 +262,7 @@ export {
   OEmbedProxy,
   type OEmbedProviderConfig,
   type OEmbedResult,
-} from "./oembed/oembed-service.js";
+} from './oembed/oembed-service.js';
 
 // ─── Permalink (Gap A-03) ──────────────────────────────────
 export {
@@ -270,7 +279,7 @@ export {
   type ParsedStructure,
   type PermalinkSettings,
   type PermalinkStorage,
-} from "./permalink/permalink-service.js";
+} from './permalink/permalink-service.js';
 
 // ─── Comments (Gap A-13) ───────────────────────────────────
 export {
@@ -283,25 +292,19 @@ export {
   type ModerationRule,
   type ModerationResult,
   type WhitelistedCommenter,
-} from "./comments/index.js";
+} from './comments/index.js';
 
 // ─── Security (Gap F-01) ───────────────────────────────────
-export {
-  SecurityService,
-  type SecurityKeys,
-} from "./security/security-service.js";
+export { SecurityService, type SecurityKeys } from './security/security-service.js';
 
 // ─── Recovery Mode (Gap F-02) ──────────────────────────────
-export {
-  RecoveryMode,
-  type PluginErrorRecord,
-} from "./security/recovery-mode.js";
+export { RecoveryMode, type PluginErrorRecord } from './security/recovery-mode.js';
 
 // ─── Application Passwords (Gap F-04) ──────────────────────
 export {
   ApplicationPasswordsEngine,
   type AppPasswordData,
-} from "./security/application-passwords.js";
+} from './security/application-passwords.js';
 
 // ─── Password Policy (Gap F-06) ────────────────────────────
 export {
@@ -310,7 +313,7 @@ export {
   type PasswordPolicyConfig,
   type PasswordStrengthResult,
   type PasswordValidationResult,
-} from "./security/password-policy.js";
+} from './security/password-policy.js';
 
 // ─── Database Encryption (Gap F-15) ────────────────────────
 export {
@@ -318,32 +321,34 @@ export {
   getDbEncryption,
   encryptField,
   decryptField,
-} from "./security/db-encryption.js";
+} from './security/db-encryption.js';
 
 // ─── Password Reset ────────────────────────────────────────
-export {
-  PasswordResetEngine,
-  type PasswordResetTokenData,
-} from "./security/password-reset.js";
+export { PasswordResetEngine, type PasswordResetTokenData } from './security/password-reset.js';
 
 // ─── Two-Factor Auth ───────────────────────────────────────
 export {
   TwoFactorEngine,
   type TwoFactorSecretData,
   type BackupCodesData,
-} from "./security/two-factor.js";
+} from './security/two-factor.js';
 
 // ─── SEO ───────────────────────────────────────────────────
-export { SeoService } from "./seo/seo-service.js";
-export type { SeoMetadata, SeoContentEntry } from "./seo/seo-service.js";
+export { SeoService } from './seo/seo-service.js';
+export type { SeoMetadata, SeoContentEntry } from './seo/seo-service.js';
 
 // ─── Config ────────────────────────────────────────────────
-export { ConfigService } from "./config/config-service.js";
+export { ConfigService } from './config/config-service.js';
 
 // ─── Phase 8 — Operational Full ──────────────────────────────
 
 // Upgrade Manager (Gap I-01)
-export { UpgradeManager, type VersionInfo, type MigrationResult, type UpgradeOptions } from "./upgrade/upgrade-manager.js";
+export {
+  UpgradeManager,
+  type VersionInfo,
+  type MigrationResult,
+  type UpgradeOptions,
+} from './upgrade/upgrade-manager.js';
 
 // Backup Manager (Gap I-02)
 export {
@@ -356,19 +361,35 @@ export {
   type BackupStatus,
   type StorageProvider,
   type RetentionConfig,
-} from "./backup/backup-manager.js";
+} from './backup/backup-manager.js';
 
 // Log Manager (Gap I-10)
-export { LogManager, type LogEntry, type LogLevel, type LogFilter, type LogFileInfo } from "./logging/log-manager.js";
+export {
+  LogManager,
+  type LogEntry,
+  type LogLevel,
+  type LogFilter,
+  type LogFileInfo,
+} from './logging/log-manager.js';
 
 // i18n / Translation (Gap I-13)
-export { I18nEngine, type I18nOptions, type LocaleInfo } from "./i18n/i18n-engine.js";
+export { I18nEngine, type I18nOptions, type LocaleInfo } from './i18n/i18n-engine.js';
 
 // Cron Viewer (Gap I-14)
-export { CronViewer, type CronEvent, type CronStatus, type CronEventFilter } from "./cron/cron-viewer.js";
+export {
+  CronViewer,
+  type CronEvent,
+  type CronStatus,
+  type CronEventFilter,
+} from './cron/cron-viewer.js';
 
 // DB Optimizer (Gap I-12)
-export { DbOptimizer, type TableInfo, type CleanupResult, type CleanupOptions } from "./db/db-optimizer.js";
+export {
+  DbOptimizer,
+  type TableInfo,
+  type CleanupResult,
+  type CleanupOptions,
+} from './db/db-optimizer.js';
 
 // Mail / Email System (Gap I-03)
 export {
@@ -381,38 +402,43 @@ export {
   type MailResult,
   type MailProvider,
   type MailLog,
-} from "./mail/mail-manager.js";
+} from './mail/mail-manager.js';
 
 // Scheduler Service
-export { SchedulerService, type ScheduledJob, type JobExecution, type QueueStats } from "./scheduler/scheduler.js";
+export {
+  SchedulerService,
+  type ScheduledJob,
+  type JobExecution,
+  type QueueStats,
+} from './scheduler/scheduler.js';
 
 // ─── Core Engine ───────────────────────────────────────────
 
-import { ContentEngine } from "./content/content-engine.js";
-import { PluginEngine } from "./plugin/plugin-engine.js";
-import { ThemeEngine } from "./theme/theme-engine.js";
-import { AuthService } from "./auth/auth-service.js";
-import { MediaService } from "./media/media-service.js";
-import { CacheService } from "./cache/cache-service.js";
-import { ShortcodeEngine } from "./shortcode/shortcode-engine.js";
-import { OEmbedService } from "./oembed/oembed-service.js";
-import { PermalinkService } from "./permalink/permalink-service.js";
-import { SecurityService } from "./security/security-service.js";
-import { RecoveryMode } from "./security/recovery-mode.js";
-import { ApplicationPasswordsEngine } from "./security/application-passwords.js";
-import { PasswordPolicyEngine } from "./security/password-policy.js";
-import { DbEncryption } from "./security/db-encryption.js";
-import { PasswordResetEngine } from "./security/password-reset.js";
-import { TwoFactorEngine } from "./security/two-factor.js";
-import { ConfigService } from "./config/config-service.js";
-import { UpgradeManager } from "./upgrade/upgrade-manager.js";
-import { BackupManager } from "./backup/backup-manager.js";
-import { LogManager } from "./logging/log-manager.js";
-import { I18nEngine } from "./i18n/i18n-engine.js";
-import { CronViewer } from "./cron/cron-viewer.js";
-import { DbOptimizer } from "./db/db-optimizer.js";
-import { MailManager } from "./mail/mail-manager.js";
-import { SchedulerService } from "./scheduler/scheduler.js";
+import { ContentEngine } from './content/content-engine.js';
+import { PluginEngine } from './plugin/plugin-engine.js';
+import { ThemeEngine } from './theme/theme-engine.js';
+import { AuthService } from './auth/auth-service.js';
+import { MediaService } from './media/media-service.js';
+import { CacheService } from './cache/cache-service.js';
+import { ShortcodeEngine } from './shortcode/shortcode-engine.js';
+import { OEmbedService } from './oembed/oembed-service.js';
+import { PermalinkService } from './permalink/permalink-service.js';
+import { SecurityService } from './security/security-service.js';
+import { RecoveryMode } from './security/recovery-mode.js';
+import { ApplicationPasswordsEngine } from './security/application-passwords.js';
+import { PasswordPolicyEngine } from './security/password-policy.js';
+import { DbEncryption } from './security/db-encryption.js';
+import { PasswordResetEngine } from './security/password-reset.js';
+import { TwoFactorEngine } from './security/two-factor.js';
+import { ConfigService } from './config/config-service.js';
+import { UpgradeManager } from './upgrade/upgrade-manager.js';
+import { BackupManager } from './backup/backup-manager.js';
+import { LogManager } from './logging/log-manager.js';
+import { I18nEngine } from './i18n/i18n-engine.js';
+import { CronViewer } from './cron/cron-viewer.js';
+import { DbOptimizer } from './db/db-optimizer.js';
+import { MailManager } from './mail/mail-manager.js';
+import { SchedulerService } from './scheduler/scheduler.js';
 
 export interface NodePressEngineOptions {
   config: ConfigService;

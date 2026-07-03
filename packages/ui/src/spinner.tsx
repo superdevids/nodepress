@@ -1,20 +1,20 @@
-import { cn } from "./utils.js";
+import { cn } from './utils.js';
 
 export interface SpinnerProps {
   className?: string;
-  size?: "sm" | "md" | "lg";
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const spinnerSizes = {
-  sm: "h-4 w-4",
-  md: "h-6 w-6",
-  lg: "h-8 w-8",
+  sm: 'h-4 w-4',
+  md: 'h-6 w-6',
+  lg: 'h-8 w-8',
 };
 
-export function Spinner({ className, size = "md" }: SpinnerProps) {
+export function Spinner({ className, size = 'md' }: SpinnerProps) {
   return (
     <svg
-      className={cn("animate-spin text-muted-foreground", spinnerSizes[size], className)}
+      className={cn('text-wp-text-light animate-spin', spinnerSizes[size], className)}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
