@@ -5,6 +5,7 @@ import { RecoveryMode } from '@nodepress/core';
 import { IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../common/prisma.service';
 
 class RecoveryLoginDto {
@@ -24,7 +25,10 @@ export class RecoveryService {
   private readonly logger = new Logger(RecoveryService.name);
   private readonly recoveryMode = new RecoveryMode();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   isInRecovery(): boolean {
     return this.recoveryMode.isActive();
@@ -46,7 +50,9 @@ export class RecoveryService {
     return result;
   }
 
-  async loginWithToken(token: string): Promise<{ accessToken: string }> {
+  async loginWithToken(
+    token: string,
+  ): Promise<{ accessToken: string; user: { id: string; role: string } }> {
     const stored = await this.prisma.recoveryToken.findUnique({
       where: { token },
     });
@@ -67,10 +73,19 @@ export class RecoveryService {
       data: { usedAt: new Date() },
     });
 
+    const user = await this.prisma.user.findUnique({ where: { id: stored.userId } });
+
     this.recoveryMode.activate();
     this.logger.log(`Recovery mode activated by user ${stored.userId}`);
 
-    return { accessToken: `recovery_${token}` };
+    const payload = {
+      sub: stored.userId,
+      email: user?.email || 'recovery@nodepress.local',
+      role: 'SUPER_ADMIN',
+      permissions: ['*'],
+    };
+    const accessToken = this.jwtService.sign(payload);
+    return { accessToken, user: { id: stored.userId, role: 'SUPER_ADMIN' } };
   }
 
   deactivate(): void {

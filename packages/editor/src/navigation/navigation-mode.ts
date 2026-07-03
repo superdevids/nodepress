@@ -5,16 +5,16 @@
  * list view sidebar showing all blocks as a tree, and breadcrumbs in the toolbar.
  */
 
-import type { BlockNode } from "../types.js";
+import type { BlockNode } from '../types.js';
 
 export interface BlockTreeNode {
   id: string;
   name: string;
   title: string;
   depth: number;
+  index: number;
   children: BlockTreeNode[];
   node: BlockNode;
-  pos: number;
 }
 
 let _blockIdCounter = 0;
@@ -22,18 +22,17 @@ let _blockIdCounter = 0;
 export function buildBlockTree(nodes: BlockNode[], parentDepth: number = 0): BlockTreeNode[] {
   const tree: BlockTreeNode[] = [];
 
-  for (const node of nodes) {
+  for (const [index, node] of nodes.entries()) {
     const id = `block-${_blockIdCounter++}`;
     const children = node.content ? buildBlockTree(node.content, parentDepth + 1) : [];
-    const pos = _blockIdCounter - 1;
     tree.push({
       id,
       name: node.type,
       title: getBlockTitle(node),
       depth: parentDepth,
+      index,
       children,
       node,
-      pos,
     });
   }
 
@@ -53,29 +52,29 @@ export function findBlockById(tree: BlockTreeNode[], id: string): BlockTreeNode 
 
 export function getBlockTitle(node: BlockNode): string {
   const typeMap: Record<string, string> = {
-    doc: "Document",
-    paragraph: "Paragraph",
-    heading: "Heading",
-    bulletList: "List",
-    orderedList: "Ordered List",
-    listItem: "List Item",
-    blockquote: "Quote",
-    codeBlock: "Code",
-    image: "Image",
-    horizontalRule: "Separator",
-    hardBreak: "Line Break",
-    table: "Table",
-    tableRow: "Table Row",
-    tableCell: "Table Cell",
-    tableHeader: "Table Header",
-    youtube: "YouTube",
-    "nodepress/cover": "Cover",
-    "nodepress/media-text": "Media & Text",
-    "nodepress/buttons": "Buttons",
-    "nodepress/columns": "Columns",
-    "nodepress/spacer": "Spacer",
-    "nodepress/details": "Details",
-    "nodepress/reusable-block": "Reusable Block",
+    doc: 'Document',
+    paragraph: 'Paragraph',
+    heading: 'Heading',
+    bulletList: 'List',
+    orderedList: 'Ordered List',
+    listItem: 'List Item',
+    blockquote: 'Quote',
+    codeBlock: 'Code',
+    image: 'Image',
+    horizontalRule: 'Separator',
+    hardBreak: 'Line Break',
+    table: 'Table',
+    tableRow: 'Table Row',
+    tableCell: 'Table Cell',
+    tableHeader: 'Table Header',
+    youtube: 'YouTube',
+    'nodepress/cover': 'Cover',
+    'nodepress/media-text': 'Media & Text',
+    'nodepress/buttons': 'Buttons',
+    'nodepress/columns': 'Columns',
+    'nodepress/spacer': 'Spacer',
+    'nodepress/details': 'Details',
+    'nodepress/reusable-block': 'Reusable Block',
   };
 
   return typeMap[node.type] ?? node.type;
@@ -92,7 +91,10 @@ export function getParentBlockId(tree: BlockTreeNode[], currentId: string): stri
   return undefined;
 }
 
-export function getPreviousSibling(tree: BlockTreeNode[], currentId: string): BlockTreeNode | undefined {
+export function getPreviousSibling(
+  tree: BlockTreeNode[],
+  currentId: string,
+): BlockTreeNode | undefined {
   const topIdx = tree.findIndex((c) => c.id === currentId);
   if (topIdx > 0) return tree[topIdx - 1];
   for (const node of tree) {
@@ -106,7 +108,10 @@ export function getPreviousSibling(tree: BlockTreeNode[], currentId: string): Bl
   return undefined;
 }
 
-export function getNextSibling(tree: BlockTreeNode[], currentId: string): BlockTreeNode | undefined {
+export function getNextSibling(
+  tree: BlockTreeNode[],
+  currentId: string,
+): BlockTreeNode | undefined {
   const topIdx = tree.findIndex((c) => c.id === currentId);
   if (topIdx >= 0 && topIdx < tree.length - 1) return tree[topIdx + 1];
   for (const node of tree) {
@@ -131,7 +136,10 @@ export function flattenTree(tree: BlockTreeNode[]): BlockTreeNode[] {
   return result;
 }
 
-export function buildBreadcrumbs(tree: BlockTreeNode[], currentId: string): { id: string; title: string }[] {
+export function buildBreadcrumbs(
+  tree: BlockTreeNode[],
+  currentId: string,
+): { id: string; title: string }[] {
   const crumbs: { id: string; title: string }[] = [];
   let current = findBlockById(tree, currentId);
   if (!current) return crumbs;

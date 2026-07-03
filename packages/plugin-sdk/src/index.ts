@@ -14,11 +14,7 @@
  * - Register shortcodes
  */
 
-export {
-  HookRegistry,
-  type HookCallback,
-  type HookEvent,
-} from "./hooks.js";
+export { HookRegistry, type HookCallback, type HookEvent } from './hooks.js';
 
 export {
   registerContentType,
@@ -26,35 +22,19 @@ export {
   type ContentTypeDefinition,
   type FieldDefinition,
   type FieldType,
-} from "./content.js";
+} from './content.js';
 
-export {
-  registerBlock,
-  type BlockDefinition,
-  type BlockEditorProps,
-} from "./blocks.js";
+export { registerBlock, type BlockDefinition, type BlockEditorProps } from './blocks.js';
 
-export {
-  registerSetting,
-  type SettingDefinition,
-  type SettingField,
-} from "./settings.js";
+export { registerSetting, type SettingDefinition, type SettingField } from './settings.js';
 
-export {
-  registerCron,
-  type CronJob,
-  type CronSchedule,
-} from "./cron.js";
+export { registerCron, type CronJob, type CronSchedule } from './cron.js';
 
-export {
-  registerCapability,
-  type CapabilityDefinition,
-} from "./capabilities.js";
+export { registerCapability, type CapabilityDefinition } from './capabilities.js';
 
-export {
-  registerShortcode,
-  type ShortcodeHandler,
-} from "./shortcode.js";
+export { registerShortcode, type ShortcodeHandler } from './shortcode.js';
+
+import type { PrismaClient } from '@prisma/client';
 
 /**
  * Plugin manifest interface.
@@ -87,7 +67,7 @@ export interface PluginLifecycle {
  */
 export interface PluginContext {
   hooks: HookRegistry;
-  prisma: import("@prisma/client").PrismaClient;
+  prisma: PrismaClient;
   cache: unknown;
   shortcode: unknown;
   logger: Console;
