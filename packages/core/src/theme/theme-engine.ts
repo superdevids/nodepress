@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 import { ChildThemeResolver } from "./child-theme-resolver.js";
 import { ThemeJsonParser } from "./theme-json-parser.js";
 import { TemplatePartsManager } from "./template-parts.js";

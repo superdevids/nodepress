@@ -1,7 +1,39 @@
 {
-  "name": "nodepress",
+  "name": "nodepressjs",
   "version": "0.0.1",
-  "private": true,
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "nodepressjs": "packages/cli/dist/index.js"
+  },
+  "files": [
+    "packages/cli/dist/",
+    "packages/core/dist/",
+    "packages/db/dist/",
+    "packages/plugin-sdk/dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/superdevids/nodepress.git"
+  },
+  "homepage": "https://github.com/superdevids/nodepress#readme",
+  "bugs": {
+    "url": "https://github.com/superdevids/nodepress/issues"
+  },
+  "keywords": [
+    "cms",
+    "wordpress",
+    "nestjs",
+    "nextjs",
+    "headless-cms",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": "NodePress Team",
   "description": "WordPress-compatible CMS built with Node.js / TypeScript",
   "scripts": {
     "setup": "bash scripts/setup.sh",
@@ -17,11 +49,11 @@
     "clean": "turbo run clean",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "db:generate": "pnpm --filter @nodepress/db db:generate",
-    "db:push": "pnpm --filter @nodepress/db db:push",
-    "db:migrate": "pnpm --filter @nodepress/db db:migrate",
-    "db:seed": "pnpm --filter @nodepress/db db:seed",
-    "db:studio": "pnpm --filter @nodepress/db db:studio",
+    "db:generate": "pnpm --filter @nodepressjs/db db:generate",
+    "db:push": "pnpm --filter @nodepressjs/db db:push",
+    "db:migrate": "pnpm --filter @nodepressjs/db db:migrate",
+    "db:seed": "pnpm --filter @nodepressjs/db db:seed",
+    "db:studio": "pnpm --filter @nodepressjs/db db:studio",
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "changeset:publish": "changeset publish"

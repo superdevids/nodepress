@@ -1,5 +1,5 @@
 import { z, type ZodSchema, type ZodType } from "zod";
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 import { HookRegistry } from "./hook-registry.js";
 
 export type SettingFieldType =

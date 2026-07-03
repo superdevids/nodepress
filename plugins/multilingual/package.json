@@ -18,6 +18,6 @@
     "hooks:content.render"
   ],
   "dependencies": {
-    "@nodepress/plugin-sdk": "workspace:*"
+    "@nodepressjs/plugin-sdk": "workspace:*"
   }
 }

@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 import { EventEmitter } from "node:events";
 
 export interface MailOptions {

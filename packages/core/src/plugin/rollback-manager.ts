@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { readFile, writeFile, cp } from "node:fs/promises";
 import { join } from "node:path";
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 
 export interface RollbackPoint {
   version: string;

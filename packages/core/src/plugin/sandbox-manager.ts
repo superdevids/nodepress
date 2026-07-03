@@ -1,5 +1,5 @@
 import { HookRegistry } from "./hook-registry.js";
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 
 export interface SandboxConfig {
   memoryLimit: number;

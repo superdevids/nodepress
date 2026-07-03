@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 
 export const PREVIEW_COOKIE_NAME = "nodepress_preview_theme";
 

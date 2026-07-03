@@ -4,8 +4,8 @@
  */
 
 import http from "node:http";
-import { PrismaClient } from "@nodepress/db";
-import type { NodePressEngine, NodePressEngineOptions } from "@nodepress/core";
+import { PrismaClient } from "@nodepressjs/db";
+import type { NodePressEngine, NodePressEngineOptions } from "@nodepressjs/core";
 
 export interface TestServerOptions {
   database?: {
@@ -51,7 +51,7 @@ export class TestServer {
     this.prisma = prisma;
     await prisma.$connect();
 
-    const { NodePressEngine, ContentEngine, PluginEngine, ThemeEngine, AuthService, MediaService, CacheService, ShortcodeEngine, OEmbedService, PermalinkService, SecurityService, ConfigService, HookRegistry } = await import("@nodepress/core");
+    const { NodePressEngine, ContentEngine, PluginEngine, ThemeEngine, AuthService, MediaService, CacheService, ShortcodeEngine, OEmbedService, PermalinkService, SecurityService, ConfigService, HookRegistry } = await import("@nodepressjs/core");
 
     const config = new ConfigService();
     const hooks = new HookRegistry();

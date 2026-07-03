@@ -11,8 +11,8 @@ import {
   isInstalled,
   type DatabaseConfig,
   type SecurityKeys,
-} from '@nodepress/core/config/config-generator';
-import { seedDefaultData } from '@nodepress/core/install/default-seed';
+} from '@nodepressjs/core/config/config-generator';
+import { seedDefaultData } from '@nodepressjs/core/install/default-seed';
 
 export interface InstallDbInput {
   host: string;

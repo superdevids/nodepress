@@ -12,7 +12,7 @@
  * - Admin endpoint: GET /api/dev/queries
  */
 
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 
 export interface QueryRecord {
   id: number;

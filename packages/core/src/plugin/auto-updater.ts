@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 import { HookRegistry } from "./hook-registry.js";
 import { RegistryClient, type UpdateCheckResult } from "./registry-client.js";
 import { RollbackManager } from "./rollback-manager.js";

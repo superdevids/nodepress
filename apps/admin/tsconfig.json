@@ -18,14 +18,14 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"],
-      "@nodepress/core": ["../../packages/core/src"],
-      "@nodepress/core/*": ["../../packages/core/src/*"],
-      "@nodepress/config": ["../../packages/config/src"],
-      "@nodepress/config/*": ["../../packages/config/src/*"],
-      "@nodepress/ui": ["../../packages/ui/src"],
-      "@nodepress/ui/*": ["../../packages/ui/src/*"],
-      "@nodepress/editor": ["../../packages/editor/src"],
-      "@nodepress/editor/*": ["../../packages/editor/src/*"]
+      "@nodepressjs/core": ["../../packages/core/src"],
+      "@nodepressjs/core/*": ["../../packages/core/src/*"],
+      "@nodepressjs/config": ["../../packages/config/src"],
+      "@nodepressjs/config/*": ["../../packages/config/src/*"],
+      "@nodepressjs/ui": ["../../packages/ui/src"],
+      "@nodepressjs/ui/*": ["../../packages/ui/src/*"],
+      "@nodepressjs/editor": ["../../packages/editor/src"],
+      "@nodepressjs/editor/*": ["../../packages/editor/src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

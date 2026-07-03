@@ -15,7 +15,7 @@
     "settings:write"
   ],
   "dependencies": {
-    "@nodepress/plugin-sdk": "workspace:*",
+    "@nodepressjs/plugin-sdk": "workspace:*",
     "ioredis": "^5.4.0"
   }
 }

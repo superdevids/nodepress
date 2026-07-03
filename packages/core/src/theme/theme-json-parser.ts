@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 import type { InputJsonValue } from "@prisma/client/runtime/library.js";
 
 export interface ThemeJsonColorPalette {

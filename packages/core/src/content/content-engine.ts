@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 
 /**
  * Supported field types for content type definitions.

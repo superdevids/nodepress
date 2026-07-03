@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, HttpStatus, Injectable } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
-import { PrismaClient } from '@nodepress/db';
+import { PrismaClient } from '@nodepressjs/db';
 
 export interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';

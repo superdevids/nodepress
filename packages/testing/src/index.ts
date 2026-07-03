@@ -1,5 +1,5 @@
 /**
- * @nodepress/testing
+ * @nodepressjs/testing
  *
  * Test utilities for NodePress projects.
  * Provides factories, fixtures, plugin test utils, and test server helpers.

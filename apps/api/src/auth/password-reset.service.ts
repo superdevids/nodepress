@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PasswordResetEngine } from '@nodepress/core';
+import { PasswordResetEngine } from '@nodepressjs/core';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../common/prisma.service';
 

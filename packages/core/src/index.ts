@@ -1,5 +1,5 @@
 /**
- * @nodepress/core - NodePress Business Logic Engine
+ * @nodepressjs/core - NodePress Business Logic Engine
  *
  * Central orchestrator for all CMS operations:
  * - Content modeling & management

@@ -194,7 +194,7 @@ export class ThemeSupportsManager {
     }
   }
 
-  async syncToDatabase(themeSlug: string, themeId: string, prisma: import("@nodepress/db").PrismaClient): Promise<void> {
+  async syncToDatabase(themeSlug: string, themeId: string, prisma: import("@nodepressjs/db").PrismaClient): Promise<void> {
     const features = this.getSupportedFeatures(themeSlug);
     const theme = await prisma.theme.findUnique({ where: { id: themeId } });
     if (theme) {
@@ -205,7 +205,7 @@ export class ThemeSupportsManager {
     }
   }
 
-  async loadFromDatabase(themeSlug: string, themeId: string, prisma: import("@nodepress/db").PrismaClient): Promise<void> {
+  async loadFromDatabase(themeSlug: string, themeId: string, prisma: import("@nodepressjs/db").PrismaClient): Promise<void> {
     const theme = await prisma.theme.findUnique({ where: { id: themeId } });
     if (theme?.supports) {
       for (const feature of theme.supports) {

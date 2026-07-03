@@ -1,4 +1,4 @@
-import { PluginLifecycle, PluginContext } from '@nodepress/plugin-sdk';
+import { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
 import Redis from 'ioredis';
 
 export const manifest = {

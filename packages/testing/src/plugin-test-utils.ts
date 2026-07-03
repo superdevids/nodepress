@@ -3,8 +3,8 @@
  * Provides mocks and test harnesses for plugin developers.
  */
 
-import { HookRegistry } from "@nodepress/plugin-sdk";
-import type { PluginManifest, PluginLifecycle, PluginContext } from "@nodepress/plugin-sdk";
+import { HookRegistry } from "@nodepressjs/plugin-sdk";
+import type { PluginManifest, PluginLifecycle, PluginContext } from "@nodepressjs/plugin-sdk";
 
 /**
  * Create a mock PluginSDK instance for testing.

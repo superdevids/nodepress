@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { HookRegistry } from "./hook-registry.js";

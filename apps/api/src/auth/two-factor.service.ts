@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { TwoFactorEngine } from '@nodepress/core';
+import { TwoFactorEngine } from '@nodepressjs/core';
 import { PrismaService } from '../common/prisma.service';
 
 @Injectable()

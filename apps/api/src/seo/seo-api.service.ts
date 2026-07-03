@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SeoService } from '@nodepress/core/seo';
+import { SeoService } from '@nodepressjs/core/seo';
 import { ContentService } from '../content/content.service';
 import { SettingsService } from '../settings/settings.service';
 

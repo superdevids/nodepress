@@ -3,7 +3,7 @@
  * Allows plugins to register custom shortcodes.
  *
  * @example
- * import { registerShortcode } from "@nodepress/plugin-sdk";
+ * import { registerShortcode } from "@nodepressjs/plugin-sdk";
  *
  * registerShortcode("my_plugin_button", (attrs, content) => {
  *   const url = attrs.url ?? "#";

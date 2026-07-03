@@ -1,5 +1,5 @@
 {
-  "name": "@nodepress/admin",
+  "name": "@nodepressjs/admin",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
-    "@nodepress/config": "workspace:*",
-    "@nodepress/core": "workspace:*",
-    "@nodepress/editor": "workspace:*",
-    "@nodepress/ui": "workspace:*",
+    "@nodepressjs/config": "workspace:*",
+    "@nodepressjs/core": "workspace:*",
+    "@nodepressjs/editor": "workspace:*",
+    "@nodepressjs/ui": "workspace:*",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.0.4",

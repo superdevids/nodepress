@@ -1,5 +1,5 @@
 {
-  "name": "@nodepress/api",
+  "name": "@nodepressjs/api",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -21,8 +21,8 @@
     "@nestjs/serve-static": "^4.0.0",
     "@nestjs/graphql": "^12.0.0",
     "@nestjs/apollo": "^12.0.0",
-    "@nodepress/core": "*",
-    "@nodepress/db": "*",
+    "@nodepressjs/core": "*",
+    "@nodepressjs/db": "*",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",

@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 import { HookRegistry } from "./hook-registry.js";
 import type { ShortcodeEngine } from "../shortcode/shortcode-engine.js";
 import { DependencyResolver } from "./dependency-resolver.js";

@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 import { type ThemeJson, type ThemeJsonSettings, type ThemeJsonStyles, ThemeJsonParser } from "./theme-json-parser.js";
 
 export interface StyleVariationDef {

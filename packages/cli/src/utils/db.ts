@@ -12,7 +12,7 @@ export async function getPrismaClient(): Promise<any> {
   if (prismaClient) return prismaClient;
 
   try {
-    const { PrismaClient } = await import('@nodepress/db');
+    const { PrismaClient } = await import('@nodepressjs/db');
     prismaClient = new PrismaClient({
       datasources: { db: { url: getDatabaseUrl() } },
     });
@@ -29,7 +29,7 @@ export async function getPrismaClient(): Promise<any> {
       return prismaClient;
     } catch (err) {
       throw new Error(
-        `Cannot connect to database at ${getDatabaseUrl()}. Make sure the database is running and @nodepress/db is installed.`
+        `Cannot connect to database at ${getDatabaseUrl()}. Make sure the database is running and @nodepressjs/db is installed.`,
       );
     }
   }
@@ -70,12 +70,7 @@ export async function pushSchema(): Promise<void> {
   spinner.start();
 
   try {
-    const dbPackageDir = path.resolve(
-      getConfigPathRelative(),
-      '..',
-      '..',
-      'db'
-    );
+    const dbPackageDir = path.resolve(getConfigPathRelative(), '..', '..', 'db');
     const prismaBin = findPrismaCli();
 
     execSync(
@@ -84,7 +79,7 @@ export async function pushSchema(): Promise<void> {
         cwd: dbPackageDir,
         stdio: 'pipe',
         env: { ...process.env, DATABASE_URL: getDatabaseUrl() },
-      }
+      },
     );
 
     spinner.succeed('Schema pushed successfully');
@@ -100,12 +95,7 @@ export async function runMigrations(): Promise<void> {
   spinner.start();
 
   try {
-    const dbPackageDir = path.resolve(
-      getConfigPathRelative(),
-      '..',
-      '..',
-      'db'
-    );
+    const dbPackageDir = path.resolve(getConfigPathRelative(), '..', '..', 'db');
     const prismaBin = findPrismaCli();
 
     execSync(`${prismaBin} prisma migrate deploy`, {
@@ -127,12 +117,7 @@ export async function rollbackMigration(): Promise<void> {
   spinner.start();
 
   try {
-    const dbPackageDir = path.resolve(
-      getConfigPathRelative(),
-      '..',
-      '..',
-      'db'
-    );
+    const dbPackageDir = path.resolve(getConfigPathRelative(), '..', '..', 'db');
     const prismaBin = findPrismaCli();
 
     execSync(`${prismaBin} prisma migrate resolve --rolled-back`, {
@@ -275,7 +260,11 @@ export async function seedDatabase(): Promise<void> {
     // ─── Seed Settings ────────────────────────────────────────────────────
     const settings = [
       { group: 'general', key: 'site_title', value: '"NodePress CMS"' },
-      { group: 'general', key: 'site_tagline', value: '"The WordPress alternative for JavaScript developers"' },
+      {
+        group: 'general',
+        key: 'site_tagline',
+        value: '"The WordPress alternative for JavaScript developers"',
+      },
       { group: 'general', key: 'site_url', value: '"http://localhost:3000"' },
       { group: 'general', key: 'admin_email', value: '"admin@nodepress.local"' },
       { group: 'general', key: 'language', value: '"en_US"' },
@@ -314,7 +303,7 @@ export async function exportDatabase(filePath?: string): Promise<string> {
       filePath ||
       path.join(
         getBackupDir(),
-        `nodepress-export-${new Date().toISOString().replace(/[:.]/g, '-')}.sql`
+        `nodepress-export-${new Date().toISOString().replace(/[:.]/g, '-')}.sql`,
       );
 
     // Ensure output directory exists
@@ -328,7 +317,7 @@ export async function exportDatabase(filePath?: string): Promise<string> {
       {
         stdio: 'pipe',
         env: { ...process.env, PGPASSWORD: url.password },
-      }
+      },
     );
 
     spinner.succeed(`Database exported to: ${outputPath}`);
@@ -356,7 +345,7 @@ export async function importDatabase(filePath: string): Promise<void> {
       {
         stdio: 'pipe',
         env: { ...process.env, PGPASSWORD: url.password },
-      }
+      },
     );
 
     spinner.succeed('Database imported successfully');

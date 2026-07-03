@@ -1,4 +1,4 @@
-import type { PluginLifecycle, PluginContext } from '@nodepress/plugin-sdk';
+import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
 
 export const manifest = {
   slug: 'seo',

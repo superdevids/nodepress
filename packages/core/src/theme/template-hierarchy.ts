@@ -1,5 +1,5 @@
 import { existsSync, readdirSync } from "node:fs";
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 
 export type TemplateType =
   | "index"

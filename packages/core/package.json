@@ -1,5 +1,5 @@
 {
-  "name": "@nodepress/core",
+  "name": "@nodepressjs/core",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -28,9 +28,9 @@
     "clean": "rimraf dist node_modules"
   },
   "dependencies": {
-    "@nodepress/config": "workspace:*",
-    "@nodepress/db": "workspace:*",
-    "@nodepress/plugin-sdk": "workspace:*",
+    "@nodepressjs/config": "workspace:*",
+    "@nodepressjs/db": "workspace:*",
+    "@nodepressjs/plugin-sdk": "workspace:*",
     "zod": "^3.22.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",

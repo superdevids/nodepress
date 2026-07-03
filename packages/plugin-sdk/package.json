@@ -1,5 +1,5 @@
 {
-  "name": "@nodepress/plugin-sdk",
+  "name": "@nodepressjs/plugin-sdk",
   "version": "0.0.1",
   "private": true,
   "type": "module",

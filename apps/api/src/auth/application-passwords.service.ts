@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
-import { ApplicationPasswordsEngine } from '@nodepress/core';
+import { ApplicationPasswordsEngine } from '@nodepressjs/core';
 import { PrismaService } from '../common/prisma.service';
 
 export interface AppPasswordEntry {

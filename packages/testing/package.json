@@ -1,5 +1,5 @@
 {
-  "name": "@nodepress/testing",
+  "name": "@nodepressjs/testing",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -22,8 +22,8 @@
     "clean": "rimraf dist node_modules"
   },
   "dependencies": {
-    "@nodepress/core": "workspace:*",
-    "@nodepress/db": "workspace:*",
+    "@nodepressjs/core": "workspace:*",
+    "@nodepressjs/db": "workspace:*",
     "@faker-js/faker": "^8.4.0"
   },
   "devDependencies": {

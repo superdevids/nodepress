@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { PasswordPolicyEngine, type PasswordPolicyConfig } from '@nodepress/core';
+import { PasswordPolicyEngine, type PasswordPolicyConfig } from '@nodepressjs/core';
 
 @Injectable()
 export class PasswordPolicyService {

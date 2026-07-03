@@ -18,9 +18,9 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@nodepress/core": ["../../packages/core/src"],
-      "@nodepress/core/*": ["../../packages/core/src/*"],
-      "@nodepress/db": ["../../packages/db/src"]
+      "@nodepressjs/core": ["../../packages/core/src"],
+      "@nodepressjs/core/*": ["../../packages/core/src/*"],
+      "@nodepressjs/db": ["../../packages/db/src"]
     }
   },
   "include": ["src/**/*"],

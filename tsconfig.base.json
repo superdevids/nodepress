@@ -27,22 +27,22 @@
 
     "baseUrl": ".",
     "paths": {
-      "@nodepress/core": ["./packages/core/src"],
-      "@nodepress/core/*": ["./packages/core/src/*"],
-      "@nodepress/db": ["./packages/db/src"],
-      "@nodepress/db/*": ["./packages/db/src/*"],
-      "@nodepress/plugin-sdk": ["./packages/plugin-sdk/src"],
-      "@nodepress/plugin-sdk/*": ["./packages/plugin-sdk/src/*"],
-      "@nodepress/ui": ["./packages/ui/src"],
-      "@nodepress/ui/*": ["./packages/ui/src/*"],
-      "@nodepress/editor": ["./packages/editor/src"],
-      "@nodepress/editor/*": ["./packages/editor/src/*"],
-      "@nodepress/cli": ["./packages/cli/src"],
-      "@nodepress/cli/*": ["./packages/cli/src/*"],
-      "@nodepress/config": ["./packages/config/src"],
-      "@nodepress/config/*": ["./packages/config/src/*"],
-      "@nodepress/testing": ["./packages/testing/src"],
-      "@nodepress/testing/*": ["./packages/testing/src/*"]
+      "@nodepressjs/core": ["./packages/core/src"],
+      "@nodepressjs/core/*": ["./packages/core/src/*"],
+      "@nodepressjs/db": ["./packages/db/src"],
+      "@nodepressjs/db/*": ["./packages/db/src/*"],
+      "@nodepressjs/plugin-sdk": ["./packages/plugin-sdk/src"],
+      "@nodepressjs/plugin-sdk/*": ["./packages/plugin-sdk/src/*"],
+      "@nodepressjs/ui": ["./packages/ui/src"],
+      "@nodepressjs/ui/*": ["./packages/ui/src/*"],
+      "@nodepressjs/editor": ["./packages/editor/src"],
+      "@nodepressjs/editor/*": ["./packages/editor/src/*"],
+      "@nodepressjs/cli": ["./packages/cli/src"],
+      "@nodepressjs/cli/*": ["./packages/cli/src/*"],
+      "@nodepressjs/config": ["./packages/config/src"],
+      "@nodepressjs/config/*": ["./packages/config/src/*"],
+      "@nodepressjs/testing": ["./packages/testing/src"],
+      "@nodepressjs/testing/*": ["./packages/testing/src/*"]
     }
   },
   "exclude": ["node_modules", ".turbo", "dist", ".next", "*.tsbuildinfo"]

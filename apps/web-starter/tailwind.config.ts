@@ -1,5 +1,5 @@
 import type { Config } from 'tailwindcss';
-import { nodepressPreset } from '@nodepress/config';
+import { nodepressPreset } from '@nodepressjs/config';
 
 const config: Config = {
   presets: [nodepressPreset],

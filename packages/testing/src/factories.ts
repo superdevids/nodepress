@@ -4,8 +4,8 @@
  */
 
 import { faker } from "@faker-js/faker";
-import { getPrismaClient } from "@nodepress/db";
-import type { PrismaClient, Role, EntryStatus, CommentStatus, ContentTypeSource } from "@nodepress/db";
+import { getPrismaClient } from "@nodepressjs/db";
+import type { PrismaClient, Role, EntryStatus, CommentStatus, ContentTypeSource } from "@nodepressjs/db";
 
 function getClient(prisma?: PrismaClient): PrismaClient {
   return prisma ?? getPrismaClient();
@@ -107,10 +107,10 @@ interface EntryBuilder {
   withTerms(termIds: string[]): Promise<EntryBuilder>;
   withFeaturedImage(mediaId: string): EntryBuilder;
   withMeta(key: string, value: unknown): Promise<EntryBuilder>;
-  save(): Promise<import("@nodepress/db").ContentEntry>;
+  save(): Promise<import("@nodepressjs/db").ContentEntry>;
 }
 
-export async function createUser(overrides: UserInput = {}, prisma?: PrismaClient): Promise<import("@nodepress/db").User> {
+export async function createUser(overrides: UserInput = {}, prisma?: PrismaClient): Promise<import("@nodepressjs/db").User> {
   const client = getClient(prisma);
   return client.user.create({
     data: {
@@ -130,7 +130,7 @@ export async function createUser(overrides: UserInput = {}, prisma?: PrismaClien
   });
 }
 
-export async function createContentType(overrides: ContentTypeInput = {}, prisma?: PrismaClient): Promise<import("@nodepress/db").ContentType> {
+export async function createContentType(overrides: ContentTypeInput = {}, prisma?: PrismaClient): Promise<import("@nodepressjs/db").ContentType> {
   const client = getClient(prisma);
   return client.contentType.create({
     data: {
@@ -152,7 +152,7 @@ export async function createContentType(overrides: ContentTypeInput = {}, prisma
   });
 }
 
-export async function createEntry(overrides: EntryInput = {}, prisma?: PrismaClient): Promise<import("@nodepress/db").ContentEntry> {
+export async function createEntry(overrides: EntryInput = {}, prisma?: PrismaClient): Promise<import("@nodepressjs/db").ContentEntry> {
   const client = getClient(prisma);
   return client.contentEntry.create({
     data: {
@@ -253,7 +253,7 @@ export function createEntryBuilder(overrides: EntryInput = {}, prisma?: PrismaCl
   return builder;
 }
 
-export async function createTerm(overrides: TermInput = {}, prisma?: PrismaClient): Promise<import("@nodepress/db").Term> {
+export async function createTerm(overrides: TermInput = {}, prisma?: PrismaClient): Promise<import("@nodepressjs/db").Term> {
   const client = getClient(prisma);
   return client.term.create({
     data: {
@@ -268,7 +268,7 @@ export async function createTerm(overrides: TermInput = {}, prisma?: PrismaClien
   });
 }
 
-export async function createMedia(overrides: MediaInput = {}, prisma?: PrismaClient): Promise<import("@nodepress/db").Media> {
+export async function createMedia(overrides: MediaInput = {}, prisma?: PrismaClient): Promise<import("@nodepressjs/db").Media> {
   const client = getClient(prisma);
   return client.media.create({
     data: {
@@ -290,7 +290,7 @@ export async function createMedia(overrides: MediaInput = {}, prisma?: PrismaCli
   });
 }
 
-export async function createComment(overrides: CommentInput = {}, prisma?: PrismaClient): Promise<import("@nodepress/db").Comment> {
+export async function createComment(overrides: CommentInput = {}, prisma?: PrismaClient): Promise<import("@nodepressjs/db").Comment> {
   const client = getClient(prisma);
   return client.comment.create({
     data: {
@@ -309,7 +309,7 @@ export async function createComment(overrides: CommentInput = {}, prisma?: Prism
   });
 }
 
-export async function createTaxonomy(overrides: Partial<{ name: string; hierarchical: boolean }> = {}, prisma?: PrismaClient): Promise<import("@nodepress/db").Taxonomy> {
+export async function createTaxonomy(overrides: Partial<{ name: string; hierarchical: boolean }> = {}, prisma?: PrismaClient): Promise<import("@nodepressjs/db").Taxonomy> {
   const client = getClient(prisma);
   return client.taxonomy.create({
     data: {

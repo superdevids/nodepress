@@ -16,7 +16,7 @@ import { join, basename } from "node:path";
 import { createGzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
 import { createHash } from "node:crypto";
-import type { PrismaClient } from "@nodepress/db";
+import type { PrismaClient } from "@nodepressjs/db";
 
 export type BackupType = "full" | "database" | "media" | "config";
 export type BackupStatus = "pending" | "running" | "completed" | "failed" | "restoring";

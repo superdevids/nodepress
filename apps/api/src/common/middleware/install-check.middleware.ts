@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { isInstalled } from '@nodepress/core/config/config-generator';
+import { isInstalled } from '@nodepressjs/core/config/config-generator';
 
 /**
  * Install Check Middleware

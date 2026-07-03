@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
-import { RecoveryMode } from '@nodepress/core';
+import { RecoveryMode } from '@nodepressjs/core';
 import { IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
