@@ -37,11 +37,6 @@
   "description": "Production-ready WordPress-compatible CMS built with Node.js / TypeScript — NestJS, Next.js, Prisma, PostgreSQL",
   "scripts": {
     "start": "node start.js",
-    "setup": "bash scripts/setup.sh",
-    "setup:win": "powershell -ExecutionPolicy Bypass -File scripts/setup.ps1",
-    "go": "pnpm setup && pnpm dev",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "test": "turbo run test",
@@ -50,19 +45,19 @@
     "clean": "turbo run clean",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "db:generate": "pnpm --filter @nodepressjs/db db:generate",
-    "db:push": "pnpm --filter @nodepressjs/db db:push",
-    "db:migrate": "pnpm --filter @nodepressjs/db db:migrate",
-    "db:seed": "pnpm --filter @nodepressjs/db db:seed",
-    "db:studio": "pnpm --filter @nodepressjs/db db:studio",
+    "db:generate": "npx prisma generate --schema=packages/db/prisma/schema.prisma",
+    "db:push": "npx prisma db push --schema=packages/db/prisma/schema.prisma",
+    "db:migrate": "npx prisma migrate dev --schema=packages/db/prisma/schema.prisma",
+    "db:seed": "npx ts-node --project packages/db/tsconfig.json packages/db/src/seed.ts",
+    "db:studio": "npx prisma studio --schema=packages/db/prisma/schema.prisma",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "changeset:publish": "changeset publish"
   },
-  "packageManager": "pnpm@9.1.0",
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",

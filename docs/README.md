@@ -12,6 +12,7 @@
 | [PRD6.md](./PRD6.md) | Final Audit & Remediation v6.0 — 39 remaining issues fixed                                                   |
 | [PRD7.md](./PRD7.md) | Production Readiness Plan v7.0 — ✅ Implementation Complete (v1.0-beta ready)                                |
 | [PRD8.md](./PRD8.md) | Installation Simplification v8.0 — One-click installer for everyone                                          |
+| [PRD9.md](./PRD9.md) | Zero-Warning Installation v9.0 — All installation errors fixed (latest)                                      |
 
 ## Technical Reports
 

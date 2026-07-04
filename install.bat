@@ -1,42 +1,35 @@
 @echo off
-title NodePress Installer v1.0
 cd /d "%~dp0"
+title NodePress Installer
 
-setlocal enabledelayedexpansion
-
-for /f %%i in ('echo prompt $E ^| cmd') do set "ESC=%%i"
-
-cls
 echo ============================================================
-echo.           %ESC%[96m%sNodePress - One-Click Installer%s%ESC%[0m
-echo.           %ESC%[93mWordPress-compatible CMS for Node.js%ESC%[0m
+echo            🚀  NodePress - Simple Installer
 echo ============================================================
 echo.
-echo This installer will set up everything automatically!
-echo Just sit back and relax.
-echo.
 
-echo %ESC%[96m[Step 1/2]%ESC%[0m Installing dependencies...
-echo.
-call pnpm install
-if !ERRORLEVEL! NEQ 0 (
-    echo   %ESC%[91m[sError]%ESC%[0m Failed to install dependencies.
-    echo   Try running: pnpm install
+:: Install dependencies
+echo [1/2] Installing dependencies...
+call npm install
+if %ERRORLEVEL% NEQ 0 (
+    echo ❌ npm install failed. Please check your internet connection.
     pause
     exit /b 1
 )
-echo   %ESC%[92m[OK]%ESC%[0m Dependencies installed!
+echo ✅ Dependencies installed!
 echo.
 
-echo %ESC%[96m[Step 2/2]%ESC%[0m Starting NodePress...
+:: Start NodePress
+echo [2/2] Starting NodePress...
 echo.
-echo   This will set up your database, run migrations,
-echo   seed default data, and start the dev server.
-echo.
-call npm start
-if !ERRORLEVEL! NEQ 0 (
-    pause
-    exit /b !ERRORLEVEL!
-)
+start npm start
 
-pause
+echo.
+echo ============================================================
+echo ✅ NodePress is starting!
+echo    Your browser will open automatically.
+echo.
+echo    Admin Panel: http://localhost:3000
+echo ============================================================
+echo.
+timeout /t 3 /nobreak >nul
+start http://localhost:3000

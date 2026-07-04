@@ -139,17 +139,11 @@ docker compose up -d --build
 If you used the Node.js installer:
 
 ```bash
+# Install dependencies
+npm i
+
 # Start development servers
-pnpm dev
-
-# Run database migrations
-pnpm db:migrate
-
-# Open database UI
-pnpm db:studio
-
-# Run tests
-pnpm test
+npm start
 ```
 
 ---
