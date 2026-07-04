@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * WordPress-style Admin Color Schemes
+ * NodePress-style Admin Color Schemes
  *
  * Available schemes:
- * - default:  WordPress blue (#2271b1)
+ * - default:  NodePress blue (#2271b1)
  * - light:    Clean white/light gray
  * - dark:     Dark mode
  * - modern:   Purple/teal
@@ -30,7 +30,7 @@ export const COLOR_SCHEMES: Record<ColorSchemeId, ColorScheme> = {
   default: {
     id: 'default',
     label: 'Default',
-    description: 'WordPress classic blue',
+    description: 'NodePress classic blue',
     colors: {
       '--primary': '221.2 83.2% 53.3%',
       '--primary-foreground': '210 40% 98%',

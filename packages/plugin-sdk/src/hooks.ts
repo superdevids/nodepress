@@ -1,12 +1,12 @@
 /**
  * Hook system for plugins.
- * WordPress-inspired Actions & Filters pattern.
+ * NodePress-inspired Actions & Filters pattern.
  */
 
 export type HookCallback = (...args: unknown[]) => Promise<void> | void;
 
 export interface HookEvent {
-  type: "action" | "filter";
+  type: 'action' | 'filter';
   name: string;
   timestamp: number;
   data?: unknown;
@@ -19,7 +19,10 @@ interface RegisteredHook {
 
 export class HookRegistry {
   private actions: Map<string, RegisteredHook[]> = new Map();
-  private filters: Map<string, Array<{ callback: (value: unknown, ...args: unknown[]) => unknown; priority: number }>> = new Map();
+  private filters: Map<
+    string,
+    Array<{ callback: (value: unknown, ...args: unknown[]) => unknown; priority: number }>
+  > = new Map();
 
   /**
    * Register an action hook (add_action equivalent).
@@ -46,7 +49,11 @@ export class HookRegistry {
   /**
    * Register a filter hook (add_filter equivalent).
    */
-  addFilter(name: string, callback: (value: unknown, ...args: unknown[]) => unknown, priority: number = 10): void {
+  addFilter(
+    name: string,
+    callback: (value: unknown, ...args: unknown[]) => unknown,
+    priority: number = 10,
+  ): void {
     if (!this.filters.has(name)) {
       this.filters.set(name, []);
     }
@@ -79,13 +86,19 @@ export class HookRegistry {
   removeAction(name: string, callback: HookCallback): void {
     const hooks = this.actions.get(name);
     if (!hooks) return;
-    this.actions.set(name, hooks.filter(h => h.callback !== callback));
+    this.actions.set(
+      name,
+      hooks.filter((h) => h.callback !== callback),
+    );
   }
 
   removeFilter(name: string, callback: (value: unknown, ...args: unknown[]) => unknown): void {
     const hooks = this.filters.get(name);
     if (!hooks) return;
-    this.filters.set(name, hooks.filter(h => h.callback !== callback));
+    this.filters.set(
+      name,
+      hooks.filter((h) => h.callback !== callback),
+    );
   }
 
   getActionNames(): string[] {

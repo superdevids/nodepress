@@ -8,7 +8,7 @@ All notable changes to NodePress are documented here.
 
 ### Added
 
-- WordPress-style install flow: clone → `npm install` → `npm start`
+- NodePress-style install flow: clone → `npm install` → `npm start`
 - Windows `.bat` installer for one-click setup
 - Zero-warning installation: all build/start errors resolved
 - Auto-detection of missing prerequisites with download links
@@ -24,7 +24,7 @@ All notable changes to NodePress are documented here.
 - Forgot Password & Reset Password flow
 - Bulk Actions API (publish, unpublish, trash, delete)
 - Notifications System with real-time bell icon
-- Full WordPress-style template hierarchy (11 routes)
+- Full NodePress-style template hierarchy (11 routes)
 - Plugin Data Persistence (all 13 plugins survive restart via Prisma)
 - 24 automated test files
 - Dark mode support across admin and public theme

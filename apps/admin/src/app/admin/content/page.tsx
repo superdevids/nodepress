@@ -424,7 +424,7 @@ export default function ContentPage() {
         </div>
       </div>
 
-      {/* ============ TABS (WordPress "subsubsub") ============ */}
+      {/* ============ TABS (NodePress-style "subsubsub") ============ */}
       <div className="mb-4 border-b border-[#c3c4c7]">
         <div className="-mb-px flex items-center gap-0">
           {(['all', 'publish', 'draft', 'pending', 'trash'] as const).map((status) => (
@@ -604,7 +604,7 @@ export default function ContentPage() {
                           </button>
                         </div>
                         <span className="font-mono text-xs text-[#8c8f94]">{item.slug}</span>
-                        {/* Row actions (WordPress style) */}
+                        {/* Row actions (NodePress-style) */}
                         <div className="mt-0.5 flex items-center gap-0 text-xs text-[#8c8f94]">
                           <button
                             onClick={() => router.push(`/admin/content/${item.type}/${item.id}`)}

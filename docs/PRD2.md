@@ -1,4 +1,4 @@
-# PRD v2: NodePress — WordPress Versi Full Node.js/JavaScript
+# PRD v2: NodePress — Modern CMS Built with Node.js/JavaScript
 
 **Versi Dokumen:** 2.0
 **Tanggal:** 3 Juli 2026
@@ -7,7 +7,7 @@
 
 > **Note:** This document reflects the original v2.0 specification. All security, performance, and scalability requirements are implemented. See [PRD4.md](./PRD4.md) for current status.
 
-> Dokumen ini adalah **ekstensi** dari PRD v1 (`PRD-WordPress-NodeJS-Edition.md`). Section 1-8 di v1 tetap berlaku sebagai fondasi. PRD v2 fokus pada **gap analysis**, fitur baru, dan tiga pilar non-negotiable: **Kecepatan, Keamanan, Skalabilitas** — supaya siapapun developer bisa berkontribusi dengan aman dan percaya diri.
+> Dokumen ini adalah **ekstensi** dari PRD v1 (`PRD1.md`). Section 1-8 di v1 tetap berlaku sebagai fondasi. PRD v2 fokus pada **gap analysis**, fitur baru, dan tiga pilar non-negotiable: **Kecepatan, Keamanan, Skalabilitas** — supaya siapapun developer bisa berkontribusi dengan aman dan percaya diri.
 
 ---
 
@@ -42,7 +42,7 @@ Berikut fitur yang belum tercakup atau kurang detail di v1, dikelompokkan per ka
 **Content Locking (Concurrent Edit Protection)**
 
 - Saat user A membuka editor, entry di-`lock` (TTL-based via Redis, auto-release setelah idle/timeout)
-- User B yang coba edit entry yang sama akan lihat notice "sedang diedit oleh [nama], sejak [waktu]" — mirip WordPress
+- User B yang coba edit entry yang sama akan lihat notice "sedang diedit oleh [nama], sejak [waktu]" — mirip CMS pada umumnya
 - WebSocket event untuk notify real-time saat lock dilepas
 
 **Bulk Operations**

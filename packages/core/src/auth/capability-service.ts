@@ -1,5 +1,5 @@
 /**
- * WordPress-inspired capability-based authorization system.
+ * NodePress-inspired capability-based authorization system.
  *
  * Each capability is a granular string like "content:product:create".
  * Roles are collections of capabilities with optional hierarchical inheritance.
@@ -15,55 +15,50 @@ export interface RoleDefinition {
 
 const DEFAULT_ROLES: Record<string, RoleDefinition> = {
   SUPER_ADMIN: {
-    name: "Super Admin",
-    capabilities: new Set(["*"]), // Wildcard — full access
+    name: 'Super Admin',
+    capabilities: new Set(['*']), // Wildcard — full access
   },
   ADMIN: {
-    name: "Admin",
+    name: 'Admin',
     capabilities: new Set([
-      "content:*",
-      "media:*",
-      "users:*",
-      "plugins:*",
-      "themes:*",
-      "settings:*",
-      "tools:*",
+      'content:*',
+      'media:*',
+      'users:*',
+      'plugins:*',
+      'themes:*',
+      'settings:*',
+      'tools:*',
     ]),
   },
   EDITOR: {
-    name: "Editor",
+    name: 'Editor',
     capabilities: new Set([
-      "content:*",
-      "content:publish",
-      "content:edit:others",
-      "content:delete:others",
-      "media:upload",
-      "media:edit",
-      "comments:*",
+      'content:*',
+      'content:publish',
+      'content:edit:others',
+      'content:delete:others',
+      'media:upload',
+      'media:edit',
+      'comments:*',
     ]),
   },
   AUTHOR: {
-    name: "Author",
+    name: 'Author',
     capabilities: new Set([
-      "content:create",
-      "content:publish:own",
-      "content:edit:own",
-      "content:delete:own",
-      "media:upload",
+      'content:create',
+      'content:publish:own',
+      'content:edit:own',
+      'content:delete:own',
+      'media:upload',
     ]),
   },
   CONTRIBUTOR: {
-    name: "Contributor",
-    capabilities: new Set([
-      "content:create",
-      "content:edit:own",
-    ]),
+    name: 'Contributor',
+    capabilities: new Set(['content:create', 'content:edit:own']),
   },
   SUBSCRIBER: {
-    name: "Subscriber",
-    capabilities: new Set([
-      "content:read",
-    ]),
+    name: 'Subscriber',
+    capabilities: new Set(['content:read']),
   },
 };
 
@@ -119,15 +114,15 @@ export class CapabilityService {
    * Match a pattern capability against a target capability.
    */
   private matchCapability(pattern: Capability, target: Capability): boolean {
-    if (pattern === "*") return true;
+    if (pattern === '*') return true;
 
-    const patternParts = pattern.split(":");
-    const targetParts = target.split(":");
+    const patternParts = pattern.split(':');
+    const targetParts = target.split(':');
 
     if (patternParts.length > targetParts.length) return false;
 
     for (let i = 0; i < patternParts.length; i++) {
-      if (patternParts[i] === "*") return true;
+      if (patternParts[i] === '*') return true;
       if (patternParts[i] !== targetParts[i]) return false;
     }
 

@@ -93,7 +93,7 @@ export const BLOCK_PATTERNS: EditorPattern[] = [
                 ),
                 p(
                   t(
-                    'Our platform combines the flexibility of a headless CMS with the ease of use that WordPress is known for.',
+                    'Our platform combines the flexibility of a headless CMS with an intuitive editing experience.',
                   ),
                 ),
               ],
@@ -348,7 +348,11 @@ export const BLOCK_PATTERNS: EditorPattern[] = [
                   type: 'image',
                   attrs: { src: '', alt: 'Avatar', width: 80, height: 80, round: true },
                 },
-                p(t('Migrated from WordPress in a day. The API is a dream to work with.')),
+                p(
+                  t(
+                    'Migrated our entire content library in a day. The API is a dream to work with.',
+                  ),
+                ),
                 p(t('— Emily T.')),
               ],
             },
@@ -383,11 +387,11 @@ export const BLOCK_PATTERNS: EditorPattern[] = [
             },
             {
               type: 'accordion-item',
-              attrs: { title: 'Is it compatible with WordPress?' },
+              attrs: { title: 'Can I migrate from WordPress?' },
               content: [
                 p(
                   t(
-                    'Yes, NodePress offers WordPress-equivalent features including plugins, themes, hooks, shortcodes, and more for easy migration.',
+                    'Yes, NodePress offers equivalent features including plugins, themes, hooks, shortcodes, and more for easy migration from other platforms.',
                   ),
                 ),
               ],
@@ -729,7 +733,7 @@ export const BLOCK_PATTERNS: EditorPattern[] = [
               attrs: { year: '2026', side: 'left' },
               content: [
                 h(3, t('Beta Release')),
-                p(t('Beta launch with WordPress-compatible APIs, themes, and migration tools.')),
+                p(t('Beta launch with Modern CMS APIs, themes, and migration tools.')),
               ],
             },
             {
@@ -774,11 +778,7 @@ export const BLOCK_PATTERNS: EditorPattern[] = [
               content: [
                 { type: 'icon', attrs: { icon: 'plugin', size: 40 } },
                 h(3, t('Extensible')),
-                p(
-                  t(
-                    'Powerful plugin and hook system similar to WordPress for endless customization.',
-                  ),
-                ),
+                p(t('Powerful plugin and hook system for endless customization.')),
               ],
             },
             {

@@ -471,9 +471,9 @@
 
 ---
 
-## 🟣 G. WordPress Feature Parity Gaps (from PRD)
+## 🟣 G. Feature Parity Gaps (from PRD)
 
-The PRD specifies parity with core WordPress functionality. The following features are specified but missing, incomplete, or not wired:
+The PRD specifies parity with traditional CMS functionality. The following features are specified but missing, incomplete, or not wired:
 
 | Feature                                         | Status                                              | Location                                                |
 | ----------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------- |
@@ -510,7 +510,7 @@ The PRD specifies parity with core WordPress functionality. The following featur
 | Editor Package (`packages/editor`) |      4      |    5    |    10     |   6    | **25**  |
 | Other Packages                     |      6      |   16    |    12     |   4    | **38**  |
 | Plugins, Web-Starter, Config       |      5      |   37    |    26     |   7    | **68**  |
-| WordPress Parity Gaps              |      —      |    —    |     —     |   —    | **20**  |
+| Feature Parity Gaps                |      —      |    —    |     —     |   —    | **20**  |
 | **TOTAL**                          |   **49**    | **110** |  **85**   | **42** | **286** |
 
 ### Severity Distribution
@@ -557,7 +557,7 @@ Phase 4 — Core Package
 Phase 5 — Editor & Plugins
   Fix key blocking → Fix HTML parser → Implement plugin features → Fix block tree
 
-Phase 6 — WordPress Parity
+Phase 6 — Feature Parity
   Wire all existing engine stubs → Implement missing features → Test against PRD
 ```
 

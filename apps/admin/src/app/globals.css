@@ -25,7 +25,7 @@
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
 
-    /* Sidebar — WordPress dark sidebar (#1d2327) */
+    /* Sidebar — NodePress dark sidebar (#1d2327) */
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-muted: 217.2 32.6% 17.5%;
@@ -34,7 +34,7 @@
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 224.3 76.3% 48%;
 
-    /* Admin Bar — WordPress dark bar (#1d2327) */
+    /* Admin Bar — NodePress dark bar (#1d2327) */
     --adminbar-background: 222.2 84% 4.9%;
     --adminbar-foreground: 210 40% 98%;
 
@@ -94,7 +94,7 @@
   }
 }
 
-/* ─── WordPress-style scrollbar ──────────────────────────── */
+/* ─── NodePress-style scrollbar ──────────────────────────── */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -117,7 +117,7 @@
   background: transparent;
 }
 
-/* ─── WordPress Admin Bar specific styles ────────────────── */
+/* ─── NodePress Admin Bar specific styles ────────────────── */
 #wpadminbar {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell,
@@ -129,14 +129,14 @@
   cursor: pointer;
 }
 
-/* ─── WordPress-style focus ring ──────────────────────────── */
+/* ─── NodePress-style focus ring ──────────────────────────── */
 .wp-focus-ring:focus-visible {
   outline: 1.5px solid #2271b1;
   outline-offset: 1px;
   border-radius: 2px;
 }
 
-/* ─── WordPress notice animations ─────────────────────────── */
+/* ─── NodePress notice animations ─────────────────────────── */
 @keyframes slideIn {
   from {
     transform: translateY(-100%);
@@ -167,7 +167,7 @@
   animation: slideOut 0.3s ease-in forwards;
 }
 
-/* ─── WordPress-style skeleton shimmer ───────────────────── */
+/* ─── NodePress-style skeleton shimmer ───────────────────── */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -197,7 +197,7 @@
   cursor: grabbing;
 }
 
-/* ─── WordPress-style tooltip ────────────────────────────── */
+/* ─── NodePress-style tooltip ────────────────────────────── */
 [data-wp-tooltip] {
   position: relative;
 }
@@ -225,7 +225,7 @@
   opacity: 1;
 }
 
-/* ─── WordPress-style admin badge ────────────────────────── */
+/* ─── NodePress-style admin badge ────────────────────────── */
 .wp-badge {
   display: inline-flex;
   align-items: center;
@@ -236,7 +236,7 @@
   line-height: 1.6;
 }
 
-/* ─── Editor title (WordPress-style) ─────────────────────── */
+/* ─── Editor title (NodePress-style) ─────────────────────── */
 .wp-editor-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -254,7 +254,7 @@
   color: #c3c4c7;
 }
 
-/* ─── Meta box styling (WordPress-style) ─────────────────── */
+/* ─── Meta box styling (NodePress-style) ─────────────────── */
 .wp-meta-box {
   background: #fff;
   border: 1px solid #c3c4c7;
@@ -289,7 +289,7 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* ─── WordPress-style admin links ────────────────────────── */
+/* ─── NodePress-style admin links ────────────────────────── */
 .wp-admin-link {
   color: #2271b1;
   text-decoration: none;
@@ -304,7 +304,7 @@
   color: #135e96;
 }
 
-/* ─── Row actions (WordPress-style hover actions) ────────── */
+/* ─── Row actions (NodePress-style hover actions) ────────── */
 .wp-row-actions {
   opacity: 0;
   transition: opacity 0.1s ease;
@@ -315,7 +315,7 @@ tr:hover .wp-row-actions,
   opacity: 1;
 }
 
-/* ─── Striped table rows (WordPress-style) ───────────────── */
+/* ─── Striped table rows (NodePress-style) ───────────────── */
 .wp-striped tbody tr:nth-child(odd) {
   background-color: #f6f7f7;
 }
@@ -324,7 +324,7 @@ tr:hover .wp-row-actions,
   background-color: #f0f6fc;
 }
 
-/* ─── WordPress admin notice colors ──────────────────────── */
+/* ─── NodePress admin notice colors ──────────────────────── */
 .wp-notice-success {
   border-left: 4px solid #00a32a;
   background: #f0f6f0;
@@ -378,7 +378,7 @@ tr:hover .wp-row-actions,
   border-bottom-color: #2271b1;
 }
 
-/* ─── WordPress-style button ─────────────────────────────── */
+/* ─── NodePress-style button ─────────────────────────────── */
 .wp-button-primary {
   background: #2271b1;
   color: #fff;

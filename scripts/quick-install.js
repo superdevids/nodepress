@@ -4,7 +4,7 @@
  * ============================================================
  * NodePress Quick Install
  * ============================================================
- * Like WordPress's famous "5-minute installation" — but for NodePress.
+ * NodePress's famous "5-minute installation" experience.
  *
  * Usage:
  *   node scripts/quick-install.js
@@ -127,7 +127,7 @@ function showBanner() {
   );
   console.log(
     color('║', C.cyan),
-    color('      WordPress-compatible CMS — 5-minute install', C.dim),
+    color('      Modern CMS — 5-minute install', C.dim),
     color(' ║', C.cyan),
   );
   console.log(color('╚══════════════════════════════════════════════════════════╝', C.cyan));
@@ -407,7 +407,7 @@ JWT_EXPIRY=15m
 REFRESH_TOKEN_EXPIRY=7d
 JWT_ISSUER=nodepress
 
-# Security Keys & Salts (WordPress-compatible)
+# Security Keys & Salts (Modern CMS)
 AUTH_KEY=${authKey}
 SECURE_AUTH_KEY=${secureAuthKey}
 LOGGED_IN_KEY=${loggedInKey}

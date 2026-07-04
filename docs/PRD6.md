@@ -162,7 +162,7 @@ The following criteria must be met before PRD6 can be considered complete:
 
 ## 5. Final Verdict
 
-After PRD6 execution, the NodePress codebase is expected to reach **~92–95% WordPress feature parity** with:
+After PRD6 execution, the NodePress codebase is expected to reach **~92–95% feature parity with traditional CMS** with:
 
 - **Zero critical security issues** — all authentication, authorization, and data access paths hardened
 - **Zero mock data in admin panel** — every displayed metric computed from real data

@@ -2,7 +2,7 @@
  * @nodepress/editor
  *
  * Block editor based on Tiptap (ProseMirror).
- * WordPress-compatible block editor similar to Gutenberg.
+ * Modern CMS block editor similar to Gutenberg.
  *
  * Phase 3 - Full Block Editor
  * Includes: Block Supports, Dynamic Blocks, Reusable Blocks,

@@ -19,7 +19,7 @@ cls
 echo.
 echo %cyan%╔══════════════════════════════════════════════════════════╗%reset%
 echo %cyan%║%reset%  %bold%🚀  NodePress — 5-Minute Installer%reset%                %cyan%║%reset%
-echo %cyan%║%reset%  WordPress-compatible CMS for Windows                 %cyan%║%reset%
+echo %cyan%║%reset%  Modern, open-source CMS for Windows                 %cyan%║%reset%
 echo %cyan%╚══════════════════════════════════════════════════════════╝%reset%
 echo.
 echo This installer will set up everything you need to run NodePress.

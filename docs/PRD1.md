@@ -1,4 +1,4 @@
-# PRD: NodePress — WordPress Versi Full Node.js/JavaScript
+# PRD: NodePress — Modern CMS Built with Node.js/JavaScript
 
 **Versi Dokumen:** 1.0
 **Tanggal:** 3 Juli 2026
@@ -12,11 +12,11 @@
 
 ## 1. Executive Summary
 
-**NodePress** adalah Content Management System (CMS) open-source yang dibangun 100% menggunakan JavaScript/TypeScript, dirancang untuk mereplikasi dan memodernisasi fungsionalitas inti WordPress tanpa dependensi PHP sama sekali. Target utamanya adalah developer JavaScript/TypeScript yang ingin punya CMS fleksibel dengan DX (Developer Experience) modern, type-safety penuh, dan arsitektur headless-first, tanpa harus context-switch ke ekosistem PHP.
+**NodePress** adalah Content Management System (CMS) open-source yang dibangun 100% menggunakan JavaScript/TypeScript, dirancang untuk mereplikasi dan memodernisasi fungsionalitas inti CMS tradisional tanpa dependensi PHP sama sekali. Target utamanya adalah developer JavaScript/TypeScript yang ingin punya CMS fleksibel dengan DX (Developer Experience) modern, type-safety penuh, dan arsitektur headless-first, tanpa harus context-switch ke ekosistem PHP.
 
 **Masalah yang diselesaikan:**
 
-- WordPress core berbasis PHP, sulit di-extend dengan type-safety modern
+- CMS tradisional berbasis PHP, sulit di-extend dengan type-safety modern
 - Ekosistem plugin WP sering bentrok, performa menurun seiring banyak plugin aktif
 - Developer JS/TS harus belajar stack berbeda (PHP + MySQL query lama) untuk customize WP
 - Headless WP butuh plugin tambahan (WPGraphQL, ACF to REST) yang tidak native
@@ -35,7 +35,7 @@
 
 ### 2.1 Vision Statement
 
-Menjadi CMS pilihan utama bagi developer JavaScript yang menginginkan pengalaman "WordPress-like" — mudah dipakai non-technical user di admin panel, namun sepenuhnya dapat di-extend dan di-deploy dengan tooling modern JS.
+Menjadi CMS pilihan utama bagi developer JavaScript yang menginginkan pengalaman CMS modern — mudah dipakai non-technical user di admin panel, namun sepenuhnya dapat di-extend dan di-deploy dengan tooling modern JS.
 
 ### 2.2 Goals (12 bulan pertama)
 
@@ -66,7 +66,7 @@ Menjadi CMS pilihan utama bagi developer JavaScript yang menginginkan pengalaman
 | KeystoneJS  | TypeScript/GraphQL | GraphQL-first, schema declarative kuat        | Admin UI kurang customizable, less content-editor friendly                        |
 | Ghost       | Node.js            | Fokus publishing, performa bagus              | Content model kaku, tidak fleksibel untuk custom post type kompleks               |
 
-**Positioning NodePress:** kombinasi antara familiarity WordPress (post types, taxonomies, plugin/hook, tema) dengan DX modern Payload/Strapi (TypeScript penuh, schema-as-code, admin panel auto-generated).
+**Positioning NodePress:** kombinasi antara familiarity CMS tradisional (post types, taxonomies, plugin/hook, tema) dengan DX modern Payload/Strapi (TypeScript penuh, schema-as-code, admin panel auto-generated).
 
 ---
 
@@ -187,7 +187,7 @@ nodepress/
 │   ├── ui/                   # Shared component library (admin + theme)
 │   ├── editor/                # Block editor (Tiptap-based)
 │   └── cli/                   # create-nodepress-app CLI
-├── plugins/ (13 WordPress-equivalent plugins)
+├── plugins/ (13 feature-equivalent plugins)
 │   ├── seo/
 │   ├── cache-redis/
 │   ├── comments/
@@ -322,7 +322,7 @@ export const ProductType = defineContentType({
 
 ### 8.6 Plugin & Hook System
 
-**Filosofi:** meniru WordPress Actions & Filters tapi type-safe.
+**Filosofi:** terinspirasi Actions & Filters ala CMS tradisional tapi type-safe.
 
 ```typescript
 // Actions — untuk side effect (mirip do_action / add_action)
@@ -615,9 +615,9 @@ model WebhookSubscription {
 
 ---
 
-## 15. Lampiran — Perbandingan Fitur WordPress vs NodePress (Target v1.0)
+## 15. Lampiran — Perbandingan Fitur (Target v1.0)
 
-| Fitur WordPress           | Status di NodePress v1.0                                |
+| Fitur CMS Referensi       | Status di NodePress v1.0                                |
 | ------------------------- | ------------------------------------------------------- |
 | Custom Post Types         | ✅ Full (code-first + UI-first)                         |
 | Custom Fields (ACF-like)  | ✅ Built-in, tidak perlu plugin tambahan                |

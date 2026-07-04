@@ -34,8 +34,7 @@ export default async function AboutPage() {
             <Heading level={2}>Our Mission</Heading>
             <Text className="mt-3 leading-relaxed">
               NodePress is built to provide a modern, type-safe content management experience that
-              combines the flexibility of WordPress with the power of TypeScript and modern Node.js
-              frameworks.
+              combines flexibility with the power of TypeScript and modern Node.js frameworks.
             </Text>
             <Text className="mt-3 leading-relaxed">
               We believe content management should be developer-friendly without sacrificing
@@ -66,7 +65,7 @@ export default async function AboutPage() {
                 },
                 {
                   title: 'Plugin System',
-                  description: 'WordPress-compatible hook system for extending functionality.',
+                  description: 'Modern CMS hook system for extending functionality.',
                 },
               ].map((feature) => (
                 <div

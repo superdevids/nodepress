@@ -6,7 +6,7 @@ import { SHORTCUTS, type Shortcut } from '@/lib/keyboard-shortcuts';
 import { cn } from '@/lib/utils';
 
 /**
- * WordPress-style Keyboard Shortcuts Modal
+ * NodePress-style Keyboard Shortcuts Modal
  *
  * Shows all available keyboard shortcuts grouped by category.
  * Triggered by pressing `?` key.

@@ -1,22 +1,22 @@
-import { existsSync, readdirSync } from "node:fs";
-import type { PrismaClient } from "@nodepressjs/db";
+import { existsSync, readdirSync } from 'node:fs';
+import type { PrismaClient } from '@nodepressjs/db';
 
 export type TemplateType =
-  | "index"
-  | "single"
-  | "page"
-  | "archive"
-  | "category"
-  | "tag"
-  | "author"
-  | "date"
-  | "search"
-  | "404"
-  | "front-page"
-  | "home"
-  | "taxonomy"
-  | "embed"
-  | "attachment";
+  | 'index'
+  | 'single'
+  | 'page'
+  | 'archive'
+  | 'category'
+  | 'tag'
+  | 'author'
+  | 'date'
+  | 'search'
+  | '404'
+  | 'front-page'
+  | 'home'
+  | 'taxonomy'
+  | 'embed'
+  | 'attachment';
 
 export interface TemplateResolutionContext {
   type: TemplateType;
@@ -54,7 +54,7 @@ export class TemplateHierarchyResolver {
   }
 
   /**
-   * Resolve the full WordPress-style template hierarchy.
+   * Resolve the full NodePress-style template hierarchy.
    *
    * single-{type}-{slug}.tsx → single-{type}.tsx → single.tsx → page.tsx
    * archive-{type}.tsx → archive.tsx
@@ -69,7 +69,7 @@ export class TemplateHierarchyResolver {
     const hierarchy = this.buildHierarchy(context);
     return {
       hierarchy,
-      finalTemplate: hierarchy[0] ?? "index",
+      finalTemplate: hierarchy[0] ?? 'index',
     };
   }
 
@@ -77,15 +77,15 @@ export class TemplateHierarchyResolver {
     const candidates: string[] = [];
 
     if (context.isFrontPage) {
-      candidates.push("front-page");
+      candidates.push('front-page');
     }
 
     if (context.isHome) {
-      candidates.push("home");
+      candidates.push('home');
     }
 
     switch (context.type) {
-      case "single": {
+      case 'single': {
         // single-{contentType}-{slug} → single-{contentType} → single → page
         if (context.contentType && context.slug) {
           candidates.push(`single-${context.contentType}-${context.slug}`);
@@ -99,12 +99,12 @@ export class TemplateHierarchyResolver {
         if (context.format) {
           candidates.push(`single-${context.format}`);
         }
-        candidates.push("single");
-        candidates.push("page");
+        candidates.push('single');
+        candidates.push('page');
         break;
       }
 
-      case "page": {
+      case 'page': {
         // page-{slug} → page → single
         if (context.slug) {
           candidates.push(`page-${context.slug}`);
@@ -112,12 +112,12 @@ export class TemplateHierarchyResolver {
         if (context.format) {
           candidates.push(`page-${context.format}`);
         }
-        candidates.push("page");
-        candidates.push("single");
+        candidates.push('page');
+        candidates.push('single');
         break;
       }
 
-      case "archive": {
+      case 'archive': {
         // archive-{contentType} → archive
         if (context.contentType) {
           candidates.push(`archive-${context.contentType}`);
@@ -125,11 +125,11 @@ export class TemplateHierarchyResolver {
         if (context.slug) {
           candidates.push(`archive-${context.slug}`);
         }
-        candidates.push("archive");
+        candidates.push('archive');
         break;
       }
 
-      case "category": {
+      case 'category': {
         // category-{slug} → category → archive
         if (context.slug) {
           candidates.push(`category-${context.slug}`);
@@ -137,12 +137,12 @@ export class TemplateHierarchyResolver {
         if (context.term) {
           candidates.push(`category-${context.term}`);
         }
-        candidates.push("category");
-        candidates.push("archive");
+        candidates.push('category');
+        candidates.push('archive');
         break;
       }
 
-      case "tag": {
+      case 'tag': {
         // tag-{slug} → tag → archive
         if (context.slug) {
           candidates.push(`tag-${context.slug}`);
@@ -150,12 +150,12 @@ export class TemplateHierarchyResolver {
         if (context.term) {
           candidates.push(`tag-${context.term}`);
         }
-        candidates.push("tag");
-        candidates.push("archive");
+        candidates.push('tag');
+        candidates.push('archive');
         break;
       }
 
-      case "taxonomy": {
+      case 'taxonomy': {
         // taxonomy-{taxonomy}-{term} → taxonomy-{taxonomy} → taxonomy → archive
         if (context.taxonomy && context.term) {
           candidates.push(`taxonomy-${context.taxonomy}-${context.term}`);
@@ -166,12 +166,12 @@ export class TemplateHierarchyResolver {
         if (context.slug) {
           candidates.push(`taxonomy-${context.slug}`);
         }
-        candidates.push("taxonomy");
-        candidates.push("archive");
+        candidates.push('taxonomy');
+        candidates.push('archive');
         break;
       }
 
-      case "author": {
+      case 'author': {
         // author-{slug} → author
         if (context.authorSlug) {
           candidates.push(`author-${context.authorSlug}`);
@@ -179,45 +179,47 @@ export class TemplateHierarchyResolver {
         if (context.slug) {
           candidates.push(`author-${context.slug}`);
         }
-        candidates.push("author");
-        candidates.push("archive");
+        candidates.push('author');
+        candidates.push('archive');
         break;
       }
 
-      case "date": {
+      case 'date': {
         // date-{year}-{month} → date-{year} → date
         if (context.year !== undefined && context.month !== undefined) {
-          candidates.push(`date-${context.year}-${String(context.month).padStart(2, "0")}`);
+          candidates.push(`date-${context.year}-${String(context.month).padStart(2, '0')}`);
         }
         if (context.year !== undefined) {
           candidates.push(`date-${context.year}`);
         }
         if (context.day !== undefined) {
-          candidates.push(`date-${context.year}-${String(context.month ?? 1).padStart(2, "0")}-${String(context.day).padStart(2, "0")}`);
+          candidates.push(
+            `date-${context.year}-${String(context.month ?? 1).padStart(2, '0')}-${String(context.day).padStart(2, '0')}`,
+          );
         }
-        candidates.push("date");
-        candidates.push("archive");
+        candidates.push('date');
+        candidates.push('archive');
         break;
       }
 
-      case "search": {
-        candidates.push("search");
+      case 'search': {
+        candidates.push('search');
         break;
       }
 
-      case "404": {
-        candidates.push("404");
+      case '404': {
+        candidates.push('404');
         break;
       }
 
-      case "embed": {
-        candidates.push("embed");
-        candidates.push("single");
-        candidates.push("page");
+      case 'embed': {
+        candidates.push('embed');
+        candidates.push('single');
+        candidates.push('page');
         break;
       }
 
-      case "attachment": {
+      case 'attachment': {
         // attachment-{slug} → attachment → single
         if (context.slug) {
           candidates.push(`attachment-${context.slug}`);
@@ -225,19 +227,19 @@ export class TemplateHierarchyResolver {
         if (context.contentType) {
           candidates.push(`attachment-${context.contentType}`);
         }
-        candidates.push("attachment");
-        candidates.push("single");
+        candidates.push('attachment');
+        candidates.push('single');
         break;
       }
 
       default: {
-        candidates.push("index");
+        candidates.push('index');
       }
     }
 
     // Always append index as final fallback
-    if (!candidates.includes("index")) {
-      candidates.push("index");
+    if (!candidates.includes('index')) {
+      candidates.push('index');
     }
 
     // Deduplicate while preserving order
@@ -248,7 +250,11 @@ export class TemplateHierarchyResolver {
    * Get template file path candidates for a given context.
    * Returns file paths in priority order with proper extensions.
    */
-  getTemplateFilePaths(context: TemplateResolutionContext, themeDir: string, extensions: string[] = ["tsx", "ts"]): string[] {
+  getTemplateFilePaths(
+    context: TemplateResolutionContext,
+    themeDir: string,
+    extensions: string[] = ['tsx', 'ts'],
+  ): string[] {
     const hierarchy = this.buildHierarchy(context);
     const paths: string[] = [];
 
@@ -273,7 +279,7 @@ export class TemplateHierarchyResolver {
     postPassword?: string | null;
   }): ResolvedTemplate {
     const context: TemplateResolutionContext = {
-      type: "single",
+      type: 'single',
       contentType: entry.contentType?.name,
       slug: entry.slug,
       format: entry.format ?? undefined,
@@ -292,7 +298,11 @@ export class TemplateHierarchyResolver {
   /**
    * Check if a specific template file exists in the theme hierarchy.
    */
-  templateExists(template: string, themeDir: string, extensions: string[] = ["tsx", "ts"]): string | null {
+  templateExists(
+    template: string,
+    themeDir: string,
+    extensions: string[] = ['tsx', 'ts'],
+  ): string | null {
     for (const ext of extensions) {
       const filePath = `${themeDir}/${template}.${ext}`;
       if (existsSync(filePath)) {
@@ -305,7 +315,7 @@ export class TemplateHierarchyResolver {
   /**
    * Get the available templates in a theme directory.
    */
-  getAvailableTemplates(themeDir: string, extensions: string[] = ["tsx", "ts"]): string[] {
+  getAvailableTemplates(themeDir: string, extensions: string[] = ['tsx', 'ts']): string[] {
     try {
       const files = readdirSync(themeDir);
       const templates: string[] = [];

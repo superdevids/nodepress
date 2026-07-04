@@ -2,7 +2,7 @@
 
 ## 👋 Welcome!
 
-**NodePress** is a Content Management System (CMS) — like WordPress, but built with modern JavaScript (TypeScript). You can use it to create blogs, websites, and content platforms.
+**NodePress** is a Content Management System (CMS) built with modern JavaScript (TypeScript). You can use it to create blogs, websites, and content platforms.
 
 > ⚠️ **Beta Notice:** NodePress is v1.0.0-beta.2 — under active development. It works well for testing and development, but we don't recommend it for production websites yet.
 

@@ -1,7 +1,7 @@
 /**
  * NodePress Install Detection Middleware
  * =======================================
- * Like WordPress: if not installed → redirect ALL routes to /install
+ * Like NodePress: if not installed → redirect ALL routes to /install
  *
  * This middleware checks the API server's /api/install/status endpoint.
  * If the system is not installed, every route redirects to /install.

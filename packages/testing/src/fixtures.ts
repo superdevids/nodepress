@@ -3,10 +3,10 @@
  * Loads JSON fixture files from tests/fixtures/ directory.
  */
 
-import { readFileSync, existsSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
-let FIXTURES_DIR = resolve(process.cwd(), "tests", "fixtures");
+let FIXTURES_DIR = resolve(process.cwd(), 'tests', 'fixtures');
 
 export interface FixtureCollection {
   [key: string]: unknown;
@@ -16,14 +16,14 @@ export interface FixtureCollection {
  * Load a single JSON fixture file by name (with or without .json extension).
  */
 export function loadFixture<T = unknown>(name: string): T {
-  const fileName = name.endsWith(".json") ? name : `${name}.json`;
+  const fileName = name.endsWith('.json') ? name : `${name}.json`;
   const filePath = join(FIXTURES_DIR, fileName);
 
   if (!existsSync(filePath)) {
     throw new Error(`Fixture not found: ${filePath}`);
   }
 
-  const content = readFileSync(filePath, "utf-8");
+  const content = readFileSync(filePath, 'utf-8');
   return JSON.parse(content) as T;
 }
 
@@ -35,11 +35,11 @@ export function loadAllFixtures(): FixtureCollection {
     return {};
   }
 
-  const files = readdirSync(FIXTURES_DIR).filter((f) => f.endsWith(".json"));
+  const files = readdirSync(FIXTURES_DIR).filter((f) => f.endsWith('.json'));
   const fixtures: FixtureCollection = {};
 
   for (const file of files) {
-    const name = file.replace(/\.json$/, "");
+    const name = file.replace(/\.json$/, '');
     fixtures[name] = loadFixture(name);
   }
 
@@ -57,28 +57,34 @@ export function setFixturesDir(dir: string): void {
  * Sample rich content (ProseMirror doc format).
  */
 export const sampleContent = {
-  type: "doc" as const,
+  type: 'doc' as const,
   content: [
     {
-      type: "heading",
+      type: 'heading',
       attrs: { level: 2 },
-      content: [{ type: "text", text: "Sample Heading" }],
+      content: [{ type: 'text', text: 'Sample Heading' }],
     },
     {
-      type: "paragraph",
+      type: 'paragraph',
       content: [
-        { type: "text", text: "This is a sample paragraph with " },
-        { type: "text", marks: [{ type: "bold" }], text: "bold text" },
-        { type: "text", text: " and " },
-        { type: "text", marks: [{ type: "italic" }], text: "italic text" },
-        { type: "text", text: "." },
+        { type: 'text', text: 'This is a sample paragraph with ' },
+        { type: 'text', marks: [{ type: 'bold' }], text: 'bold text' },
+        { type: 'text', text: ' and ' },
+        { type: 'text', marks: [{ type: 'italic' }], text: 'italic text' },
+        { type: 'text', text: '.' },
       ],
     },
     {
-      type: "bulletList",
+      type: 'bulletList',
       content: [
-        { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Item 1" }] }] },
-        { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Item 2" }] }] },
+        {
+          type: 'listItem',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Item 1' }] }],
+        },
+        {
+          type: 'listItem',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Item 2' }] }],
+        },
       ],
     },
   ],
@@ -97,7 +103,7 @@ export const sampleHtml = `
 `;
 
 /**
- * Sample WordPress-style shortcode content.
+ * Sample NodePress-style shortcode content.
  */
 export const sampleShortcodeContent = `
   [gallery ids="1,2,3" columns="3"]
@@ -109,12 +115,12 @@ export const sampleShortcodeContent = `
  * Complete sample post data.
  */
 export const samplePost = {
-  title: "Hello World",
-  slug: "hello-world",
+  title: 'Hello World',
+  slug: 'hello-world',
   content: sampleHtml,
-  excerpt: "This is a sample post excerpt.",
-  status: "PUBLISHED",
-  commentStatus: "open",
-  pingStatus: "open",
-  postFormat: "standard",
+  excerpt: 'This is a sample post excerpt.',
+  status: 'PUBLISHED',
+  commentStatus: 'open',
+  pingStatus: 'open',
+  postFormat: 'standard',
 };

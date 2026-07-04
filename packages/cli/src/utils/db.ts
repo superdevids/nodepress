@@ -248,7 +248,7 @@ export async function seedDatabase(): Promise<void> {
       {
         group: 'general',
         key: 'site_tagline',
-        value: '"The WordPress alternative for JavaScript developers"',
+        value: '"A modern CMS for JavaScript developers"',
       },
       { group: 'general', key: 'site_url', value: '"http://localhost:3000"' },
       { group: 'general', key: 'admin_email', value: '"admin@nodepress.local"' },

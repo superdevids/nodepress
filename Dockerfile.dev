@@ -1,6 +1,6 @@
 ﻿# ============================================================
 # NodePress - Development Dockerfile (Hot-Reload)
-# WordPress-compatible CMS built with Node.js / TypeScript
+# Modern CMS built with Node.js / TypeScript
 # ============================================================
 # Usage:
 #   docker compose up -d api     # Starts API with hot-reload

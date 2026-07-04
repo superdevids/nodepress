@@ -1,0 +1,116 @@
+# Render Blueprint for NodePress
+# Deploy the full stack except frontends (which go to Vercel)
+#
+# Usage:
+#   1. Push this file to GitHub
+#   2. In Render Dashboard → Blueprint → Connect repo
+#   3. Set environment variables in Render dashboard
+#
+# Note: Admin and Web-Starter frontends should be deployed to Vercel.
+# This blueprint handles the API backend, worker, database, and Redis.
+
+services:
+  # ──────────────────────────────────────────────
+  # NestJS API (Web Service)
+  # ──────────────────────────────────────────────
+  - type: web
+    name: nodepress-api
+    runtime: image
+    repo: https://github.com/yourorg/nodepress
+    branch: main
+    plan: starter
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: '3001'
+      - key: JWT_SECRET
+        sync: false # Set manually in dashboard
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nodepress-db
+          property: connectionString
+      - key: DATABASE_DIRECT_URL
+        fromDatabase:
+          name: nodepress-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: nodepress-redis
+          property: connectionString
+      - key: S3_ENDPOINT
+        value: https://s3.us-east-1.amazonaws.com
+      - key: S3_REGION
+        value: us-east-1
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: S3_BUCKET
+        value: nodepress-media
+      - key: S3_PUBLIC_URL
+        value: https://cdn.yourdomain.com
+      - key: NEXT_PUBLIC_API_URL
+        value: https://api.yourdomain.com
+      - key: API_URL
+        value: https://api.yourdomain.com
+      - key: APP_URL
+        value: https://admin.yourdomain.com
+      - key: CORS_ORIGINS
+        value: https://admin.yourdomain.com,https://yourdomain.com
+      - key: JWT_EXPIRY
+        value: 15m
+      - key: REFRESH_TOKEN_EXPIRY
+        value: 7d
+
+  # ──────────────────────────────────────────────
+  # BullMQ Worker (Background Job Processor)
+  # ──────────────────────────────────────────────
+  - type: worker
+    name: nodepress-worker
+    runtime: image
+    repo: https://github.com/yourorg/nodepress
+    branch: main
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVICE_TYPE
+        value: worker
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nodepress-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: nodepress-redis
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+
+# ──────────────────────────────────────────────
+# Managed PostgreSQL 16
+# ──────────────────────────────────────────────
+databases:
+  - name: nodepress-db
+    plan: starter
+    postgresMajorVersion: 16
+
+# ──────────────────────────────────────────────
+# Managed Redis 7
+# ──────────────────────────────────────────────
+redis:
+  - name: nodepress-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru

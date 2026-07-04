@@ -6,15 +6,15 @@
 
 ### What is NodePress?
 
-NodePress is a modern, open-source Content Management System (CMS) built entirely in TypeScript. It's designed as a modern alternative to WordPress for JavaScript/TypeScript development teams. It runs on Node.js, uses PostgreSQL for data, and has a Next.js admin panel.
+NodePress is a modern, open-source Content Management System (CMS) built entirely in TypeScript. It runs on Node.js, uses PostgreSQL for data, and has a Next.js admin panel. It's built for JavaScript/TypeScript development teams.
 
 ### Is NodePress production-ready?
 
 **Not yet.** NodePress is currently in **beta** (v1.0.0-beta.2). It's under active development and works well for testing and development, but we don't recommend it for production websites yet. Key features like the install wizard and forgot password flow are still being built. Check [docs/PRD7.md](PRD7.md) for the full production readiness plan.
 
-### Is NodePress a WordPress clone?
+### Is NodePress inspired by WordPress?
 
-No. NodePress is **inspired by WordPress** — it uses similar concepts (posts, pages, plugins, themes, hooks) — but it's built from scratch using modern technology. It's not a drop-in replacement. You can't install WordPress plugins or themes on it.
+NodePress includes familiar concepts (posts, pages, plugins, themes, hooks) that have proven successful, but it's built from scratch using modern technology. It's not a drop-in replacement for any other CMS.
 
 ### Do I need to know coding to use NodePress?
 
@@ -22,11 +22,11 @@ No. NodePress is **inspired by WordPress** — it uses similar concepts (posts, 
 - **Installing NodePress:** Basic terminal/command line skills are needed.
 - **Building plugins/themes:** Yes, you'll need TypeScript/React knowledge.
 
-### Can I migrate my WordPress site to NodePress?
+### Can I migrate my existing site to NodePress?
 
 **Tools exist, but expect manual work.**
 
-We provide a WXR (WordPress eXtended RSS) importer that handles:
+We provide a WXR (WordPress eXtended RSS) importer that handles migration from WordPress:
 
 - ✅ Posts, pages, custom content types
 - ✅ Media library (images, files)
@@ -38,7 +38,7 @@ We provide a WXR (WordPress eXtended RSS) importer that handles:
 **What requires manual work:**
 
 - ⚠️ Gutenberg custom blocks (known blocks map cleanly)
-- ⚠️ WordPress plugins must be rewritten as NodePress plugins
+- ⚠️ Existing plugins must be rewritten as NodePress plugins
 - ⚠️ Themes must be rebuilt in React/Next.js
 - ❌ WooCommerce data (migration tool coming in v2.0)
 
@@ -64,7 +64,7 @@ NodePress ships with **13 official plugins** covering the most common CMS needs:
 | Multilingual   | 11 languages, auto-translate (DeepL/Google)   |
 | File Editor    | Monaco code editor, file browser              |
 
-This is **not as extensive** as WordPress's 60,000+ plugin ecosystem. For niche plugins, you'll need to build your own using the Plugin SDK.
+For niche plugins not covered by the 13 official ones, you can build your own using the Plugin SDK.
 
 ### Do I need to know coding to contribute?
 

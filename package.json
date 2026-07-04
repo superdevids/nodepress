@@ -26,7 +26,7 @@
   },
   "keywords": [
     "cms",
-    "wordpress",
+    "cms",
     "nestjs",
     "nextjs",
     "headless-cms",
@@ -34,7 +34,7 @@
   ],
   "license": "MIT",
   "author": "NodePress Team",
-  "description": "Modern CMS inspired by WordPress, built with Node.js / TypeScript — NestJS, Next.js, Prisma, PostgreSQL (beta)",
+  "description": "Modern CMS built with Node.js / TypeScript — NestJS, Next.js, Prisma, PostgreSQL (beta)",
   "scripts": {
     "start": "node start.js",
     "dev": "turbo run dev --parallel",

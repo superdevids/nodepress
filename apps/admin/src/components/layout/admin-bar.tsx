@@ -10,10 +10,10 @@ import { NotificationDropdown } from './notification-dropdown';
 import { ScreenOptions } from '@/components/admin/screen-options';
 
 /**
- * WordPress-Style Admin Bar
+ * NodePress-Style Admin Bar
  *
  * Features:
- * - Fixed top bar (like WordPress #wpadminbar)
+ * - Fixed top bar (like NodePress #wpadminbar)
  * - Logo/brand on left
  * - "+ New" dropdown (Post, Page, Media)
  * - Search box (type-ahead)
@@ -152,7 +152,7 @@ export function AdminBar() {
           </a>
         </div>
 
-        {/* "+ New" Dropdown (WordPress-style) */}
+        {/* "+ New" Dropdown (NodePress-style) */}
         <div className="relative flex h-full items-center" ref={newDropdownRef}>
           <button
             onClick={() => setShowNewDropdown(!showNewDropdown)}
@@ -257,7 +257,7 @@ export function AdminBar() {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Search Box (WordPress-style, hidden on small screens) */}
+        {/* Search Box (NodePress-style, hidden on small screens) */}
         <form onSubmit={handleSearch} className="hidden h-full items-center md:flex">
           <div
             className={cn(

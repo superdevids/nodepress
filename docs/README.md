@@ -1,6 +1,6 @@
 # NodePress Documentation
 
-> NodePress v1.0.0-beta.2 — Modern CMS inspired by WordPress
+> NodePress v1.0.0-beta.2 — Modern CMS built with Node.js / TypeScript
 
 ---
 
@@ -18,9 +18,9 @@
 
 ## 📋 Project Documents
 
-| Document                                           | Description                                                             |
-| -------------------------------------------------- | ----------------------------------------------------------------------- |
-| [WORDPRESS-COMPARISON.md](WORDPRESS-COMPARISON.md) | Honest comparison with WordPress (feature parity, gaps, decision guide) |
+| Document                                           | Description                                                                   |
+| -------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [WORDPRESS-COMPARISON.md](WORDPRESS-COMPARISON.md) | Honest comparison with traditional CMS (feature parity, gaps, decision guide) |
 
 ---
 

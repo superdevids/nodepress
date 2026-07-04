@@ -3,7 +3,7 @@
 /**
  * NodePress Master Start Script
  * =============================
- * Like WordPress: clone → npm i → npm start → everything works
+ * Clone → npm i → npm start → everything works
  *
  * - Detects if NOT installed → redirects to Install Wizard
  * - Works with npm, pnpm, or yarn (auto-detects)
@@ -203,7 +203,7 @@ async function checkEnv() {
   console.log('');
   console.log(`${C.bold}${C.cyan}╔═══════════════════════════════════════════╗`);
   console.log(`  🚀  NodePress - Starting Up`);
-  console.log(`      WordPress-compatible CMS`);
+  console.log(`      Modern CMS`);
   console.log(`      ${C.bold}${C.green}clone → npm i → npm start${C.reset}`);
   console.log(`╚═══════════════════════════════════════════╝${C.reset}`);
   console.log('');

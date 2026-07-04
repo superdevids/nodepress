@@ -10,7 +10,7 @@
     - Sets up the database
     - Opens browser to the Install Wizard
 .NOTES
-    Like WordPress's famous "5-minute installation" — but for NodePress on Windows.
+    A "5-minute installation" experience — designed for NodePress on Windows.
     Run this as Administrator for best results.
 #>
 
@@ -52,7 +52,7 @@ function Write-Banner {
     Write-Host ""
     Write-Color "╔══════════════════════════════════════════════════════════╗" -Color Cyan
     Write-Color "║  $([char]0x1b)[1m🚀  NodePress — Windows Installer$([char]0x1b)[0m                ║" -Color Cyan
-    Write-Color "║  WordPress-compatible CMS — 5-minute setup                 ║" -Color Cyan
+    Write-Color "║  Modern, open-source CMS — 5-minute setup                  ║" -Color Cyan
     Write-Color "╚══════════════════════════════════════════════════════════╝" -Color Cyan
     Write-Host ""
     Write-Color " This installer will set up everything you need to run NodePress." -Color White

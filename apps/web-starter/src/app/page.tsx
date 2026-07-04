@@ -65,7 +65,7 @@ const FEATURES = [
   },
   {
     title: 'Plugin System',
-    description: 'Extend functionality with a WordPress-compatible hook system.',
+    description: 'Extend functionality with a Modern CMS hook system.',
   },
 ] as const;
 

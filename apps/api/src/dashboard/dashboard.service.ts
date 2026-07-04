@@ -56,7 +56,7 @@ export class DashboardService {
       {
         id: '1',
         title: 'NodePress 2.0 Release Notes',
-        excerpt: 'Major performance improvements and new WordPress-compatible APIs.',
+        excerpt: 'Major performance improvements and new Modern CMS APIs.',
         date: new Date().toISOString(),
         category: 'Release',
       },

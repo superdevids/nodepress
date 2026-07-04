@@ -1,6 +1,6 @@
 ﻿# ============================================================
 # NodePress - Production Docker Compose
-# WordPress-compatible CMS built with Node.js / TypeScript
+# Modern CMS built with Node.js / TypeScript
 # ============================================================
 # Usage:
 #   docker compose -f docker-compose.prod.yml up -d

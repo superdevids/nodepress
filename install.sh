@@ -3,7 +3,7 @@ set -e
 
 # ============================================================
 # NodePress - One-Click Installer (Linux / macOS)
-# WordPress-compatible CMS built with TypeScript
+# Modern CMS built with TypeScript
 # ============================================================
 
 RED='\033[0;31m'
@@ -23,7 +23,7 @@ esac
 clear
 echo "============================================================"
 echo -e "           ${CYAN}🚀 NodePress - One-Click Installer${NC}"
-echo -e "           ${YELLOW}WordPress-compatible CMS for Everyone${NC}"
+echo -e "           ${YELLOW}Modern CMS for Everyone${NC}"
 echo "============================================================"
 echo ""
 echo "This installer will set up everything to run NodePress."

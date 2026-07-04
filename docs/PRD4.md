@@ -6,16 +6,16 @@
 **Scope:** Cross-reference PRD1 (v1.0) + PRD2 (v2.0) + PRD3 (147 gaps) + 298 fixed issues (286 audit + 12 NG) + Final codebase analysis  
 **Audience:** C-Level Stakeholders, Engineering Leadership, Development Team
 
-> **Updated:** July 4, 2026 — Consistency fixes applied per PRD5 audit findings. WordPress parity standardized to ~90% (132/147). Test claims corrected to reflect actual state (~5 test files). Internal contradictions resolved.
+> **Updated:** July 4, 2026 — Consistency fixes applied per PRD5 audit findings. Feature parity standardized to ~90% (132/147). Test claims corrected to reflect actual state (~5 test files). Internal contradictions resolved.
 
 ---
 
 ## 1. Executive Summary
 
-NodePress is an open-source, TypeScript-native content management system built to achieve feature parity with WordPress while leveraging a modern technology stack (NestJS, Prisma, Next.js, pnpm monorepo). Between PRD3 (audit) and PRD4, a comprehensive 9-phase remediation effort identified and resolved **298 issues** (286 audit + 12 new gaps) spanning the API application, admin panel, core package, editor package, CLI, database, plugins, Docker, and configuration.
+NodePress is an open-source, TypeScript-native content management system built to achieve feature parity with traditional CMS platforms while leveraging a modern technology stack (NestJS, Prisma, Next.js, pnpm monorepo). Between PRD3 (audit) and PRD4, a comprehensive 9-phase remediation effort identified and resolved **298 issues** (286 audit + 12 new gaps) spanning the API application, admin panel, core package, editor package, CLI, database, plugins, Docker, and configuration.
 
 **Current Status:** Active Development (7/10 readiness)  
-**Key Finding:** 298 issues (286 audit + 12 NG gaps) have been addressed, with most fixes verified. WordPress feature parity is at ~90% (132/147). Admin panel full API integration and comprehensive testing coverage are still in progress. All 13 plugins are functionally implemented but several need production hardening. The architecture is fundamentally solid — TypeScript end-to-end, clean module separation, 38 Prisma models, 80+ core business logic files, 85+ REST API endpoints, and a complete GraphQL implementation.
+**Key Finding:** 298 issues (286 audit + 12 NG gaps) have been addressed, with most fixes verified. Feature parity with traditional CMS is at ~90% (132/147). Admin panel full API integration and comprehensive testing coverage are still in progress. All 13 plugins are functionally implemented but several need production hardening. The architecture is fundamentally solid — TypeScript end-to-end, clean module separation, 38 Prisma models, 80+ core business logic files, 85+ REST API endpoints, and a complete GraphQL implementation.
 
 ### Remediation Progress Summary
 
@@ -27,7 +27,7 @@ NodePress is an open-source, TypeScript-native content management system built t
 | 4         | Editor Package                       | 25           | 25           | 100%         |
 | 5         | CLI, DB, SDK, UI, Testing, Config    | 38           | 38           | 100%         |
 | 6         | Plugins, Web-Starter, Docker, Config | 68           | 68           | 100%         |
-| 7         | WordPress Comparison Doc             | —            | Created      | ✅           |
+| 7         | CMS Comparison Doc                   | —            | Created      | ✅           |
 | 8         | GitHub Push                          | —            | Public repo  | ✅           |
 | 9         | New Gaps (NG-01 to NG-12)            | 12           | 12           | 100%         |
 | **TOTAL** | **All**                              | **298**      | **298**      | **100%**     |
@@ -46,7 +46,7 @@ The 9-phase remediation effort systematically addressed every issue identified i
 | **Phase 4** | Editor Package (25 issues)                       | Tiptap extension configuration, schema validation, node serialization, mark parsing, drag-and-drop, slash commands extension, placeholder handling                                                                                     |
 | **Phase 5** | CLI, DB, SDK, UI, Testing, Config (38 issues)    | CLI command registration, Prisma schema index optimization (gin, FTS vectors), missing SDK exports, UI component props, test config wiring, ESLint rule fixes, env validation                                                          |
 | **Phase 6** | Plugins, Web-Starter, Docker, Config (68 issues) | 5 stub plugins made functional, Docker Compose networking, multi-stage build cache, web-starter auth flow, env fallbacks, turborepo pipeline configuration, GitHub Actions matrix                                                      |
-| **Phase 7** | WordPress Comparison Doc                         | Comprehensive 147-feature comparison document created                                                                                                                                                                                  |
+| **Phase 7** | CMS Comparison Doc                               | Comprehensive 147-feature comparison document created                                                                                                                                                                                  |
 | **Phase 8** | GitHub Push                                      | Monorepo pushed to public GitHub repository                                                                                                                                                                                            |
 | **Phase 9** | New Gaps Closure (NG-01 to NG-12)                | Testing infrastructure, GraphQL implementation, SEO backend, Prisma migrations, block editor integration, admin bar auth, web-starter, Redis cache, load testing, pingbacks, image queue, comments feed                                |
 
@@ -64,7 +64,7 @@ The 9-phase remediation effort systematically addressed every issue identified i
 | 6   | Auth & RBAC               | Super Admin, Admin, Editor, Author, Contributor, Subscriber                                                            | ✅ Complete            | `packages/core/src/auth/capability-service.ts` + guards | 6 roles, capability-based checking, capability inheritance                                             |
 | 7   | REST API                  | Auto-generated per content type                                                                                        | ✅ Complete            | `apps/api/src/content/content.controller.ts`            | 85+ endpoints across 25 controllers                                                                    |
 | 8   | GraphQL API               | Optional, toggle per instance                                                                                          | ❌ **NOT IMPLEMENTED** | N/A                                                     | No Apollo Server, no `@nestjs/graphql`, no schema generation                                           |
-| 9   | Plugin/Hook system        | Actions & Filters, event-driven                                                                                        | ✅ Complete            | `packages/core/src/plugin/hook-registry.ts`             | WordPress-style addAction/applyFilters with priority                                                   |
+| 9   | Plugin/Hook system        | Actions & Filters, event-driven                                                                                        | ✅ Complete            | `packages/core/src/plugin/hook-registry.ts`             | Action/filter pattern (addAction/applyFilters) with priority                                           |
 | 10  | Theme rendering           | SSR/ISR via Next.js                                                                                                    | ⚠️ Partial             | `apps/web-starter/`                                     | Template hierarchy exists in core; web-starter is placeholder (6 files)                                |
 | 11  | Menu builder              | Navigation management                                                                                                  | ✅ Complete            | `apps/api/src/menus/` + admin UI                        | Drag-and-drop menu builder with nested items                                                           |
 | 12  | Revisions & draft/publish | Content workflow                                                                                                       | ✅ Complete            | ContentEntry status enum + Revision model               | DRAFT/PENDING/REVIEW/SCHEDULED/PUBLISHED/ARCHIVED workflow                                             |
@@ -100,7 +100,7 @@ PRD1 explicitly lists GraphQL API as a **Must Have** feature. The current codeba
 
 ---
 
-## 5. PRD3 WordPress Parity Checklist — Updated
+## 5. PRD3 Feature Parity Checklist — Updated
 
 The following updates the original PRD3 Section 5 gap analysis with current post-remediation status:
 
@@ -188,7 +188,7 @@ These were issues discovered after the original 286-item audit. All 12 have been
 | **Plugins**               | ★★★★★  | PluginEngine robust (18 files), 13 fully functional plugins covering SEO, cache, comments, forms, analytics, security, social, backup, newsletter, redirects, performance, multilingual, file editor |
 | **Testing**               | ★☆☆☆☆  | Vitest config across all packages, ~5 existing test files. CI pipeline configured. Coverage expansion in progress (target: 190+ tests).                                                              |
 | **CI/CD**                 | ★★★★★  | GitHub Actions matrix build, Docker layer caching, lint/typecheck/test/build/security scan pipeline, k6 load test regression                                                                         |
-| **Documentation**         | ★★★★★  | 4 PRDs, audit report, WordPress comparison, contributing guide, API docs (Swagger), plugin development tutorial                                                                                      |
+| **Documentation**         | ★★★★★  | 4 PRDs, audit report, CMS comparison, contributing guide, API docs (Swagger), plugin development tutorial                                                                                            |
 | **Docker/DevOps**         | ★★★★★  | Docker Compose for dev, multi-stage production Dockerfile, K8s-ready healthcheck patterns, proper layer caching, multi-arch support                                                                  |
 
 ---
@@ -207,7 +207,7 @@ All phases of the original remediation roadmap have been executed. All 12 new ga
 
 ---
 
-## 9. WordPress Feature Parity — FINAL Scorecard
+## 9. Feature Parity — FINAL Scorecard
 
 | Category                  | Total Features | Complete | Partial | % Complete (Adjusted) |
 | ------------------------- | -------------- | -------- | ------- | --------------------- |
@@ -252,7 +252,7 @@ All phases of the original remediation roadmap have been executed. All 12 new ga
 ║   New Gaps Closed:        12 (100%)                           ║
 ║   Total Resolved:         298 (100%)                          ║
 ║                                                              ║
-║   WordPress Parity:       ~90% (132/147 features, partials)    ║
+║   Feature Parity:        ~90% (132/147 features, partials)    ║
 ║   Official Plugins:       13 fully implemented                ║
 ║   Testing Coverage:       ~5 test files (target: 190+)        ║
 ║   GraphQL Implementation: Complete (Apollo + code-first)       ║
@@ -281,17 +281,17 @@ All phases of the original remediation roadmap have been executed. All 12 new ga
 
 ### Strengths
 
-| #   | Finding                                      | Impact                                                                                                                                                                                                      |
-| --- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ✅  | **All 298 issues fixed**                     | The 9-phase remediation achieved resolution across all packages including all 12 post-audit new gaps. Admin panel API integration and testing coverage still in progress.                                   |
-| ✅  | **~90% WordPress feature parity**            | 132 of 147 features are fully implemented. Several areas (admin panel integration, testing coverage) still require work.                                                                                    |
-| ✅  | **13 fully functional plugins**              | All 13 WordPress-equivalent plugins (SEO, cache, comments, forms, analytics, security, social-sharing, backup, newsletter, redirection, performance, multilingual, file-editor) are implemented and tested. |
-| ✅  | **Solid end-to-end TypeScript architecture** | The monorepo enforces type safety from database (Prisma) through business logic (NestJS) to frontend (Next.js/React). Shared types flow through all layers.                                                 |
-| ✅  | **Comprehensive plugin/theme engine**        | The PluginEngine (18 files), HookRegistry, DependencyResolver, and ThemeResolver match WordPress capabilities. Shortcodes, oEmbed, block patterns, child themes — all implemented.                          |
-| ✅  | **Docker + CI/CD ready**                     | Docker Compose for development, multi-stage production Dockerfile, GitHub Actions matrix build, K8s-compatible healthcheck patterns, k6 load test regression.                                               |
-| ✅  | **Enterprise-grade security**                | JWT with refresh tokens, 2FA (TOTP), RBAC with 6 roles, rate limiting, audit logging, CSP headers, CORS configuration, bcrypt password hashing, application passwords, plugin sandboxing.                   |
-| ✅  | **GraphQL + REST dual API**                  | Complete REST API (85+ endpoints) and GraphQL API (code-first, auto-generated schema from content types). Both fully functional and tested.                                                                 |
-| ✅  | **Testing infrastructure**                   | Vitest config across all packages, ~5 existing test files. CI pipeline configured. Coverage expansion in progress (target: 190+ tests).                                                                     |
+| #   | Finding                                      | Impact                                                                                                                                                                                                    |
+| --- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅  | **All 298 issues fixed**                     | The 9-phase remediation achieved resolution across all packages including all 12 post-audit new gaps. Admin panel API integration and testing coverage still in progress.                                 |
+| ✅  | **~90% feature parity with traditional CMS** | 132 of 147 features are fully implemented. Several areas (admin panel integration, testing coverage) still require work.                                                                                  |
+| ✅  | **13 fully functional plugins**              | All 13 feature-equivalent plugins (SEO, cache, comments, forms, analytics, security, social-sharing, backup, newsletter, redirection, performance, multilingual, file-editor) are implemented and tested. |
+| ✅  | **Solid end-to-end TypeScript architecture** | The monorepo enforces type safety from database (Prisma) through business logic (NestJS) to frontend (Next.js/React). Shared types flow through all layers.                                               |
+| ✅  | **Comprehensive plugin/theme engine**        | The PluginEngine (18 files), HookRegistry, DependencyResolver, and ThemeResolver match traditional CMS capabilities. Shortcodes, oEmbed, block patterns, child themes — all implemented.                  |
+| ✅  | **Docker + CI/CD ready**                     | Docker Compose for development, multi-stage production Dockerfile, GitHub Actions matrix build, K8s-compatible healthcheck patterns, k6 load test regression.                                             |
+| ✅  | **Enterprise-grade security**                | JWT with refresh tokens, 2FA (TOTP), RBAC with 6 roles, rate limiting, audit logging, CSP headers, CORS configuration, bcrypt password hashing, application passwords, plugin sandboxing.                 |
+| ✅  | **GraphQL + REST dual API**                  | Complete REST API (85+ endpoints) and GraphQL API (code-first, auto-generated schema from content types). Both fully functional and tested.                                                               |
+| ✅  | **Testing infrastructure**                   | Vitest config across all packages, ~5 existing test files. CI pipeline configured. Coverage expansion in progress (target: 190+ tests).                                                                   |
 
 ### Critical Blockers — ✅ ALL RESOLVED
 
@@ -328,7 +328,7 @@ This section formally closes all outstanding items identified throughout the PRD
 
 All 298 issues identified during the original codebase audit (286) and subsequent gap analysis (12 NG) have been **resolved, verified, and closed**.
 
-### WordPress Feature Parity: ~90% (132/147)
+### Feature Parity: ~90% (132/147)
 
 The remaining partial features require further work before v1.0 readiness:
 
@@ -340,23 +340,23 @@ The remaining partial features require further work before v1.0 readiness:
 
 ### Plugin Ecosystem: 13 Plugins Complete
 
-All 13 WordPress-equivalent plugins are fully implemented:
+All 13 feature-equivalent plugins are fully implemented:
 
-| Plugin           | WordPress Equivalent | Status | Key Capabilities                                         |
-| ---------------- | -------------------- | ------ | -------------------------------------------------------- |
-| `seo`            | Yoast SEO            | ✅     | Meta tags, sitemap, schema.org, readability, breadcrumbs |
-| `cache-redis`    | W3 Total Cache       | ✅     | Object cache, page cache, tag-based invalidation, TTL    |
-| `comments`       | Akismet              | ✅     | Gravatar, threading, moderation, anti-spam               |
-| `forms`          | Contact Form 7       | ✅     | Drag-drop builder, Stripe, CSV, reCAPTCHA                |
-| `analytics`      | MonsterInsights      | ✅     | GA4 integration, dashboard, popular posts                |
-| `security`       | Wordfence            | ✅     | WAF, malware scan, 2FA, audit logging                    |
-| `social-sharing` | Social Warfare       | ✅     | 8 networks, share counts, click-to-tweet                 |
-| `backup`         | UpdraftPlus          | ✅     | Scheduled, S3/GDrive, incremental, restore               |
-| `newsletter`     | MailPoet             | ✅     | Campaigns, subscribers, templates, automation            |
-| `redirection`    | Redirection          | ✅     | 301/302, 404 tracker, regex, import/export               |
-| `performance`    | WP Rocket            | ✅     | Cache, minify, lazy load, CDN, critical CSS              |
-| `multilingual`   | WPML                 | ✅     | 11 languages, auto-translate, SEO per locale             |
-| `file-editor`    | Built-in editor      | ✅     | Monaco, git diff, file tree, safe mode                   |
+| Plugin           | Feature Equivalent | Status | Key Capabilities                                         |
+| ---------------- | ------------------ | ------ | -------------------------------------------------------- |
+| `seo`            | Yoast SEO          | ✅     | Meta tags, sitemap, schema.org, readability, breadcrumbs |
+| `cache-redis`    | W3 Total Cache     | ✅     | Object cache, page cache, tag-based invalidation, TTL    |
+| `comments`       | Akismet            | ✅     | Gravatar, threading, moderation, anti-spam               |
+| `forms`          | Contact Form 7     | ✅     | Drag-drop builder, Stripe, CSV, reCAPTCHA                |
+| `analytics`      | MonsterInsights    | ✅     | GA4 integration, dashboard, popular posts                |
+| `security`       | Wordfence          | ✅     | WAF, malware scan, 2FA, audit logging                    |
+| `social-sharing` | Social Warfare     | ✅     | 8 networks, share counts, click-to-tweet                 |
+| `backup`         | UpdraftPlus        | ✅     | Scheduled, S3/GDrive, incremental, restore               |
+| `newsletter`     | MailPoet           | ✅     | Campaigns, subscribers, templates, automation            |
+| `redirection`    | Redirection        | ✅     | 301/302, 404 tracker, regex, import/export               |
+| `performance`    | WP Rocket          | ✅     | Cache, minify, lazy load, CDN, critical CSS              |
+| `multilingual`   | WPML               | ✅     | 11 languages, auto-translate, SEO per locale             |
+| `file-editor`    | Built-in editor    | ✅     | Monaco, git diff, file tree, safe mode                   |
 
 ### What Was Built
 
@@ -366,7 +366,7 @@ All 13 WordPress-equivalent plugins are fully implemented:
 - **85+ REST API endpoints** across 25 NestJS controllers
 - **Complete GraphQL API** with Apollo Server and code-first schema
 - **~5 test files** (expansion in progress, target: 190+) with CI pipeline verification
-- **13 WordPress-equivalent plugins** fully implemented
+- **13 feature-equivalent plugins** fully implemented
 - **Tiptap block editor** with 22 extensions, integrated into admin panel
 - **SEO backend service** with sitemap.xml, robots.txt, schema.org JSON-LD
 - **Redis caching layer** with tag-based invalidation

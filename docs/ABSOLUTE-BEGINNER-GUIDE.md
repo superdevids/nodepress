@@ -48,26 +48,17 @@ You can update it anytime. No coding needed.
 
 ---
 
-## 🧐 Is This Like WordPress?
+## 🧐 What is NodePress?
 
-Yes! Very similar.
+NodePress is a Content Management System — just like popular CMS platforms.
 
-WordPress powers over 43% of all websites on the internet.
-
-That is almost HALF of the internet.
-
-NodePress works the same way as WordPress.
-
-But it uses newer technology under the hood.
+But it uses modern technology under the hood.
 
 Think of it like this:
 
-> WordPress is a reliable old car.
-> NodePress is a brand new version of that car.
+> NodePress is a brand new car with a smooth engine.
 
-Both get you where you want to go.
-
-NodePress just has a smoother engine.
+It gets you where you want to go — fast.
 
 ---
 
@@ -485,11 +476,11 @@ For a business website, you might want to wait.
 
 Or ask a developer to help you set it up properly.
 
-### Q: Can I move my old WordPress site here?
+### Q: Can I migrate my old site here?
 
-Yes! NodePress has a tool for that.
+Yes! NodePress has an import tool for that.
 
-It can import your posts, pictures, and users from WordPress.
+It can import your posts, pictures, and users from most CMS platforms.
 
 See the Migration Guide for step-by-step help.
 
@@ -516,16 +507,16 @@ Yes! NodePress has 13 built-in features (called "plugins"):
 
 Go to **Plugins** in your dashboard to turn them on.
 
-### Q: How is NodePress different from WordPress?
+### Q: How is NodePress different from other CMS platforms?
 
-| Feature             | WordPress | NodePress        |
-| ------------------- | --------- | ---------------- |
-| Price               | Free      | Free             |
-| Ease of use         | Easy      | Easy             |
-| Number of plugins   | 60,000+   | 13               |
-| Technology          | PHP (old) | JavaScript (new) |
-| Speed               | Good      | Very fast        |
-| Ready for business? | Yes       | Almost (in beta) |
+| Feature             | NodePress           |
+| ------------------- | ------------------- |
+| Price               | Free                |
+| Ease of use         | Easy                |
+| Number of plugins   | 13                  |
+| Technology          | JavaScript (modern) |
+| Speed               | Very fast           |
+| Ready for business? | Almost (in beta)    |
 
 ### Q: What does "beta" mean?
 

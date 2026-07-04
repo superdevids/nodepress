@@ -272,7 +272,7 @@ export default function MediaDetailPage() {
   // ─── Main Render ────────────────────────────────────────────────────────
   return (
     <div className="bg-background min-h-screen">
-      {/* ── WordPress-style Header ───────────────────────────────────── */}
+      {/* ── NodePress-style Header ───────────────────────────────────── */}
       <div className="bg-background border-b">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
@@ -313,7 +313,7 @@ export default function MediaDetailPage() {
         </div>
       </div>
 
-      {/* ── Content area (WordPress two-column layout) ───────────────── */}
+      {/* ── Content area (NodePress-style two-column layout) ───────────────── */}
       <div className="grid gap-8 p-6 lg:grid-cols-5">
         {/* ── LEFT COLUMN: Preview + Edit form (3/5) ─────────────────── */}
         <div className="space-y-6 lg:col-span-3">

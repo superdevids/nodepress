@@ -1,5 +1,5 @@
 /**
- * WordPress-inspired Actions & Filters hook system.
+ * NodePress-inspired Actions & Filters hook system.
  *
  * Actions — for side effects (do_action / add_action)
  * Filters — for modifying data (apply_filters / add_filter)
@@ -10,7 +10,7 @@ type ActionCallback = HookCallback;
 type FilterCallback<T = unknown> = (value: T, ...args: unknown[]) => T | Promise<T>;
 
 export interface HookEvent {
-  type: "action" | "filter";
+  type: 'action' | 'filter';
   name: string;
   timestamp: number;
   data?: unknown;

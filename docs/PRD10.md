@@ -6,7 +6,7 @@
 
 ## 1. Executive Summary
 
-The goal: `npm i` produces ZERO warnings. `npm start` produces ZERO errors. Installation must work like WordPress: clone → npm i → npm start → CMS ready.
+The goal: `npm i` produces ZERO warnings. `npm start` produces ZERO errors. Installation must work like a traditional CMS: clone → npm i → npm start → CMS ready.
 
 This PRD documents all issues found and their fixes.
 

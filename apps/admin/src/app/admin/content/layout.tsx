@@ -65,7 +65,7 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="min-h-screen bg-[#f0f0f1]">
-      {/* WordPress-style admin header bar */}
+      {/* NodePress-style admin header bar */}
       <div className="bg-[#1d2327] px-6 py-2">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
@@ -75,7 +75,7 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
         </div>
       </div>
 
-      {/* WordPress-style submenu tabs */}
+      {/* NodePress-style submenu tabs */}
       <div className="border-b border-[#c3c4c7] bg-white">
         <div className="mx-auto max-w-7xl px-6">
           <nav className="-mb-px flex items-center gap-0">

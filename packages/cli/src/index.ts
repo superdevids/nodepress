@@ -39,29 +39,26 @@
  *   cron:run              Run a specific cron job
  */
 
-import { Command } from "commander";
+import { Command } from 'commander';
 
 const program = new Command();
 
-program
-  .name("nodepress")
-  .description("NodePress CLI — WordPress-compatible CMS for Node.js")
-  .version("0.0.1");
+program.name('nodepress').description('NodePress CLI — Modern CMS for Node.js').version('0.0.1');
 
 // ─── Core commands ─────────────────────────────────────────
-import { coreCommands } from "./commands/core.js";
-import { dbCommands } from "./commands/db.js";
-import { contentCommands } from "./commands/content.js";
-import { pluginCommands } from "./commands/plugin.js";
-import { themeCommands } from "./commands/theme.js";
-import { userCommands } from "./commands/user.js";
-import { cacheCommands } from "./commands/cache.js";
-import { backupCommands } from "./commands/backup.js";
-import { generateCommands } from "./commands/generate.js";
-import { maintenanceCommands } from "./commands/maintenance.js";
-import { cronCommands } from "./commands/cron.js";
-import { registerSecurityCommand } from "./commands/security.js";
-import { registerSettingsCommand } from "./commands/settings.js";
+import { coreCommands } from './commands/core.js';
+import { dbCommands } from './commands/db.js';
+import { contentCommands } from './commands/content.js';
+import { pluginCommands } from './commands/plugin.js';
+import { themeCommands } from './commands/theme.js';
+import { userCommands } from './commands/user.js';
+import { cacheCommands } from './commands/cache.js';
+import { backupCommands } from './commands/backup.js';
+import { generateCommands } from './commands/generate.js';
+import { maintenanceCommands } from './commands/maintenance.js';
+import { cronCommands } from './commands/cron.js';
+import { registerSecurityCommand } from './commands/security.js';
+import { registerSettingsCommand } from './commands/settings.js';
 
 coreCommands(program);
 dbCommands(program);

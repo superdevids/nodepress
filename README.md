@@ -1,6 +1,6 @@
 # 🚀 NodePress — Build a Website in 5 Minutes
 
-> **A free website builder.** Like WordPress, but newer and faster.
+> **A free website builder.** No programming needed.
 > No programming needed. No technical skills required.
 
 ---
@@ -35,7 +35,7 @@ This is for you if:
 
 - You want a website but don't know how to code
 - You are tired of paying developers for every little change
-- You used WordPress before and want something faster
+- You want a modern, fast CMS
 - You just want to write and share your ideas
 
 **You do NOT need to be a programmer.**
@@ -146,14 +146,14 @@ Turn them on with one click:
 
 ## 🎯 Quick Facts
 
-| Question                       | Answer                                         |
-| ------------------------------ | ---------------------------------------------- |
-| 💰 Is it free?                 | Yes! 100% free. MIT license.                   |
-| 🏢 Can I use it for business?  | In beta — good for testing, not production yet |
-| 🔄 Can I move from WordPress?  | Yes, import tool included                      |
-| 🐛 Is it stable?               | Beta software — works but still being polished |
-| 👥 How many people can use it? | Unlimited users, unlimited content             |
-| 🚀 How fast is it?             | Very fast — built on modern JavaScript         |
+| Question                           | Answer                                         |
+| ---------------------------------- | ---------------------------------------------- |
+| 💰 Is it free?                     | Yes! 100% free. MIT license.                   |
+| 🏢 Can I use it for business?      | In beta — good for testing, not production yet |
+| 🔄 Can I migrate from another CMS? | Yes, import tool included                      |
+| 🐛 Is it stable?                   | Beta software — works but still being polished |
+| 👥 How many people can use it?     | Unlimited users, unlimited content             |
+| 🚀 How fast is it?                 | Very fast — built on modern JavaScript         |
 
 ---
 

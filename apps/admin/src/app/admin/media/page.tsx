@@ -627,7 +627,7 @@ export default function MediaPage() {
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen">
-      {/* ── Page Header (WordPress-style) ─────────────────────────────── */}
+      {/* ── Page Header (NodePress-style) ─────────────────────────────── */}
       <div className="bg-background border-b">
         <div className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>

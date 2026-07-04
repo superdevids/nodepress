@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * WordPress-Style Keyboard Shortcuts
+ * NodePress-Style Keyboard Shortcuts
  *
  * Implements a centralized keyboard shortcuts system
- * that mirrors WordPress admin keyboard navigation.
+ * that mirrors NodePress admin keyboard navigation.
  *
  * Available shortcuts:
  * - Ctrl+Alt+N  → New post

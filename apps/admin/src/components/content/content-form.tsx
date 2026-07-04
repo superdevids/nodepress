@@ -323,7 +323,7 @@ export function ContentForm({
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-6">
           {/* ── Main Editor Area ── */}
           <div className="min-w-0 flex-1 space-y-4">
-            {/* Title field (extra large, like WordPress) */}
+            {/* Title field (extra large, like NodePress) */}
             <div className="rounded-lg border border-[#dcdcde] bg-white p-4 shadow-sm">
               <input
                 {...register('title')}

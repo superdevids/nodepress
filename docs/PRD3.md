@@ -6,7 +6,7 @@
 > **Updated:** July 4, 2026 — Consistency fixes applied per PRD5 audit findings.
 > **Historical gap analysis — all 147 gaps have been addressed. See [PRD4.md](./PRD4.md) for final verification.**
 
-> Analisis gap komparatif sistematis: 147 gap dari 9 domain. PRD1 (v1.0) + PRD2 (v2.0) vs WordPress Core.
+> Analisis gap komparatif sistematis: 147 gap dari 9 domain. PRD1 (v1.0) + PRD2 (v2.0) vs CMS Referensi.
 
 ---
 
@@ -400,9 +400,9 @@ The original 8-phase roadmap was fully executed:
 
 ---
 
-## 5. WordPress Feature Parity Checklist
+## 5. Feature Parity Checklist
 
-All gaps identified in this document have been resolved. Current WordPress parity: **~90% (132/147)**.
+All gaps identified in this document have been resolved. Current feature parity: **~90% (132/147)**.
 
 | Fitur                 | Status                        |
 | --------------------- | ----------------------------- |

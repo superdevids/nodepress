@@ -295,7 +295,7 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
   );
 }
 
-// ─── At a Glance Widget (WordPress-style compact list) ──────
+// ─── At a Glance Widget (NodePress-style compact list) ──────
 
 function AtAGlanceWidget() {
   const router = useRouter();
@@ -832,7 +832,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   // ── Decide which column each widget goes into ──────────
-  // WordPress-style: even widgets in left column, odd in right
+  // NodePress-style: even widgets in left column, odd in right
   const leftCol = visibleWidgets.filter((_, i) => i % 2 === 0);
   const rightCol = visibleWidgets.filter((_, i) => i % 2 === 1);
 

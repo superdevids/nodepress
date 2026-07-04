@@ -1,7 +1,7 @@
 /**
  * Security Service (Gap F-01 — Security Keys/Salts)
  *
- * WordPress-compatible security keys and salts system.
+ * Modern CMS security keys and salts system.
  * Provides encryption, hashing, nonce generation, and input validation.
  */
 import crypto from 'node:crypto';
@@ -32,7 +32,7 @@ export class SecurityService {
   }
 
   /**
-   * Generate a nonce token (WordPress-compatible).
+   * Generate a nonce token (Modern CMS compatible).
    * Nonces are valid for 12 hours by default.
    */
   createNonce(action: string, userId: string = 'guest'): string {

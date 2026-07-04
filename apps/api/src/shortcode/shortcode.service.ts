@@ -6,7 +6,7 @@ export type ShortcodeHandler = (attrs: Record<string, string>, content?: string)
  * Shortcode service — Gap A-01
  *
  * Registers and renders shortcodes (e.g. [gallery id="123"])
- * embedded within content. Analogous to WordPress shortcodes.
+ * embedded within content. Analogous to NodePress shortcodes.
  */
 @Injectable()
 export class ShortcodeService {
@@ -49,18 +49,21 @@ export class ShortcodeService {
   render(input: string): string {
     const shortcodeRegex = /\[(\w+)([^\]]*?)\](?:(.*?)\[\/\1\])?/gs;
 
-    return input.replace(shortcodeRegex, (match, tag: string, attrsStr: string, content?: string) => {
-      const handler = this.registry.get(tag);
-      if (!handler) return match; // leave unregistered shortcodes as-is
+    return input.replace(
+      shortcodeRegex,
+      (match, tag: string, attrsStr: string, content?: string) => {
+        const handler = this.registry.get(tag);
+        if (!handler) return match; // leave unregistered shortcodes as-is
 
-      const attrs = this.parseAttributes(attrsStr.trim());
-      try {
-        return handler(attrs, content?.trim());
-      } catch (err) {
-        this.logger.error(`Shortcode [${tag}] render error: ${(err as Error).message}`);
-        return match;
-      }
-    });
+        const attrs = this.parseAttributes(attrsStr.trim());
+        try {
+          return handler(attrs, content?.trim());
+        } catch (err) {
+          this.logger.error(`Shortcode [${tag}] render error: ${(err as Error).message}`);
+          return match;
+        }
+      },
+    );
   }
 
   // ---- built-in handlers ----

@@ -41,7 +41,7 @@ Today I am going to show you how to install NodePress.
 
 NodePress is a free website builder.
 
-Think of it like WordPress, but newer and faster.
+Think of it as a modern, fast CMS.
 
 And here is the best part.
 

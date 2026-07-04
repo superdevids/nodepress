@@ -1,0 +1,59 @@
+# Vercel deployment ignore rules
+# These files are NOT needed for building Next.js apps on Vercel
+
+# Ignore the NestJS API (deployed separately)
+apps/api/
+apps/e2e/
+
+# Ignore Docker files (not used on Vercel)
+Dockerfile
+Dockerfile.dev
+docker-compose.yml
+docker-compose.prod.yml
+
+# Ignore all plugins (loaded at runtime by API, not needed for frontend build)
+plugins/
+
+# Ignore non-essential config files
+*.md
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
+SUPPORT.md
+UPGRADE.md
+QUICK-START.md
+GETTING-STARTED.md
+SYSTEM-REQUIREMENTS.md
+
+# Ignore development scripts
+install.bat
+install.sh
+start.js
+scripts/
+
+# Ignore local storage
+storage/
+
+# Ignore CI/CD configs
+.github/
+
+# Ignore local environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.example
+
+# Ignore changesets
+.changeset/
+
+# Keeping these:
+# - pnpm-lock.yaml (required)
+# - pnpm-workspace.yaml (required)
+# - turbo.json (required)
+# - tsconfig.base.json (required)
+# - apps/admin/ (deploy target)
+# - apps/web-starter/ (deploy target)
+# - packages/ (build dependencies)
+# - .npmrc (required)

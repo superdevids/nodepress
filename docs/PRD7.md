@@ -210,7 +210,7 @@ For NodePress v1.0-beta, production ready is defined as:
 
 **What's needed:**
 
-- Complete template hierarchy matching WordPress:
+- Complete template hierarchy matching traditional CMS:
   - `single-{type}.tsx` for custom content types
   - `archive-{type}.tsx`, `archive.tsx`
   - `taxonomy-{taxonomy}.tsx`
@@ -374,13 +374,13 @@ For NodePress v1.0-beta, production ready is defined as:
 
 ### Phase 3: Content & Themes (Weeks 4-5)
 
-| Week | Task                            | Detail                                                                                      | Effort | Owner    |
-| ---- | ------------------------------- | ------------------------------------------------------------------------------------------- | ------ | -------- |
-| W4   | web-starter: template hierarchy | Create all WordPress-equivalent templates (single, archive, taxonomy, search, author, date) | 4 days | Frontend |
-| W5   | web-starter: responsive design  | Mobile-first, dark mode, Tailwind polish                                                    | 3 days | Frontend |
-| W5   | web-starter: SEO integration    | Meta tags, JSON-LD, sitemap, breadcrumbs, Open Graph                                        | 2 days | Frontend |
-| W5   | web-starter: performance        | Lighthouse >90, lazy loading, image optimization                                            | 2 days | Frontend |
-| W5   | Theme Customizer admin UI       | Basic live preview panel, color/setting overrides                                           | 3 days | Admin    |
+| Week | Task                            | Detail                                                                                | Effort | Owner    |
+| ---- | ------------------------------- | ------------------------------------------------------------------------------------- | ------ | -------- |
+| W4   | web-starter: template hierarchy | Create all CMS-equivalent templates (single, archive, taxonomy, search, author, date) | 4 days | Frontend |
+| W5   | web-starter: responsive design  | Mobile-first, dark mode, Tailwind polish                                              | 3 days | Frontend |
+| W5   | web-starter: SEO integration    | Meta tags, JSON-LD, sitemap, breadcrumbs, Open Graph                                  | 2 days | Frontend |
+| W5   | web-starter: performance        | Lighthouse >90, lazy loading, image optimization                                      | 2 days | Frontend |
+| W5   | Theme Customizer admin UI       | Basic live preview panel, color/setting overrides                                     | 3 days | Admin    |
 
 **Deliverable:** Production-quality public theme. Theme Customizer functional. ✅
 
@@ -592,4 +592,4 @@ Week 7:  ████████░░ Release Prep + RC Testing + Launch
 
 ---
 
-*End of PRD v7 — July 4, 2026. This document represents the production readiness roadmap for NodePress v1.0-beta.*
+_End of PRD v7 — July 4, 2026. This document represents the production readiness roadmap for NodePress v1.0-beta._

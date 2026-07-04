@@ -251,7 +251,7 @@ The NodePress codebase audit conducted on July 4, 2026, has identified **approxi
 
 | ID    | Severity  | Category      | File/Module                    | Description                                                                                                        | Fix Status |
 | ----- | --------- | ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ | ---------- |
-| E-001 | 🟠 HIGH   | Accuracy      | Multiple docs                  | WordPress parity claims inconsistent: 98% vs 90% (144/147 vs 132/147) — undermines credibility                     | ✅ Fixed   |
+| E-001 | 🟠 HIGH   | Accuracy      | Multiple docs                  | Feature parity claims inconsistent: 98% vs 90% (144/147 vs 132/147) — undermines credibility                       | ✅ Fixed   |
 | E-002 | 🟠 HIGH   | Accuracy      | `docs/PRD4.md`                 | PRD4 claims 190+ tests exist — only 5 actual test files found in codebase                                          | ✅ Fixed   |
 | E-003 | 🟠 HIGH   | Accuracy      | `README.md`                    | Root README inflates parity to 98% (internal assessment: ~90%) — misleading external communication                 | ✅ Fixed   |
 | E-004 | 🟠 HIGH   | Configuration | `docker-compose.prod.yml:357`  | Production docker-compose references non-existent worker path — deployment will fail                               | ❌ Open    |
@@ -444,11 +444,11 @@ Every fix implemented across all three phases **MUST** satisfy the following acc
 
 ### 4.4 Documentation Gates
 
-| #   | Criterion                                                 | Verification Method                     |
-| --- | --------------------------------------------------------- | --------------------------------------- |
-| 1   | WordPress parity claim is consistent across all documents | Cross-reference audit                   |
-| 2   | PRD5 is the single source of truth for audit state        | PRD3/PRD4 annotated with PRD5 reference |
-| 3   | All inflated/misleading claims corrected or removed       | Manual review                           |
+| #   | Criterion                                               | Verification Method                     |
+| --- | ------------------------------------------------------- | --------------------------------------- |
+| 1   | Feature parity claim is consistent across all documents | Cross-reference audit                   |
+| 2   | PRD5 is the single source of truth for audit state      | PRD3/PRD4 annotated with PRD5 reference |
+| 3   | All inflated/misleading claims corrected or removed     | Manual review                           |
 
 ---
 

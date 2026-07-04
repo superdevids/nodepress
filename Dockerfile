@@ -1,6 +1,6 @@
 ﻿# ============================================================
 # NodePress - Multi-Stage Dockerfile
-# WordPress-compatible CMS built with Node.js / TypeScript
+# Modern CMS built with Node.js / TypeScript
 # ============================================================
 # Usage:
 #   docker build --target production -t nodepress:latest .
