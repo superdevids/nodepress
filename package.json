@@ -1,6 +1,6 @@
 {
   "name": "nodepressjs",
-  "version": "0.0.1",
+  "version": "1.0.0-beta.1",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -34,7 +34,7 @@
   ],
   "license": "MIT",
   "author": "NodePress Team",
-  "description": "WordPress-compatible CMS built with Node.js / TypeScript",
+  "description": "Production-ready WordPress-compatible CMS built with Node.js / TypeScript — NestJS, Next.js, Prisma, PostgreSQL",
   "scripts": {
     "setup": "bash scripts/setup.sh",
     "setup:win": "powershell -ExecutionPolicy Bypass -File scripts/setup.ps1",

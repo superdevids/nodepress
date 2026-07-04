@@ -123,7 +123,7 @@ services:
     logging: *prod-logging
 
   pgbouncer:
-    image: bitnami/pgbouncer:1.23
+    image: bitnami/pgbouncer:1
     container_name: nodepress-pgbouncer
     <<: [*restart-policy, *resources]
     ports:
@@ -143,6 +143,24 @@ services:
       PGBOUNCER_MAX_DB_CONNECTIONS: 50
       PGBOUNCER_CLIENT_TLS_SSLMODE: require
       PGBOUNCER_SERVER_TLS_SSLMODE: require
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'pg_isready',
+          '-h',
+          'localhost',
+          '-p',
+          '6432',
+          '-U',
+          '${PGBOUNCER_USER:-nodepress}',
+          '-d',
+          '${PGBOUNCER_DB:-nodepress}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     depends_on:
       postgres:
         condition: service_healthy

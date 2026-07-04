@@ -5,11 +5,12 @@
 # build context, reducing build time and image size.
 # ============================================================
 
-# Dependencies
-node_modules
+# Dependencies — ignore all nested node_modules
+node_modules/**
+**/node_modules/**
 
 # Version control
-.git
+.git/**
 .gitignore
 .gitattributes
 
@@ -20,23 +21,22 @@ node_modules
 *.swo
 *~
 
-# Documentation
+# Documentation (but keep README.md for build context)
 *.md
+!README.md
 *.mdx
 
 # Build output
-dist
-.next
-coverage
-.turbo
+dist/**
+.next/**
+coverage/**
+.turbo/**
 *.tsbuildinfo
 
-# Environment files (contain secrets)
+# Environment files (contain secrets) — catch all variants
 .env
-.env.local
-.env.*.local
-.env.development
-.env.production
+.env.*
+!.env.example
 
 # Package manager
 pnpm-lock.yaml

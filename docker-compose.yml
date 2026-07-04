@@ -9,8 +9,6 @@
 #   docker compose down -v                  # Stop & remove volumes
 # ============================================================
 
-version: '3.9'
-
 x-logging: &default-logging
   driver: 'json-file'
   options:
@@ -75,7 +73,7 @@ services:
     logging: *default-logging
 
   pgbouncer:
-    image: bitnami/pgbouncer:1.23
+    image: bitnami/pgbouncer:1
     container_name: nodepress-pgbouncer
     restart: unless-stopped
     ports:
@@ -93,6 +91,13 @@ services:
       PGBOUNCER_RESERVE_POOL_SIZE: 5
       PGBOUNCER_RESERVE_POOL_TIMEOUT: 3
       PGBOUNCER_MAX_DB_CONNECTIONS: 50
+    healthcheck:
+      test:
+        ['CMD', 'pg_isready', '-h', 'localhost', '-p', '6432', '-U', 'nodepress', '-d', 'nodepress']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
