@@ -1,123 +1,62 @@
-# NodePress
+# NodePress — CMS for Everyone
 
-> **Updated:** July 4, 2026 — Consistency fixes applied per PRD5 audit findings.
-> **WordPress-compatible CMS built with Node.js / TypeScript**
-> Monorepo · NestJS · Next.js · Prisma · PostgreSQL · Tailwind CSS
+> One click to install. Zero config. WordPress-compatible.
 
-NodePress is a modern, headless-first Content Management System that brings the WordPress content model and plugin ecosystem to the JavaScript/TypeScript world. Built from the ground up with type safety, container-native deployment, and GraphQL-first APIs.
+## 🚀 Install in 2 Minutes
 
-## Architecture
+### Windows:
 
-```
-apps/
-├── api/          → NestJS REST + GraphQL API (port 3001)
-├── admin/        → Next.js 14 Admin Panel (port 3000)
-└── web-starter/  → Next.js Public Site Template (port 3002)
+Just **double-click** `install.bat`
 
-packages/
-├── core/         → Business logic engine (content, plugin, theme, auth, security)
-├── db/           → Prisma schema + migrations (PostgreSQL)
-├── editor/       → Tiptap/ProseMirror block editor
-├── plugin-sdk/   → Plugin development SDK
-├── cli/          → Command-line interface
-├── ui/           → Shared Tailwind component library
-├── config/       → Shared configuration + Tailwind preset
-└── testing/      → Test utilities & factories
+### Mac / Linux:
 
-plugins/ (13 WordPress-equivalent plugins)
-├── seo/          → Yoast-equivalent (meta tags, sitemap, schema.org)
-├── cache-redis/  → W3 Total Cache-equivalent (Redis caching)
-├── comments/     → Akismet-equivalent (Gravatar, moderation, anti-spam)
-├── forms/        → Contact Form 7-equivalent (builder, Stripe, CSV)
-├── file-editor/  → Theme/Plugin file editor (Monaco, git diff)
-├── analytics/    → MonsterInsights-equivalent (GA4, dashboard)
-├── security/     → Wordfence-equivalent (firewall, audit, 2FA)
-├── social-sharing/→ Social Warfare-equivalent (8 networks, share counts)
-├── backup/       → UpdraftPlus-equivalent (schedule, S3/GDrive)
-├── newsletter/   → MailPoet-equivalent (campaigns, subscribers)
-├── redirection/  → Redirection-equivalent (301/302, 404 tracker)
-├── performance/  → WP Rocket-equivalent (cache, minify, CDN)
-└── multilingual/ → WPML-equivalent (11 languages, auto-translate)
-```
-
-## 🚀 Quick Start (1 Command)
-
-### Option A: Local Development
+Open Terminal and run:
 
 ```bash
-# First time setup (install + migrate + seed)
-pnpm setup
-
-# Start developing (API:3001 + Admin:3000)
-pnpm dev
+bash install.sh
 ```
 
-### Option B: Docker (Everything in containers)
+✅ That's it! Your browser will open to the Setup Wizard.
 
-```bash
-# Single command - starts infrastructure + apps
-docker compose up
-```
+### What You Need:
 
-### Option C: One-Command Setup + Dev
+- 💻 **A computer** (Windows, Mac, or Linux)
+- 🌐 **Internet connection** (for first-time setup)
 
-```bash
-# Setup + Start in one go
-pnpm go
-```
+Everything else is automatic! The installer will check if you have Docker or Node.js
+and guide you through any missing pieces.
 
-### Prerequisites
+### After Installation:
 
-- **Node.js 20+** (see `.nvmrc`)
-- **pnpm 9+** (`npm i -g pnpm`)
-- **Docker** (for PostgreSQL + Redis + MinIO)
+1. Follow the 5-step Setup Wizard in your browser
+2. Create your admin account
+3. Start creating content!
 
-### What You Get
+## ✨ Features
 
-| Service            | URL                        | Default Credentials           |
-| ------------------ | -------------------------- | ----------------------------- |
-| Admin Panel        | http://localhost:3000      | admin@nodepress.local / admin |
-| REST API           | http://localhost:3001      | —                             |
-| API Docs (Swagger) | http://localhost:3001/docs | —                             |
-| PostgreSQL         | localhost:5432             | nodepress / nodepress         |
-| Redis              | localhost:6379             | —                             |
-| MinIO (S3)         | http://localhost:9000      | nodepress / nodepress123      |
+- 📝 **Content Management** — Posts, pages, custom types
+- 🖼️ **Media Library** — Upload, edit, organize
+- 🔌 **13 Plugins** — SEO, Comments, Analytics, Security, and more
+- 🎨 **Block Editor** — Rich text editing like WordPress
+- 👥 **User Roles** — 6 roles with granular permissions
+- 🌐 **REST + GraphQL APIs** — For developers
+- 🔒 **Security** — Built-in: CSP, CORS, 2FA, rate limiting
+- 📦 **Docker Support** — One-command deployment
 
-## Tech Stack
+## 📖 Documentation
 
-| Layer         | Technology                               |
-| ------------- | ---------------------------------------- |
-| Language      | TypeScript (strict, end-to-end)          |
-| API Framework | NestJS 10                                |
-| Admin UI      | Next.js 14 (App Router)                  |
-| Database      | PostgreSQL 16 + Prisma ORM               |
-| Cache/Queue   | Redis 7 + BullMQ                         |
-| Block Editor  | Tiptap (ProseMirror)                     |
-| Styling       | Tailwind CSS (WordPress-inspired preset) |
-| Auth          | JWT + Passport + 2FA (TOTP)              |
-| Testing       | Vitest + Playwright                      |
-| CI/CD         | GitHub Actions                           |
-| Deployment    | Docker + Kubernetes                      |
+| Guide                 | For                   |
+| --------------------- | --------------------- |
+| 📄 GETTING-STARTED.md | Complete visual guide |
+| ❓ FAQ.md             | Common questions      |
+| 📘 USER-GUIDE.md      | Full user manual      |
+| 👨‍💻 QUICK-START.md     | Developer reference   |
+| 📚 docs/              | All documentation     |
 
-## WordPress Parity: ~90%
+## 🤝 Contributing
 
-147 features mapped → 132 implemented (~90%). See [docs/WORDPRESS-COMPARISON.md](docs/WORDPRESS-COMPARISON.md)
+See CONTRIBUTING.md for developers who want to help build NodePress.
 
-> **Test Status:** ~5 test files exist. Test coverage is a work in progress — target is 190+ tests. See [docs/PRD6.md](docs/PRD6.md) (latest) for the final audit roadmap.
-
-## Documentation
-
-| Document                                                       | Description                             |
-| -------------------------------------------------------------- | --------------------------------------- |
-| [docs/PRD1.md](docs/PRD1.md)                                   | Core Product Requirements v1.0          |
-| [docs/PRD2.md](docs/PRD2.md)                                   | Security, Performance, Scalability v2.0 |
-| [docs/PRD3.md](docs/PRD3.md)                                   | Gap Analysis - 147 items (historical)   |
-| [docs/PRD4.md](docs/PRD4.md)                                   | Final Audit & Remediation Analysis      |
-| [docs/PRD5.md](docs/PRD5.md)                                   | Final Audit & Remediation v5.0          |
-| [docs/PRD6.md](docs/PRD6.md)                                   | Final Audit & Remediation v6.0 (latest) |
-| [docs/AUDIT-REPORT-COMPLETE.md](docs/AUDIT-REPORT-COMPLETE.md) | Codebase audit - 298 issues fixed       |
-| [docs/WORDPRESS-COMPARISON.md](docs/WORDPRESS-COMPARISON.md)   | NodePress vs WordPress comparison       |
-
-## License
+## 📜 License
 
 MIT

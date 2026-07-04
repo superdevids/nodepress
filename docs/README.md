@@ -11,6 +11,7 @@
 | [PRD5.md](./PRD5.md) | Final Audit & Remediation v5.0 — 229+ issues identified and fixed across API, Admin, Core, Plugins, and Docs |
 | [PRD6.md](./PRD6.md) | Final Audit & Remediation v6.0 — 39 remaining issues fixed                                                   |
 | [PRD7.md](./PRD7.md) | Production Readiness Plan v7.0 — ✅ Implementation Complete (v1.0-beta ready)                                |
+| [PRD8.md](./PRD8.md) | Installation Simplification v8.0 — One-click installer for everyone                                          |
 
 ## Technical Reports
 
