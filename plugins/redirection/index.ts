@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 
 interface RedirectRule {
   id: string;
@@ -34,37 +35,12 @@ interface NotFoundEntry {
   referrers: string[];
 }
 
-const redirectRules: RedirectRule[] = [
-  {
-    id: 'redirect-old-blog',
-    source: '/old-blog/*',
-    target: '/blog/',
-    type: 301,
-    matchType: 'prefix',
-    enabled: true,
-    priority: 10,
-    description: 'Migrate old blog URLs',
-    hits: 0,
-    lastHit: null,
-    createdAt: Date.now() - 86400000 * 30,
-  },
-  {
-    id: 'redirect-home',
-    source: '/index.html',
-    target: '/',
-    type: 301,
-    matchType: 'exact',
-    enabled: true,
-    priority: 100,
-    description: 'Index page redirect',
-    hits: 0,
-    lastHit: null,
-    createdAt: Date.now() - 86400000 * 60,
-  },
-];
-
-const redirectLog: RedirectLogEntry[] = [];
-const notFoundTracker: Map<string, NotFoundEntry> = new Map();
+let redirectRulesStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+let redirectLogStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+let notFoundStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+const redirectRulesCache: RedirectRule[] = [];
+const redirectLogCache: RedirectLogEntry[] = [];
+const notFoundCache = new Map<string, NotFoundEntry>();
 
 function generateId(): string {
   return `red-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -163,6 +139,62 @@ export const manifest = {
 
 export const lifecycle: PluginLifecycle = {
   async boot(context: PluginContext) {
+    // Initialize persistent stores
+    if (!redirectRulesStore) {
+      redirectRulesStore = createPersistentStore(context.prisma, 'redirection', 'rules');
+      redirectLogStore = createPersistentStore(context.prisma, 'redirection', 'log');
+      notFoundStore = createPersistentStore(context.prisma, 'redirection', 'notfound');
+      await Promise.all([redirectRulesStore.load(), redirectLogStore.load(), notFoundStore.load()]);
+
+      // Load existing rules, or seed defaults
+      const loadedRules = await redirectRulesStore.getAll<RedirectRule>();
+      if (Object.keys(loadedRules).length > 0) {
+        for (const v of Object.values(loadedRules))
+          if (v) redirectRulesCache.push(v as RedirectRule);
+      } else {
+        const defaults: RedirectRule[] = [
+          {
+            id: 'redirect-old-blog',
+            source: '/old-blog/*',
+            target: '/blog/',
+            type: 301,
+            matchType: 'prefix',
+            enabled: true,
+            priority: 10,
+            description: 'Migrate old blog URLs',
+            hits: 0,
+            lastHit: null,
+            createdAt: Date.now() - 86400000 * 30,
+          },
+          {
+            id: 'redirect-home',
+            source: '/index.html',
+            target: '/',
+            type: 301,
+            matchType: 'exact',
+            enabled: true,
+            priority: 100,
+            description: 'Index page redirect',
+            hits: 0,
+            lastHit: null,
+            createdAt: Date.now() - 86400000 * 60,
+          },
+        ];
+        for (const rule of defaults) {
+          await redirectRulesStore.set(rule.id, rule);
+          redirectRulesCache.push(rule);
+        }
+      }
+
+      const loadedLog = await redirectLogStore.getAll<RedirectLogEntry>();
+      for (const v of Object.values(loadedLog)) if (v) redirectLogCache.push(v as RedirectLogEntry);
+
+      const loadedNotFound = await notFoundStore.getAll<NotFoundEntry>();
+      for (const [k, v] of Object.entries(loadedNotFound)) {
+        if (v) notFoundCache.set(k, v as NotFoundEntry);
+      }
+    }
+
     context.hooks.addFilter('request:incoming', async (request: unknown) => {
       try {
         const req = request as {
@@ -176,7 +208,7 @@ export const lifecycle: PluginLifecycle = {
         const ua = req.headers?.['user-agent'] || '';
         const referrer = req.headers?.['referer'] || '';
 
-        const sortedRules = [...redirectRules]
+        const sortedRules = [...redirectRulesCache]
           .filter((r) => r.enabled)
           .sort((a, b) => b.priority - a.priority);
         for (const rule of sortedRules) {
@@ -184,7 +216,8 @@ export const lifecycle: PluginLifecycle = {
             const target = applyRedirect(rule.source, rule.target, rule.matchType, pathname);
             rule.hits++;
             rule.lastHit = Date.now();
-            redirectLog.push({
+            await redirectRulesStore!.set(rule.id, rule);
+            const logEntry: RedirectLogEntry = {
               id: generateId(),
               ruleId: rule.id,
               source: pathname,
@@ -194,8 +227,13 @@ export const lifecycle: PluginLifecycle = {
               userAgent: ua,
               referrer,
               timestamp: Date.now(),
-            });
-            if (redirectLog.length > 5000) redirectLog.splice(0, 500);
+            };
+            redirectLogCache.push(logEntry);
+            await redirectLogStore!.set(logEntry.id, logEntry);
+            if (redirectLogCache.length > 5000) {
+              const removed = redirectLogCache.splice(0, 500);
+              await Promise.all(removed.map((e) => redirectLogStore!.delete(e.id)));
+            }
             return { redirected: true, target, statusCode: rule.type };
           }
         }
@@ -234,7 +272,8 @@ export const lifecycle: PluginLifecycle = {
           lastHit: null,
           createdAt: Date.now(),
         };
-        redirectRules.push(rule);
+        redirectRulesCache.push(rule);
+        await redirectRulesStore!.set(rule.id, rule);
         context.logger.log(`Redirection: Rule created ${source} -> ${target} (${rule.type})`);
       } catch (err) {
         context.logger.warn(
@@ -246,12 +285,13 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('redirection:rule:update', async (data: unknown) => {
       try {
         const { id, ...updates } = data as Partial<RedirectRule> & { id: string };
-        const rule = redirectRules.find((r) => r.id === id);
+        const rule = redirectRulesCache.find((r) => r.id === id);
         if (!rule) {
           context.logger.warn(`Redirection: Rule ${id} not found`);
           return;
         }
         Object.assign(rule, updates);
+        await redirectRulesStore!.set(rule.id, rule);
         context.logger.log(`Redirection: Rule ${id} updated`);
       } catch (err) {
         context.logger.warn(
@@ -263,12 +303,13 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('redirection:rule:delete', async (data: unknown) => {
       try {
         const { id } = data as { id: string };
-        const idx = redirectRules.findIndex((r) => r.id === id);
+        const idx = redirectRulesCache.findIndex((r) => r.id === id);
         if (idx === -1) {
           context.logger.warn(`Redirection: Rule ${id} not found`);
           return;
         }
-        redirectRules.splice(idx, 1);
+        redirectRulesCache.splice(idx, 1);
+        await redirectRulesStore!.delete(id);
         context.logger.log(`Redirection: Rule ${id} deleted`);
       } catch (err) {
         context.logger.warn(
@@ -281,22 +322,25 @@ export const lifecycle: PluginLifecycle = {
       try {
         const { path, ip, referrer } = data as { path: string; ip?: string; referrer?: string };
         if (!path) return;
-        const existing = notFoundTracker.get(path);
+        const existing = notFoundCache.get(path);
         if (existing) {
           existing.hits++;
           existing.lastSeen = Date.now();
           if (referrer && !existing.referrers.includes(referrer)) existing.referrers.push(referrer);
+          await notFoundStore!.set(path, existing);
         } else {
-          notFoundTracker.set(path, {
+          const entry: NotFoundEntry = {
             path,
             hits: 1,
             firstSeen: Date.now(),
             lastSeen: Date.now(),
             referrers: referrer ? [referrer] : [],
-          });
+          };
+          notFoundCache.set(path, entry);
+          await notFoundStore!.set(path, entry);
         }
         context.logger.log(
-          `Redirection: 404 tracked for ${path} (${notFoundTracker.get(path)!.hits} total hits)`,
+          `Redirection: 404 tracked for ${path} (${notFoundCache.get(path)!.hits} total hits)`,
         );
       } catch (err) {
         context.logger.warn(
@@ -307,9 +351,9 @@ export const lifecycle: PluginLifecycle = {
 
     context.hooks.addAction('redirection:export', async () => {
       try {
-        const csv = generateCsvExport(redirectRules);
+        const csv = generateCsvExport(redirectRulesCache);
         context.logger.log(
-          `Redirection: Exported ${redirectRules.length} rules as CSV (${csv.length} chars)`,
+          `Redirection: Exported ${redirectRulesCache.length} rules as CSV (${csv.length} chars)`,
         );
       } catch (err) {
         context.logger.warn(
@@ -327,13 +371,15 @@ export const lifecycle: PluginLifecycle = {
         }
         const imported = parseCsvImport(csv);
         for (const rule of imported) {
-          redirectRules.push({
+          const newRule: RedirectRule = {
             ...rule,
             id: generateId(),
             hits: 0,
             lastHit: null,
             createdAt: Date.now(),
-          });
+          };
+          redirectRulesCache.push(newRule);
+          await redirectRulesStore!.set(newRule.id, newRule);
         }
         context.logger.log(`Redirection: Imported ${imported.length} rules from CSV`);
       } catch (err) {
@@ -347,13 +393,13 @@ export const lifecycle: PluginLifecycle = {
       try {
         const callback = (data as any)?.callback;
         const stats = {
-          totalRules: redirectRules.length,
-          enabledRules: redirectRules.filter((r) => r.enabled).length,
-          totalHits: redirectRules.reduce((a, r) => a + r.hits, 0),
-          total404s: Array.from(notFoundTracker.values()).reduce((a, e) => a + e.hits, 0),
-          unique404Paths: notFoundTracker.size,
-          topRedirects: [...redirectRules].sort((a, b) => b.hits - a.hits).slice(0, 5),
-          top404s: Array.from(notFoundTracker.values())
+          totalRules: redirectRulesCache.length,
+          enabledRules: redirectRulesCache.filter((r) => r.enabled).length,
+          totalHits: redirectRulesCache.reduce((a, r) => a + r.hits, 0),
+          total404s: Array.from(notFoundCache.values()).reduce((a, e) => a + e.hits, 0),
+          unique404Paths: notFoundCache.size,
+          topRedirects: [...redirectRulesCache].sort((a, b) => b.hits - a.hits).slice(0, 5),
+          top404s: Array.from(notFoundCache.values())
             .sort((a, b) => b.hits - a.hits)
             .slice(0, 5),
         };
@@ -367,17 +413,17 @@ export const lifecycle: PluginLifecycle = {
 
     context.hooks.addAction('admin:dashboard:render', async (data: unknown) => {
       try {
-        const totalHits = redirectRules.reduce((a, r) => a + r.hits, 0);
-        const total404 = Array.from(notFoundTracker.values()).reduce((a, e) => a + e.hits, 0);
+        const totalHits = redirectRulesCache.reduce((a, r) => a + r.hits, 0);
+        const total404 = Array.from(notFoundCache.values()).reduce((a, e) => a + e.hits, 0);
         (data as any).widgets = (data as any).widgets || [];
         (data as any).widgets.push({
           title: 'Redirection Overview',
           priority: 7,
           content: `<div class="redirection-widget">
-          <p>Active Rules: ${redirectRules.filter((r) => r.enabled).length}/${redirectRules.length}</p>
+          <p>Active Rules: ${redirectRulesCache.filter((r) => r.enabled).length}/${redirectRulesCache.length}</p>
           <p>Total Redirect Hits: ${totalHits}</p>
-          <p>404s Tracked: ${total404} (${notFoundTracker.size} unique paths)</p>
-          <p>Recent Log Entries: ${redirectLog.length}</p>
+          <p>404s Tracked: ${total404} (${notFoundCache.size} unique paths)</p>
+          <p>Recent Log Entries: ${redirectLogCache.length}</p>
         </div>`,
         });
       } catch (err) {

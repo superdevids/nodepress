@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { MailService } from '../mail/mail.service';
 
 export interface Comment {
@@ -21,6 +22,7 @@ export class CommentsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
     private readonly mailService: MailService,
   ) {}
 
@@ -84,6 +86,11 @@ export class CommentsService {
     // Notify the content author about the new comment (non-blocking)
     this.notifyContentAuthor(comment).catch((err) =>
       this.logger.warn('Failed to notify content author', err),
+    );
+
+    // Notify admin users about the pending comment (non-blocking)
+    this.notifyAdminsPendingComment(comment).catch((err) =>
+      this.logger.warn('Failed to notify admins about pending comment', err),
     );
 
     return this.toComment(comment);
@@ -151,6 +158,46 @@ export class CommentsService {
       TRASHED: 'trash',
     };
     return map[s] ?? 'pending';
+  }
+
+  /**
+   * Notify admin users when a new comment is pending review.
+   */
+  private async notifyAdminsPendingComment(comment: {
+    entryId: string;
+    authorName: string;
+    content: string;
+  }): Promise<void> {
+    try {
+      const entry = await this.prisma.contentEntry.findUnique({
+        where: { id: comment.entryId },
+        select: { data: true },
+      });
+
+      if (!entry) return;
+
+      const entryData = entry.data as Record<string, unknown>;
+      const entryTitle = (entryData.title as string) || 'Untitled';
+
+      // Find admin users to notify
+      const adminUsers = await this.prisma.user.findMany({
+        where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+        select: { id: true },
+      });
+
+      const adminUserIds = adminUsers.map((u) => u.id);
+      if (adminUserIds.length === 0) return;
+
+      await this.notificationsService.createForUsers(adminUserIds, {
+        type: 'comment.pending',
+        title: 'New comment pending review',
+        message: `New comment by ${comment.authorName} on "${entryTitle}"`,
+        link: `/admin/comments`,
+        icon: 'message-square',
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to notify admins about pending comment: ${err}`);
+    }
   }
 
   /**

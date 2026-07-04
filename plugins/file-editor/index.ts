@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 import { readFileSync, writeFileSync } from 'fs';
 
 export const manifest = {
@@ -89,8 +90,7 @@ const LANGUAGE_MAP: Record<string, string> = {
   '.cjs': 'javascript',
 };
 
-const backends = new Map<string, FileBackup>();
-const changes = new Map<string, FileChange[]>();
+// In-memory caches are initialized in boot()
 
 function isPathBlocked(filePath: string): boolean {
   const normalized = filePath.replace(/\\/g, '/');
@@ -154,6 +154,18 @@ function buildFileTree(paths: string[]): FileNode[] {
 export const lifecycle: PluginLifecycle = {
   async boot(ctx: PluginContext) {
     ctx.logger.log('File Editor plugin booting');
+
+    const backupStore = createPersistentStore(ctx.prisma, 'file-editor', 'backups');
+    const changesStore = createPersistentStore(ctx.prisma, 'file-editor', 'changes');
+    await Promise.all([backupStore.load(), changesStore.load()]);
+    // In-memory caches for fast reads
+    const backendsCache = new Map<string, FileBackup>();
+    const changesCache = new Map<string, FileChange[]>();
+    // Populate caches from persistent store
+    const allBackups = await backupStore.getAll<FileBackup>();
+    for (const [k, v] of Object.entries(allBackups)) if (v) backendsCache.set(k, v as FileBackup);
+    const allChanges = await changesStore.getAll<FileChange[]>();
+    for (const [k, v] of Object.entries(allChanges)) if (v) changesCache.set(k, v as FileChange[]);
 
     ctx.hooks.addAction('file-editor:listFiles', async (data: unknown) => {
       try {
@@ -250,21 +262,26 @@ export const lifecycle: PluginLifecycle = {
 
         if (createBackup !== false) {
           const backupKey = `${filePath}::${Date.now()}`;
-          backends.set(backupKey, {
+          const backup: FileBackup = {
             path: filePath,
             content: oldContent,
             timestamp: new Date().toISOString(),
             label: `Before edit ${new Date().toLocaleString()}`,
-          });
+          };
+          await backupStore.set(backupKey, backup);
+          backendsCache.set(backupKey, backup);
 
-          if (!changes.has(filePath)) changes.set(filePath, []);
-          changes.get(filePath)!.push({
+          const existingChanges = changesCache.get(filePath) || [];
+          const change: FileChange = {
             path: filePath,
             oldContent: oldContent,
             newContent: content,
             timestamp: new Date().toISOString(),
-            label: `Edit ${(changes.get(filePath)?.length ?? 0) + 1}`,
-          });
+            label: `Edit ${existingChanges.length + 1}`,
+          };
+          existingChanges.push(change);
+          await changesStore.set(filePath, existingChanges);
+          changesCache.set(filePath, existingChanges);
 
           ctx.logger.log(`Backup created for ${filePath} (${backupKey})`);
         }
@@ -390,8 +407,8 @@ export const lifecycle: PluginLifecycle = {
     ctx.hooks.addAction('file-editor:backups', async (data: unknown) => {
       try {
         const { filePath } = data as { filePath: string };
-        const fileBackups = Array.from(backends.values()).filter((b) => b.path === filePath);
-        const fileChanges = changes.get(filePath) ?? [];
+        const fileBackups = Array.from(backendsCache.values()).filter((b) => b.path === filePath);
+        const fileChanges = changesCache.get(filePath) ?? [];
         ctx.logger.log(
           `Backups listed for ${filePath}: ${fileBackups.length} backups, ${fileChanges.length} changes`,
         );
@@ -407,7 +424,8 @@ export const lifecycle: PluginLifecycle = {
     ctx.hooks.addAction('file-editor:restore', async (data: unknown) => {
       try {
         const { backupKey } = data as { backupKey: string };
-        const backup = backends.get(backupKey);
+        const backup =
+          backendsCache.get(backupKey) || (await backupStore.get<FileBackup>(backupKey));
         if (!backup) {
           ctx.logger.warn(`Backup not found: ${backupKey}`);
           return { success: false, error: 'Backup not found' };

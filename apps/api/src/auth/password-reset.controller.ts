@@ -1,9 +1,8 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiProperty } from '@nestjs/swagger';
 import { PasswordResetService } from './password-reset.service';
 import { Public } from '../common/decorators/public.decorator';
 import { IsEmail, IsString, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 
 export class ForgotPasswordDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -20,6 +19,11 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(8)
   password!: string;
+
+  @ApiProperty({ example: 'NewStr0ng!Pass' })
+  @IsString()
+  @MinLength(8)
+  confirmPassword!: string;
 }
 
 @ApiTags('Password Reset')
@@ -40,6 +44,14 @@ export class PasswordResetController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password using token from email' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.passwordResetService.resetPassword(dto.token, dto.password);
+    return this.passwordResetService.resetPassword(dto.token, dto.password, dto.confirmPassword);
+  }
+
+  @Public()
+  @Get('verify-reset-token/:token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify whether a reset token is valid and not expired' })
+  async verifyResetToken(@Param('token') token: string) {
+    return this.passwordResetService.verifyToken(token);
   }
 }

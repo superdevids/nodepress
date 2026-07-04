@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 import nodemailer from 'nodemailer';
 
 interface Subscriber {
@@ -51,38 +52,14 @@ interface MailProvider {
   config: Record<string, string>;
 }
 
-const subscribers: Subscriber[] = [
-  {
-    id: 'sub-001',
-    email: 'admin@example.com',
-    name: 'Admin User',
-    status: 'active',
-    subscribedAt: '2025-01-15T08:00:00Z',
-    lists: ['general', 'updates'],
-    metadata: {},
-  },
-  {
-    id: 'sub-002',
-    email: 'user@example.com',
-    name: 'Test User',
-    status: 'active',
-    subscribedAt: '2025-02-20T10:30:00Z',
-    lists: ['general'],
-    metadata: { source: 'signup-form' },
-  },
-];
+// Persistent stores — initialized in boot()
+let subscribersStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+let campaignsStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+let templatesStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
 
-const campaigns: Campaign[] = [];
-const templates: EmailTemplate[] = [
-  {
-    id: 'tpl-default',
-    name: 'Default Newsletter',
-    subject: '{{subject}}',
-    bodyHtml:
-      '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;max-width:600px;margin:0 auto"><header style="background:#1a1a2e;color:white;padding:20px;text-align:center"><h1>NodePress</h1></header><main style="padding:20px">{{content}}</main><footer style="border-top:1px solid #eee;padding:10px;font-size:12px;color:#999;text-align:center"><p>You received this email because you subscribed. <a href="{{unsubscribe_url}}">Unsubscribe</a></p></footer></body></html>',
-    isDefault: true,
-  },
-];
+const subscribersCache: Subscriber[] = [];
+const campaignsCache: Campaign[] = [];
+const templatesCache: EmailTemplate[] = [];
 
 const mailProvider: MailProvider = {
   type: 'smtp',
@@ -175,6 +152,38 @@ export const manifest = {
 
 export const lifecycle: PluginLifecycle = {
   async boot(context: PluginContext) {
+    // Initialize persistent stores
+    if (!subscribersStore) {
+      subscribersStore = createPersistentStore(context.prisma, 'newsletter', 'subscribers');
+      campaignsStore = createPersistentStore(context.prisma, 'newsletter', 'campaigns');
+      templatesStore = createPersistentStore(context.prisma, 'newsletter', 'templates');
+      await Promise.all([subscribersStore.load(), campaignsStore.load(), templatesStore.load()]);
+
+      // Load existing data into caches
+      const loadedSubs = await subscribersStore.getAll<Subscriber>();
+      for (const v of Object.values(loadedSubs)) if (v) subscribersCache.push(v as Subscriber);
+
+      const loadedCamps = await campaignsStore.getAll<Campaign>();
+      for (const v of Object.values(loadedCamps)) if (v) campaignsCache.push(v as Campaign);
+
+      const loadedTpls = await templatesStore.getAll<EmailTemplate>();
+      if (Object.keys(loadedTpls).length > 0) {
+        for (const v of Object.values(loadedTpls)) if (v) templatesCache.push(v as EmailTemplate);
+      } else {
+        // Seed default template
+        const defaultTpl: EmailTemplate = {
+          id: 'tpl-default',
+          name: 'Default Newsletter',
+          subject: '{{subject}}',
+          bodyHtml:
+            '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;max-width:600px;margin:0 auto"><header style="background:#1a1a2e;color:white;padding:20px;text-align:center"><h1>NodePress</h1></header><main style="padding:20px">{{content}}</main><footer style="border-top:1px solid #eee;padding:10px;font-size:12px;color:#999;text-align:center"><p>You received this email because you subscribed. <a href="{{unsubscribe_url}}">Unsubscribe</a></p></footer></body></html>',
+          isDefault: true,
+        };
+        await templatesStore.set(defaultTpl.id, defaultTpl);
+        templatesCache.push(defaultTpl);
+      }
+    }
+
     context.hooks.addAction('newsletter:subscribe', async (data: unknown) => {
       try {
         const { email, name, list } = data as { email: string; name?: string; list?: string };
@@ -182,7 +191,7 @@ export const lifecycle: PluginLifecycle = {
           context.logger.warn(`Newsletter: Invalid email address: ${email}`);
           return;
         }
-        const existing = subscribers.find((s) => s.email === email);
+        const existing = subscribersCache.find((s) => s.email === email);
         if (existing) {
           if (existing.status === 'unsubscribed') {
             existing.status = 'active';
@@ -190,9 +199,10 @@ export const lifecycle: PluginLifecycle = {
             context.logger.log(`Newsletter: ${email} re-subscribed`);
           }
           if (list && !existing.lists.includes(list)) existing.lists.push(list);
+          await subscribersStore.set(existing.id, existing);
           return;
         }
-        subscribers.push({
+        const newSub: Subscriber = {
           id: generateId('sub'),
           email,
           name: name || email.split('@')[0],
@@ -200,7 +210,9 @@ export const lifecycle: PluginLifecycle = {
           subscribedAt: new Date().toISOString(),
           lists: list ? [list] : ['general'],
           metadata: {},
-        });
+        };
+        subscribersCache.push(newSub);
+        await subscribersStore.set(newSub.id, newSub);
         context.logger.log(`Newsletter: ${email} subscribed to ${list || 'general'}`);
       } catch (err) {
         context.logger.warn(
@@ -216,7 +228,7 @@ export const lifecycle: PluginLifecycle = {
           context.logger.warn('Newsletter: Unsubscribe called without email');
           return;
         }
-        const sub = subscribers.find((s) => s.email === email);
+        const sub = subscribersCache.find((s) => s.email === email);
         if (!sub) {
           context.logger.warn(`Newsletter: ${email} not found`);
           return;
@@ -234,6 +246,7 @@ export const lifecycle: PluginLifecycle = {
           sub.lists = [];
           context.logger.log(`Newsletter: ${email} fully unsubscribed`);
         }
+        await subscribersStore.set(sub.id, sub);
       } catch (err) {
         context.logger.warn(
           `Newsletter: unsubscribe error - ${err instanceof Error ? err.message : 'Unknown error'}`,
@@ -273,7 +286,8 @@ export const lifecycle: PluginLifecycle = {
             unsubscribeRate: 0,
           },
         };
-        campaigns.push(campaign);
+        campaignsCache.push(campaign);
+        await campaignsStore.set(campaign.id, campaign);
         context.logger.log(`Newsletter: Campaign "${subject}" created (${campaign.id})`);
       } catch (err) {
         context.logger.warn(
@@ -285,20 +299,20 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('newsletter:campaign:send', async (data: unknown) => {
       try {
         const { campaignId } = data as { campaignId: string };
-        const campaign = campaigns.find((c) => c.id === campaignId);
+        const campaign = campaignsCache.find((c) => c.id === campaignId);
         if (!campaign) {
           context.logger.warn(`Newsletter: Campaign ${campaignId} not found`);
           return;
         }
         campaign.status = 'sending';
-        const targetSubs = subscribers.filter(
+        const targetSubs = subscribersCache.filter(
           (s) => s.status === 'active' && s.lists.some((l) => campaign.listIds.includes(l)),
         );
         campaign.stats.recipients = targetSubs.length;
         let delivered = 0;
         for (const sub of targetSubs) {
           const html = processTemplate(
-            templates.find((t) => t.isDefault)!,
+            templatesCache.find((t) => t.isDefault)!,
             {
               subject: campaign.subject,
               content: campaign.bodyHtml,
@@ -312,6 +326,7 @@ export const lifecycle: PluginLifecycle = {
           else {
             sub.status = 'bounced';
             campaign.stats.bounced++;
+            await subscribersStore.set(sub.id, sub);
           }
         }
         campaign.stats.delivered = delivered;
@@ -329,6 +344,7 @@ export const lifecycle: PluginLifecycle = {
           campaign.stats.delivered > 0
             ? (campaign.stats.unsubscribed / campaign.stats.delivered) * 100
             : 0;
+        await campaignsStore.set(campaign.id, campaign);
         context.logger.log(
           `Newsletter: Campaign "${campaign.subject}" sent to ${delivered}/${targetSubs.length} recipients`,
         );
@@ -345,13 +361,14 @@ export const lifecycle: PluginLifecycle = {
           campaignId: string;
           subscriberEmail: string;
         };
-        const campaign = campaigns.find((c) => c.id === campaignId);
+        const campaign = campaignsCache.find((c) => c.id === campaignId);
         if (campaign) {
           campaign.stats.opened++;
           campaign.stats.openRate =
             campaign.stats.delivered > 0
               ? (campaign.stats.opened / campaign.stats.delivered) * 100
               : 0;
+          await campaignsStore.set(campaign.id, campaign);
         }
       } catch (err) {
         context.logger.warn(
@@ -366,13 +383,14 @@ export const lifecycle: PluginLifecycle = {
           campaignId: string;
           subscriberEmail: string;
         };
-        const campaign = campaigns.find((c) => c.id === campaignId);
+        const campaign = campaignsCache.find((c) => c.id === campaignId);
         if (campaign) {
           campaign.stats.clicked++;
           campaign.stats.clickRate =
             campaign.stats.delivered > 0
               ? (campaign.stats.clicked / campaign.stats.delivered) * 100
               : 0;
+          await campaignsStore.set(campaign.id, campaign);
         }
       } catch (err) {
         context.logger.warn(
@@ -406,7 +424,7 @@ export const lifecycle: PluginLifecycle = {
           const email = cols[emailIdx]?.trim();
           if (!email || !validateEmail(email)) continue;
           const name = nameIdx >= 0 ? cols[nameIdx]?.trim() : undefined;
-          subscribers.push({
+          const newSub: Subscriber = {
             id: generateId('sub'),
             email,
             name: name || email.split('@')[0],
@@ -414,7 +432,9 @@ export const lifecycle: PluginLifecycle = {
             subscribedAt: new Date().toISOString(),
             lists: list ? [list] : ['general'],
             metadata: {},
-          });
+          };
+          subscribersCache.push(newSub);
+          await subscribersStore.set(newSub.id, newSub);
           imported++;
         }
         context.logger.log(`Newsletter: Imported ${imported} subscribers from CSV`);
@@ -428,7 +448,9 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('newsletter:export:csv', async (data: unknown) => {
       try {
         const { list } = data as { list?: string };
-        const filtered = list ? subscribers.filter((s) => s.lists.includes(list)) : subscribers;
+        const filtered = list
+          ? subscribersCache.filter((s) => s.lists.includes(list))
+          : subscribersCache;
         const csvRows = ['email,name,status,subscribed_at,lists'];
         for (const sub of filtered) {
           csvRows.push(
@@ -446,9 +468,10 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('newsletter:bounce:handle', async (data: unknown) => {
       try {
         const { email, reason } = data as { email: string; reason: string };
-        const sub = subscribers.find((s) => s.email === email);
+        const sub = subscribersCache.find((s) => s.email === email);
         if (sub) {
           sub.status = 'bounced';
+          await subscribersStore.set(sub.id, sub);
           context.logger.warn(`Newsletter: Bounce handled for ${email}: ${reason}`);
         }
       } catch (err) {
@@ -460,11 +483,11 @@ export const lifecycle: PluginLifecycle = {
 
     context.hooks.addAction('admin:dashboard:render', async (data: unknown) => {
       try {
-        const active = subscribers.filter((s) => s.status === 'active').length;
-        const totalSent = campaigns.reduce((a, c) => a + c.stats.delivered, 0);
+        const active = subscribersCache.filter((s) => s.status === 'active').length;
+        const totalSent = campaignsCache.reduce((a, c) => a + c.stats.delivered, 0);
         const avgOpenRate =
-          campaigns.length > 0
-            ? campaigns.reduce((a, c) => a + c.stats.openRate, 0) / campaigns.length
+          campaignsCache.length > 0
+            ? campaignsCache.reduce((a, c) => a + c.stats.openRate, 0) / campaignsCache.length
             : 0;
         (data as any).widgets = (data as any).widgets || [];
         (data as any).widgets.push({
@@ -472,7 +495,7 @@ export const lifecycle: PluginLifecycle = {
           priority: 6,
           content: `<div class="newsletter-widget">
           <p>Active Subscribers: ${active}</p>
-          <p>Campaigns: ${campaigns.length}</p>
+          <p>Campaigns: ${campaignsCache.length}</p>
           <p>Total Sent: ${totalSent}</p>
           <p>Avg Open Rate: ${avgOpenRate.toFixed(1)}%</p>
           <p>Provider: ${mailProvider.type.toUpperCase()}</p>

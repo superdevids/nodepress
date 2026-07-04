@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import archiver from 'archiver';
 import { createHash } from 'crypto';
@@ -37,7 +38,8 @@ interface BackupRecord {
   restoredAt?: number;
 }
 
-const backupHistory: BackupRecord[] = [];
+let backupHistoryStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+const backupHistoryCache: BackupRecord[] = [];
 
 function generateBackupId(): string {
   return `bkp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -300,12 +302,13 @@ async function storeToLocal(
   }
 }
 
-function rotateBackups(context: PluginContext, retentionDays: number): void {
+async function rotateBackups(context: PluginContext, retentionDays: number): Promise<void> {
   const cutoff = Date.now() - retentionDays * 86400000;
-  const expired = backupHistory.filter((r) => r.timestamp < cutoff && !r.restoredAt);
-  expired.forEach((r) => {
+  const expired = backupHistoryCache.filter((r) => r.timestamp < cutoff && !r.restoredAt);
+  for (const r of expired) {
     r.status = 'failed';
-  });
+    if (backupHistoryStore) await backupHistoryStore.set(r.id, r).catch(() => {});
+  }
   if (expired.length > 0) {
     context.logger.log(`Rotated ${expired.length} backups older than ${retentionDays} days`);
   }
@@ -400,8 +403,14 @@ async function performBackup(
     record.error = err instanceof Error ? err.message : 'Unknown backup error';
   }
 
-  backupHistory.push(record);
-  if (backupHistory.length > 200) backupHistory.splice(0, 50);
+  backupHistoryCache.push(record);
+  if (backupHistoryStore) await backupHistoryStore.set(record.id, record).catch(() => {});
+  if (backupHistoryCache.length > 200) {
+    const removed = backupHistoryCache.splice(0, 50);
+    for (const r of removed) {
+      if (backupHistoryStore) await backupHistoryStore.delete(r.id).catch(() => {});
+    }
+  }
 
   return record;
 }
@@ -417,6 +426,16 @@ export const manifest = {
 
 export const lifecycle: PluginLifecycle = {
   async boot(context: PluginContext) {
+    // Initialize persistent backup history store
+    if (!backupHistoryStore) {
+      backupHistoryStore = createPersistentStore(context.prisma, 'backup', 'backupHistory');
+      await backupHistoryStore.load();
+      const existing = await backupHistoryStore.getAll<BackupRecord>();
+      for (const v of Object.values(existing)) {
+        if (v) backupHistoryCache.push(v as BackupRecord);
+      }
+    }
+
     const config: BackupConfig = {
       schedule: 'daily',
       retentionDays: 30,
@@ -478,7 +497,7 @@ export const lifecycle: PluginLifecycle = {
           context.logger.warn('Backup: Restore called without backup ID');
           return;
         }
-        const record = backupHistory.find((r) => r.id === backupId);
+        const record = backupHistoryCache.find((r) => r.id === backupId);
         if (!record) {
           context.logger.warn(`Backup: Backup ${backupId} not found`);
           return;
@@ -490,6 +509,7 @@ export const lifecycle: PluginLifecycle = {
           return;
         }
         record.restoredAt = Date.now();
+        if (backupHistoryStore) await backupHistoryStore.set(backupId, record).catch(() => {});
         context.logger.log(`Backup: Restoring from ${backupId} (${record.files.length} files)`);
       } catch (err) {
         context.logger.warn(
@@ -501,7 +521,7 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('backup:list', async (data: unknown) => {
       try {
         const callback = (data as any)?.callback;
-        const list = backupHistory.map((r) => ({
+        const list = backupHistoryCache.map((r) => ({
           id: r.id,
           date: new Date(r.timestamp).toISOString(),
           size: r.sizeBytes,
@@ -519,7 +539,7 @@ export const lifecycle: PluginLifecycle = {
 
     context.hooks.addAction('backup:cleanup', async () => {
       try {
-        rotateBackups(context, config.retentionDays);
+        await rotateBackups(context, config.retentionDays);
         context.logger.log(`Backup: Cleanup completed (retention: ${config.retentionDays} days)`);
       } catch (err) {
         context.logger.warn(
@@ -549,8 +569,8 @@ export const lifecycle: PluginLifecycle = {
 
     context.hooks.addAction('admin:dashboard:render', async (data: unknown) => {
       try {
-        const lastBackup = backupHistory[backupHistory.length - 1];
-        const totalSize = backupHistory
+        const lastBackup = backupHistoryCache[backupHistoryCache.length - 1];
+        const totalSize = backupHistoryCache
           .filter((r) => r.status === 'completed')
           .reduce((a, b) => a + b.sizeBytes, 0);
         (data as any).widgets = (data as any).widgets || [];
@@ -559,7 +579,7 @@ export const lifecycle: PluginLifecycle = {
           priority: 8,
           content: `<div class="backup-widget">
           <p>Last Backup: ${lastBackup ? `${lastBackup.status} (${new Date(lastBackup.timestamp).toLocaleString()})` : 'Never'}</p>
-          <p>Total Backups: ${backupHistory.length}</p>
+          <p>Total Backups: ${backupHistoryCache.length}</p>
           <p>Total Size: ${(totalSize / 1024 / 1024 / 1024).toFixed(2)} GB</p>
           <p>Schedule: ${config.schedule}</p>
           <p>Retention: ${config.retentionDays} days</p>

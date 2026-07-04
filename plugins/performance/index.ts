@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 
 interface PerformanceConfig {
   pageCacheEnabled: boolean;
@@ -33,7 +34,8 @@ interface DbOptimizationResult {
 const pageCache = new Map<string, CacheEntry>();
 const cssFilesToCombine: string[] = [];
 const jsFilesToCombine: string[] = [];
-const criticalCssMap = new Map<string, string>();
+let criticalCssStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+const criticalCssCache = new Map<string, string>();
 
 function extractInlineScripts(html: string): string[] {
   const scripts: string[] = [];
@@ -164,6 +166,16 @@ export const manifest = {
 
 export const lifecycle: PluginLifecycle = {
   async boot(context: PluginContext) {
+    // Initialize persistent critical CSS store
+    if (!criticalCssStore) {
+      criticalCssStore = createPersistentStore(context.prisma, 'performance', 'criticalCss');
+      await criticalCssStore.load();
+      const existing = await criticalCssStore.getAll<string>();
+      for (const [k, v] of Object.entries(existing)) {
+        if (typeof v === 'string') criticalCssCache.set(k, v);
+      }
+    }
+
     const config: PerformanceConfig = {
       pageCacheEnabled: true,
       pageCacheTtl: 3600,
@@ -199,9 +211,10 @@ export const lifecycle: PluginLifecycle = {
         }
 
         if (config.criticalCssEnabled) {
-          const critical = criticalCssMap.get(path) || generateCriticalCss(result);
+          const critical = criticalCssCache.get(path) || generateCriticalCss(result);
           if (critical) {
-            criticalCssMap.set(path, critical);
+            criticalCssCache.set(path, critical);
+            if (criticalCssStore) await criticalCssStore.set(path, critical).catch(() => {});
             const originalLink = result.match(/<link[^>]*rel="stylesheet"[^>]*>/i);
             if (originalLink) {
               result = result.replace('</head>', `<style>${critical}</style>\n</head>`);
@@ -276,7 +289,8 @@ export const lifecycle: PluginLifecycle = {
       try {
         const count = pageCache.size;
         pageCache.clear();
-        criticalCssMap.clear();
+        criticalCssCache.clear();
+        if (criticalCssStore) await criticalCssStore.clear().catch(() => {});
         context.logger.log(`Performance: Cleared ${count} cached pages`);
       } catch (err) {
         context.logger.warn(

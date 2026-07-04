@@ -1,11 +1,53 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
+import { useApi } from '@/lib/use-api';
 import { getInitials } from '@/lib/utils';
+import { NotificationDropdown } from './notification-dropdown';
 
 export function AdminBar() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { get } = useApi();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await get<{ count: number }>('/notifications/unread-count');
+      if (res?.data?.count !== undefined) {
+        setUnreadCount(res.data.count);
+      }
+    } catch {
+      // Silently fail — notifications are non-critical
+    }
+  }, [get]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchUnreadCount();
+
+    // Poll every 30 seconds for new notifications
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, fetchUnreadCount]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!showDropdown) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        !target.closest('[data-notification-bell]') &&
+        !target.closest('[data-notification-dropdown]')
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showDropdown]);
 
   if (isLoading) return null;
   if (!isAuthenticated) return null;
@@ -77,26 +119,40 @@ export function AdminBar() {
           <span>View Site</span>
         </a>
 
-        <button
-          onClick={() => {
-            /* TODO: Open notifications panel */
-          }}
-          className="hover:bg-sidebar-accent flex h-full items-center px-3"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-3.5 w-3.5"
+        <div className="relative flex h-full items-center">
+          <button
+            data-notification-bell
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="hover:bg-sidebar-accent relative flex h-full items-center px-3"
+            aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
           >
-            <path d="M6 8a6 6 0 0 1 12 0c0 7 4 9 4 9H2s4-2 4-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3.5 w-3.5"
+            >
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 4 9 4 9H2s4-2 4-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {unreadCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[14px] items-center justify-center rounded-full bg-red-500 px-[3px] text-[9px] font-bold leading-none text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {showDropdown && (
+            <NotificationDropdown
+              onClose={() => setShowDropdown(false)}
+              onUnreadCountChange={setUnreadCount}
+            />
+          )}
+        </div>
 
         <div className="group relative flex h-full items-center">
           <button className="hover:bg-sidebar-accent flex h-full items-center gap-1.5 px-3">

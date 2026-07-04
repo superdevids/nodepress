@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 
 interface Language {
   code: string;
@@ -147,8 +148,10 @@ const supportedLanguages: Language[] = [
   },
 ];
 
-const translations: Translation[] = [];
-const translationMemory: TranslationMemory[] = [];
+let translationsStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+let translationMemoryStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+const translationsCache: Translation[] = [];
+const translationMemoryCache: TranslationMemory[] = [];
 
 async function translateText(
   context: PluginContext,
@@ -157,7 +160,7 @@ async function translateText(
   targetLang: string,
 ): Promise<string> {
   // Check translation memory first
-  const cached = translationMemory.find(
+  const cached = translationMemoryCache.find(
     (m) =>
       m.sourceText.toLowerCase() === text.toLowerCase() &&
       m.sourceLang === sourceLang &&
@@ -165,6 +168,8 @@ async function translateText(
   );
   if (cached) {
     cached.hits++;
+    const hitKey = `${cached.sourceLang}:${cached.targetLang}:${cached.sourceText}`;
+    await translationMemoryStore.set(hitKey, cached);
     return cached.translatedText;
   }
 
@@ -190,7 +195,15 @@ async function translateText(
         const translatedText = data.translations[0].text;
 
         // Store in translation memory
-        translationMemory.push({
+        const memKey = `${sourceLang}:${targetLang}:${text}`;
+        translationMemoryCache.push({
+          sourceLang,
+          targetLang,
+          sourceText: text,
+          translatedText,
+          hits: 1,
+        });
+        await translationMemoryStore.set(memKey, {
           sourceLang,
           targetLang,
           sourceText: text,
@@ -274,6 +287,25 @@ export const manifest = {
 
 export const lifecycle: PluginLifecycle = {
   async boot(context: PluginContext) {
+    // Initialize persistent stores
+    if (!translationsStore) {
+      translationsStore = createPersistentStore(context.prisma, 'multilingual', 'translations');
+      translationMemoryStore = createPersistentStore(
+        context.prisma,
+        'multilingual',
+        'translationMemory',
+      );
+      await Promise.all([translationsStore.load(), translationMemoryStore.load()]);
+
+      const loadedTranslations = await translationsStore.getAll<Translation>();
+      for (const v of Object.values(loadedTranslations))
+        if (v) translationsCache.push(v as Translation);
+
+      const loadedMemory = await translationMemoryStore.getAll<TranslationMemory>();
+      for (const v of Object.values(loadedMemory))
+        if (v) translationMemoryCache.push(v as TranslationMemory);
+    }
+
     const activeLanguages = supportedLanguages.filter((l) => l.enabled);
     let autoTranslateEnabled = false;
     let autoTranslateProvider: 'deepl' | 'google' | 'none' = 'none';
@@ -321,7 +353,7 @@ export const lifecycle: PluginLifecycle = {
           context.logger.warn('Multilingual: Missing required fields for translation');
           return;
         }
-        const existing = translations.findIndex(
+        const existing = translationsCache.findIndex(
           (t) =>
             t.contentType === contentType && t.contentId === contentId && t.language === language,
         );
@@ -343,12 +375,14 @@ export const lifecycle: PluginLifecycle = {
           translatedBy: 'manual',
         };
         if (existing >= 0) {
-          translations[existing] = translation;
+          translationsCache[existing] = translation;
+          await translationsStore.set(translation.id, translation);
           context.logger.log(
             `Multilingual: Updated ${language} translation for ${contentType}/${contentId}`,
           );
         } else {
-          translations.push(translation);
+          translationsCache.push(translation);
+          await translationsStore.set(translation.id, translation);
           context.logger.log(
             `Multilingual: Added ${language} translation for ${contentType}/${contentId}`,
           );
@@ -387,7 +421,7 @@ export const lifecycle: PluginLifecycle = {
           const translatedExcerpt = content?.slice(0, 200)
             ? await translateText(context, content.slice(0, 200), defaultLanguage.code, lang)
             : '';
-          translations.push({
+          const autoTranslation: Translation = {
             id: `tr-auto-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
             contentType,
             contentId,
@@ -403,7 +437,9 @@ export const lifecycle: PluginLifecycle = {
             metaDescription: translatedExcerpt || translatedTitle,
             translatedAt: new Date().toISOString(),
             translatedBy: 'auto',
-          });
+          };
+          translationsCache.push(autoTranslation);
+          await translationsStore.set(autoTranslation.id, autoTranslation);
         }
         context.logger.log(
           `Multilingual: Auto-translated "${title}" to ${langs.length} languages via ${autoTranslateProvider}`,
@@ -505,11 +541,11 @@ export const lifecycle: PluginLifecycle = {
         const stats = {
           totalLanguages: supportedLanguages.length,
           activeLanguages: activeLanguages.length,
-          totalTranslations: translations.length,
-          manualTranslations: translations.filter((t) => t.translatedBy === 'manual').length,
-          autoTranslations: translations.filter((t) => t.translatedBy === 'auto').length,
+          totalTranslations: translationsCache.length,
+          manualTranslations: translationsCache.filter((t) => t.translatedBy === 'manual').length,
+          autoTranslations: translationsCache.filter((t) => t.translatedBy === 'auto').length,
           rtlLanguages: supportedLanguages.filter((l) => l.dir === 'rtl').length,
-          translationMemoryEntries: translationMemory.length,
+          translationMemoryEntries: translationMemoryCache.length,
         };
         if (callback) callback(stats);
       } catch (err) {
@@ -527,7 +563,7 @@ export const lifecycle: PluginLifecycle = {
           priority: 9,
           content: `<div class="multilingual-widget">
           <p>Active Languages: ${activeLanguages.length}/${supportedLanguages.length}</p>
-          <p>Translations: ${translations.length} (${translations.filter((t) => t.translatedBy === 'manual').length} manual, ${translations.filter((t) => t.translatedBy === 'auto').length} auto)</p>
+          <p>Translations: ${translationsCache.length} (${translationsCache.filter((t) => t.translatedBy === 'manual').length} manual, ${translationsCache.filter((t) => t.translatedBy === 'auto').length} auto)</p>
           <p>Default: ${defaultLanguage.name}</p>
           <p>Auto-Translate: ${autoTranslateEnabled ? autoTranslateProvider.toUpperCase() : 'Disabled'}</p>
           <p>Locale Detection: ${localeDetectionEnabled ? 'Enabled' : 'Disabled'}</p>

@@ -420,6 +420,9 @@ importers:
 
   packages/config:
     devDependencies:
+      tailwindcss:
+        specifier: ^3.4.19
+        version: 3.4.19(tsx@4.22.5)
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.16)(tsx@4.22.5)(typescript@5.9.3)
@@ -711,9 +714,6 @@ importers:
       '@nodepressjs/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      node-fetch:
-        specifier: ^2.7.0
-        version: 2.7.0
 
   plugins/newsletter:
     dependencies:

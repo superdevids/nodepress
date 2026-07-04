@@ -58,27 +58,43 @@ export function BulkActions({
 
   const executeAction = async (act: string) => {
     setIsProcessing(true);
-    setProgress(0);
+    setProgress(10);
 
     try {
       setProgress(30);
-      // TODO: The /content/bulk endpoint doesn't exist on the backend yet.
-      // Once the backend implements it, replace this warning with the actual API call:
-      //   await post('/content/bulk', { action: act, ids: selectedIds });
-      showError(
-        'Not implemented',
-        'The bulk action backend endpoint (/content/bulk) is not yet available. This is a placeholder.',
-      );
+
+      // Call the real backend endpoint
+      const result = await post<{
+        success: boolean;
+        message: string;
+        details: { success: number; failed: number; errors: string[] };
+      }>('/content/bulk', { action: act, ids: selectedIds });
+
+      setProgress(90);
+
+      const { details } = result.data;
+
+      if (details.failed > 0) {
+        // Partial success — show warning with error details
+        const summary = `${details.success} succeeded, ${details.failed} failed.`;
+        showError(
+          `Bulk action completed with errors`,
+          `${summary}\n${details.errors.slice(0, 3).join('\n')}${details.errors.length > 3 ? `\n…and ${details.errors.length - 3} more` : ''}`,
+        );
+      } else {
+        success(
+          `Bulk action completed`,
+          `${details.success} item(s) ${act === 'publish' ? 'published' : act === 'unpublish' ? 'unpublished' : act === 'trash' ? 'trashed' : act === 'delete' ? 'deleted permanently' : act === 'restore' ? 'restored' : act === 'draft' ? 'moved to draft' : 'processed'}.`,
+        );
+      }
+
       setProgress(100);
 
-      success(
-        `Bulk action completed`,
-        `${selectedCount} item(s) ${act === 'publish' ? 'published' : act === 'trash' ? 'trashed' : act === 'delete' ? 'deleted permanently' : act === 'draft' ? 'moved to draft' : 'processed'}.`,
-      );
+      // Signal parent to refresh
       onAction(act, selectedIds);
       setAction('');
     } catch {
-      showError('Action failed', 'Please try again.');
+      showError('Action failed', 'The bulk action could not be completed. Please try again.');
     } finally {
       setIsProcessing(false);
       setProgress(0);

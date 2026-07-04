@@ -171,3 +171,240 @@ export function createPluginStorage<T>(
 ): PluginStorage<T> {
   return new PluginStorage<T>(pluginSlug, options);
 }
+
+// ─────────────────────────────────────────────────────────────
+// PersistentPluginStore — Prisma-backed key-value store
+// ─────────────────────────────────────────────────────────────
+
+import type { PrismaClient } from '@prisma/client';
+
+/**
+ * PersistentPluginStore — persists plugin data to the PluginData table.
+ *
+ * Keeps an in-memory cache for fast reads, writes through to PostgreSQL.
+ * Data survives restarts and is partitioned by (pluginId, namespace).
+ *
+ * @example
+ * ```ts
+ * const store = createPersistentStore(ctx.prisma, 'comments', 'comments');
+ * await store.load();
+ * await store.set('comment-1', { id: '1', text: 'hello' });
+ * const comment = await store.get('comment-1');
+ * ```
+ */
+export class PersistentPluginStore {
+  private cache: Map<string, unknown>;
+  private loaded: boolean = false;
+
+  constructor(
+    private prisma: PrismaClient,
+    private pluginId: string,
+    private namespace: string,
+  ) {
+    this.cache = new Map();
+  }
+
+  /**
+   * Load all records from the database into the in-memory cache.
+   * Call once after construction (typically in boot or activate).
+   */
+  async load(): Promise<void> {
+    if (this.loaded) return;
+    try {
+      const records = await this.prisma.pluginData.findMany({
+        where: { pluginId: this.pluginId, namespace: this.namespace },
+      });
+      for (const r of records) {
+        this.cache.set(r.key, r.value);
+      }
+      this.loaded = true;
+    } catch (err) {
+      // If DB is not available, operate in memory-only mode
+      this.loaded = true;
+    }
+  }
+
+  async get<T = any>(key: string): Promise<T | undefined> {
+    if (!this.loaded) await this.load();
+    return this.cache.get(key) as T | undefined;
+  }
+
+  async set<T = any>(key: string, value: T): Promise<void> {
+    this.cache.set(key, value);
+    try {
+      await this.prisma.pluginData.upsert({
+        where: {
+          pluginId_namespace_key: { pluginId: this.pluginId, namespace: this.namespace, key },
+        },
+        create: { pluginId: this.pluginId, namespace: this.namespace, key, value: value as any },
+        update: { value: value as any },
+      });
+    } catch {
+      // DB unavailable — keep in-memory
+    }
+  }
+
+  async delete(key: string): Promise<void> {
+    this.cache.delete(key);
+    try {
+      await this.prisma.pluginData.delete({
+        where: {
+          pluginId_namespace_key: { pluginId: this.pluginId, namespace: this.namespace, key },
+        },
+      });
+    } catch {
+      // not found or DB unavailable
+    }
+  }
+
+  async clear(): Promise<void> {
+    this.cache.clear();
+    try {
+      await this.prisma.pluginData.deleteMany({
+        where: { pluginId: this.pluginId, namespace: this.namespace },
+      });
+    } catch {
+      // DB unavailable
+    }
+  }
+
+  async getAll<T = any>(): Promise<Record<string, T>> {
+    if (!this.loaded) await this.load();
+    const result: Record<string, T> = {};
+    for (const [k, v] of this.cache) {
+      result[k] = v as T;
+    }
+    return result;
+  }
+
+  async keys(): Promise<string[]> {
+    if (!this.loaded) await this.load();
+    return Array.from(this.cache.keys());
+  }
+
+  async values<T = any>(): Promise<T[]> {
+    if (!this.loaded) await this.load();
+    return Array.from(this.cache.values()) as T[];
+  }
+
+  async size(): Promise<number> {
+    if (!this.loaded) await this.load();
+    return this.cache.size;
+  }
+
+  /** Check if a key exists in the cache. */
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+
+  // ── Array-like helpers ──────────────────────────────────────
+
+  /** Generate a unique key and insert the value. Returns the generated key. */
+  async push<T = any>(value: T): Promise<string> {
+    const key = `${this.pluginId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    await this.set(key, value);
+    return key;
+  }
+
+  async toArray<T = any>(): Promise<T[]> {
+    if (!this.loaded) await this.load();
+    return Array.from(this.cache.values()) as T[];
+  }
+
+  async find<T = any>(predicate: (item: T, key: string) => boolean): Promise<T | undefined> {
+    if (!this.loaded) await this.load();
+    for (const [key, value] of this.cache) {
+      if (predicate(value as T, key)) return value as T;
+    }
+    return undefined;
+  }
+
+  async filter<T = any>(predicate: (item: T, key: string) => boolean): Promise<T[]> {
+    if (!this.loaded) await this.load();
+    const result: T[] = [];
+    for (const [key, value] of this.cache) {
+      if (predicate(value as T, key)) result.push(value as T);
+    }
+    return result;
+  }
+
+  async map<U = any>(fn: (item: any, key: string) => U): Promise<U[]> {
+    if (!this.loaded) await this.load();
+    return Array.from(this.cache.entries()).map(([k, v]) => fn(v, k));
+  }
+
+  async reduce<U = any>(fn: (acc: U, item: any, key: string) => U, initial: U): Promise<U> {
+    if (!this.loaded) await this.load();
+    let acc = initial;
+    for (const [key, value] of this.cache) {
+      acc = fn(acc, value, key);
+    }
+    return acc;
+  }
+
+  /** Remove the first `n` entries (FIFO eviction). */
+  async spliceFirst(n: number): Promise<void> {
+    if (!this.loaded) await this.load();
+    const keys = Array.from(this.cache.keys()) as string[];
+    const limit = Math.min(n, keys.length);
+    const toDelete = keys.slice(0, limit);
+    for (const k of toDelete) {
+      this.cache.delete(k);
+    }
+    if (toDelete.length > 0) {
+      try {
+        await this.prisma.pluginData.deleteMany({
+          where: {
+            pluginId: this.pluginId,
+            namespace: this.namespace,
+            key: { in: toDelete },
+          },
+        });
+      } catch {
+        // DB unavailable
+      }
+    }
+  }
+
+  /** Find the index of the first item matching predicate (by insertion order). */
+  async findIndex(predicate: (item: any) => boolean): Promise<number> {
+    if (!this.loaded) await this.load();
+    let idx = 0;
+    for (const value of this.cache.values()) {
+      if (predicate(value)) return idx;
+      idx++;
+    }
+    return -1;
+  }
+
+  /** Remove item at the given index. Returns the removed item or undefined. */
+  async removeAt(index: number): Promise<any | undefined> {
+    if (!this.loaded) await this.load();
+    const keys = Array.from(this.cache.keys()) as string[];
+    if (index < 0 || index >= keys.length) return undefined;
+    const key = keys[index];
+    const value = key !== undefined ? this.cache.get(key) : undefined;
+    if (key !== undefined) {
+      this.cache.delete(key);
+      try {
+        await this.prisma.pluginData.delete({
+          where: {
+            pluginId_namespace_key: { pluginId: this.pluginId, namespace: this.namespace, key },
+          },
+        });
+      } catch {
+        // DB unavailable
+      }
+    }
+    return value;
+  }
+}
+
+/** Convenience factory for creating a persistent plugin store. */
+export function createPersistentStore(
+  prisma: PrismaClient,
+  pluginId: string,
+  namespace: string,
+): PersistentPluginStore {
+  return new PersistentPluginStore(prisma, pluginId, namespace);
+}

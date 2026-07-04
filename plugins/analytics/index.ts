@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 
 interface GAConfig {
   trackingId: string;
@@ -163,9 +164,19 @@ export const manifest = {
 export const lifecycle: PluginLifecycle = {
   async boot(context: PluginContext) {
     const config = { ...defaultConfig };
+    const pageViewsStore = createPersistentStore(context.prisma, 'analytics', 'pageviews');
+    await pageViewsStore.load();
     let pageViewCount = 0;
     let sessionCount = 0;
     const pageViewsMap = new Map<string, number>();
+    // Load existing page view data from DB into cache
+    const existing = await pageViewsStore.getAll<number>();
+    for (const [path, views] of Object.entries(existing)) {
+      if (typeof views === 'number') {
+        pageViewsMap.set(path, views);
+        pageViewCount += views;
+      }
+    }
 
     context.hooks.addAction('settings:register', async () => {
       try {
@@ -250,7 +261,9 @@ export const lifecycle: PluginLifecycle = {
           return;
         }
         pageViewCount++;
-        pageViewsMap.set(path, (pageViewsMap.get(path) || 0) + 1);
+        const current = pageViewsMap.get(path) || 0;
+        pageViewsMap.set(path, current + 1);
+        await pageViewsStore.set(path, current + 1);
         context.logger.log(`Analytics: pageview tracked for ${path} (total: ${pageViewCount})`);
       } catch (err) {
         context.logger.error(

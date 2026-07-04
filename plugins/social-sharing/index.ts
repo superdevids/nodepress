@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 
 interface SocialNetwork {
   id: string;
@@ -158,7 +159,8 @@ function generateOgTagsHtml(
   ${image ? `<meta name="twitter:image" content="${image}" />` : ''}`;
 }
 
-const shareCounts = new Map<string, number>();
+let shareCountsStore: import('@nodepressjs/plugin-sdk').PersistentPluginStore | null = null;
+const shareCountsCache = new Map<string, number>();
 
 export const manifest = {
   slug: 'social-sharing',
@@ -171,6 +173,16 @@ export const manifest = {
 
 export const lifecycle: PluginLifecycle = {
   async boot(context: PluginContext) {
+    if (!shareCountsStore) {
+      shareCountsStore = createPersistentStore(context.prisma, 'social-sharing', 'shareCounts');
+      await shareCountsStore.load();
+      // Load existing counts into cache
+      const existing = await shareCountsStore.getAll<number>();
+      for (const [k, v] of Object.entries(existing)) {
+        if (typeof v === 'number') shareCountsCache.set(k, v);
+      }
+    }
+
     const activeNetworks: SocialNetwork[] = [...networks];
     const buttonStyle: ShareButtonStyle = { ...defaultStyle };
     let showFloatingBar = false;
@@ -236,7 +248,9 @@ export const lifecycle: PluginLifecycle = {
           return;
         }
         const key = `${network}:${sharedUrl}`;
-        shareCounts.set(key, (shareCounts.get(key) || 0) + 1);
+        const current = shareCountsCache.get(key) || 0;
+        shareCountsCache.set(key, current + 1);
+        if (shareCountsStore) await shareCountsStore.set(key, current + 1);
         context.logger.log(`Social Sharing: ${network} share tracked for ${sharedUrl}`);
       } catch (err) {
         context.logger.error(
@@ -251,7 +265,7 @@ export const lifecycle: PluginLifecycle = {
         const counts: ShareCount[] = [];
         for (const network of activeNetworks) {
           const key = `${network.id}:${url}`;
-          const count = shareCounts.get(key) || 0;
+          const count = shareCountsCache.get(key) || 0;
           counts.push({ network: network.id, count, url });
         }
         if (callback) callback(counts);
@@ -284,7 +298,7 @@ export const lifecycle: PluginLifecycle = {
 
     context.hooks.addAction('admin:dashboard:render', async (data: unknown) => {
       try {
-        const totalShares = Array.from(shareCounts.values()).reduce((a, b) => a + b, 0);
+        const totalShares = Array.from(shareCountsCache.values()).reduce((a, b) => a + b, 0);
         (data as any).widgets = (data as any).widgets || [];
         (data as any).widgets.push({
           title: 'Social Sharing',

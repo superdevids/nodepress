@@ -91,12 +91,11 @@ export function ContentList({ items, type }: ContentListProps) {
     }
   };
 
-  const handleBulkAction = (_action: string) => {
-    // TODO: implement bulk action using the API client
-    // The API endpoint at POST /content/bulk should perform the action on selected IDs.
-    // See bulk-actions.tsx executeAction() — currently a placeholder.
-    console.warn('Bulk action not implemented:', _action, selected);
+  const handleBulkAction = (_action: string, _ids?: string[]) => {
+    // Clear selection after bulk action completes
     setSelected([]);
+    // Refresh the content list to reflect status changes
+    router.refresh();
   };
 
   const toggleSort = (field: 'date' | 'title') => {
@@ -134,7 +133,11 @@ export function ContentList({ items, type }: ContentListProps) {
             <SelectItem value="trashed">Trashed</SelectItem>
           </SelectContent>
         </Select>
-        <BulkActions selectedCount={selected.length} onAction={handleBulkAction} />
+        <BulkActions
+          selectedCount={selected.length}
+          selectedIds={selected}
+          onAction={handleBulkAction}
+        />
       </div>
 
       {/* Table */}

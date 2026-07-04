@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 import { createHash } from 'crypto';
 
 export const manifest = {
@@ -38,9 +39,11 @@ function md5Hex(input: string): string {
   return createHash('md5').update(input).digest('hex');
 }
 
-function computeDepth(parentId: string | null, comments: Map<string, CommentData>): number {
-  if (!parentId) return 0;
-  const parent = comments.get(parentId);
+async function computeDepthAsync(
+  parentId: string,
+  store: import('@nodepressjs/plugin-sdk').PersistentPluginStore,
+): Promise<number> {
+  const parent = await store.get<CommentData>(parentId);
   if (!parent) return 0;
   return Math.min(parent.depth + 1, 5);
 }
@@ -88,7 +91,10 @@ export const lifecycle: PluginLifecycle = {
   async boot(context: PluginContext) {
     context.logger.log('Comments plugin booting');
 
-    const commentsStore = new Map<string, CommentData>();
+    const commentsStore = createPersistentStore(context.prisma, 'comments', 'comments');
+    await commentsStore.load();
+    // Keep an in-memory cache layer for computeDepth and fast lookups
+    const inMemoryCache = new Map<string, CommentData>();
 
     context.hooks.addAction('comment:submit', async (data: unknown) => {
       try {
@@ -113,7 +119,9 @@ export const lifecycle: PluginLifecycle = {
           return { success: false, error: 'Comment must be between 2 and 10000 characters' };
         }
 
-        const depth = computeDepth(payload.parentId ?? null, commentsStore);
+        const depth = payload.parentId
+          ? await computeDepthAsync(payload.parentId, commentsStore)
+          : 0;
         if (depth >= 5) {
           context.logger.warn('Comment rejected: max depth reached');
           return { success: false, error: 'Maximum thread depth reached' };
@@ -164,7 +172,8 @@ export const lifecycle: PluginLifecycle = {
           context.logger.warn(`Keyword spam detected for comment ${id}`);
         }
 
-        commentsStore.set(id, comment);
+        await commentsStore.set(id, comment);
+        inMemoryCache.set(id, comment);
         context.logger.log(
           `Comment ${id} submitted by ${payload.authorEmail} (depth: ${depth}, status: ${comment.status})`,
         );
@@ -194,12 +203,14 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('comment:approve', async (data: unknown) => {
       try {
         const { id } = data as { id: string };
-        const comment = commentsStore.get(id);
+        const comment = inMemoryCache.get(id) || (await commentsStore.get<CommentData>(id));
         if (!comment) {
           context.logger.warn(`Comment ${id} not found`);
           return;
         }
         comment.status = 'approved';
+        await commentsStore.set(id, comment);
+        inMemoryCache.set(id, comment);
         context.logger.log(`Comment ${id} approved`);
       } catch (err) {
         context.logger.error(
@@ -211,12 +222,14 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('comment:unapprove', async (data: unknown) => {
       try {
         const { id } = data as { id: string };
-        const comment = commentsStore.get(id);
+        const comment = inMemoryCache.get(id) || (await commentsStore.get<CommentData>(id));
         if (!comment) {
           context.logger.warn(`Comment ${id} not found`);
           return;
         }
         comment.status = 'pending';
+        await commentsStore.set(id, comment);
+        inMemoryCache.set(id, comment);
         context.logger.log(`Comment ${id} moved to pending`);
       } catch (err) {
         context.logger.error(
@@ -228,12 +241,14 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('comment:spam', async (data: unknown) => {
       try {
         const { id } = data as { id: string };
-        const comment = commentsStore.get(id);
+        const comment = inMemoryCache.get(id) || (await commentsStore.get<CommentData>(id));
         if (!comment) {
           context.logger.warn(`Comment ${id} not found`);
           return;
         }
         comment.status = 'spam';
+        await commentsStore.set(id, comment);
+        inMemoryCache.set(id, comment);
         context.logger.log(`Comment ${id} marked as spam`);
       } catch (err) {
         context.logger.error(
@@ -245,12 +260,14 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('comment:trash', async (data: unknown) => {
       try {
         const { id } = data as { id: string };
-        const comment = commentsStore.get(id);
+        const comment = inMemoryCache.get(id) || (await commentsStore.get<CommentData>(id));
         if (!comment) {
           context.logger.warn(`Comment ${id} not found`);
           return;
         }
         comment.status = 'trash';
+        await commentsStore.set(id, comment);
+        inMemoryCache.set(id, comment);
         context.logger.log(`Comment ${id} trashed`);
       } catch (err) {
         context.logger.error(
@@ -262,13 +279,15 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('comment:vote', async (data: unknown) => {
       try {
         const { id, vote } = data as { id: string; vote: 'up' | 'down' };
-        const comment = commentsStore.get(id);
+        const comment = inMemoryCache.get(id) || (await commentsStore.get<CommentData>(id));
         if (!comment) {
           context.logger.warn(`Comment ${id} not found for voting`);
           return;
         }
         if (vote === 'up') comment.upvotes++;
         else comment.downvotes++;
+        await commentsStore.set(id, comment);
+        inMemoryCache.set(id, comment);
         context.logger.log(
           `Comment ${id} received ${vote}vote (now ${comment.upvotes}/${comment.downvotes})`,
         );

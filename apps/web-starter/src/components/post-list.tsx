@@ -1,4 +1,4 @@
-import { Grid, Heading, Text } from '@nodepressjs/ui';
+import { cn, Heading, Text } from '@nodepressjs/ui';
 import Link from 'next/link';
 import { PostCard } from './post-card';
 import type { ContentEntry } from '@/lib/api';
@@ -7,18 +7,31 @@ interface PostListProps {
   posts: ContentEntry[];
   title?: string;
   emptyMessage?: string;
+  variant?: 'grid' | 'list';
+  columns?: 2 | 3;
+  featured?: boolean;
+  className?: string;
   showViewAll?: boolean;
 }
+
+const columnsMap: Record<number, string> = {
+  2: 'grid-cols-1 sm:grid-cols-2',
+  3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+};
 
 export function PostList({
   posts,
   title,
   emptyMessage = 'No posts yet.',
+  variant = 'grid',
+  columns = 3,
+  featured = false,
+  className,
   showViewAll = false,
 }: PostListProps) {
   if (posts.length === 0) {
     return (
-      <div className="py-16 text-center">
+      <div className={cn('py-16 text-center', className)}>
         <Heading level={3} className="text-wp-text-light">
           {emptyMessage}
         </Heading>
@@ -29,21 +42,47 @@ export function PostList({
     );
   }
 
+  const firstPost = posts[0];
+  const remainingPosts = posts.slice(1);
+
   return (
-    <section>
+    <section className={className}>
       {title && (
-        <Heading level={2} className="mb-8">
-          {title}
-        </Heading>
+        <div className="mb-8 flex items-center justify-between">
+          <Heading level={2}>{title}</Heading>
+          {showViewAll && (
+            <Link
+              href="/blog"
+              className="text-wp-text-light hover:text-wp-primary hidden text-sm font-medium transition-colors sm:inline-flex"
+            >
+              View all &rarr;
+            </Link>
+          )}
+        </div>
       )}
 
-      <Grid cols={3} gap={6}>
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
-      </Grid>
+      {/* Featured Post */}
+      {featured && firstPost && (
+        <div className="mb-6">
+          <PostCard post={firstPost} featured />
+        </div>
+      )}
 
-      {showViewAll && (
+      {/* Grid / List Layout */}
+      <div
+        className={
+          variant === 'list'
+            ? 'flex flex-col gap-4'
+            : cn(columnsMap[columns] || columnsMap[3], 'grid gap-6')
+        }
+      >
+        {featured && firstPost
+          ? remainingPosts.map((post) => <PostCard key={post.id} post={post} />)
+          : posts.map((post) => <PostCard key={post.id} post={post} />)}
+      </div>
+
+      {/* View All (mobile fallback when title is absent) */}
+      {showViewAll && !title && (
         <div className="mt-10 text-center">
           <Link
             href="/blog"

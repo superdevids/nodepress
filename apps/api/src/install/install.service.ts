@@ -27,6 +27,10 @@ export interface InstallSiteInput {
   description: string;
   adminEmail: string;
   searchEngineVisibility: boolean;
+  language: string;
+  timezone: string;
+  url: string;
+  permalink: string;
 }
 
 export interface InstallAdminInput {
@@ -34,13 +38,33 @@ export interface InstallAdminInput {
   password: string;
   firstName: string;
   lastName: string;
+  avatar?: string;
 }
 
 export interface InstallInput {
   db: InstallDbInput;
   site: InstallSiteInput;
   admin: InstallAdminInput;
+  plugins: string[];
+  theme: string;
+  installType: 'fresh' | 'import';
 }
+
+const ALL_PLUGINS: { slug: string; name: string }[] = [
+  { slug: 'seo', name: 'SEO' },
+  { slug: 'analytics', name: 'Analytics' },
+  { slug: 'backup', name: 'Backup' },
+  { slug: 'cache-redis', name: 'Redis Cache' },
+  { slug: 'comments', name: 'Comments' },
+  { slug: 'file-editor', name: 'File Editor' },
+  { slug: 'forms', name: 'Forms' },
+  { slug: 'multilingual', name: 'Multilingual' },
+  { slug: 'newsletter', name: 'Newsletter' },
+  { slug: 'performance', name: 'Performance' },
+  { slug: 'redirection', name: 'Redirection' },
+  { slug: 'security', name: 'Security' },
+  { slug: 'social-sharing', name: 'Social Sharing' },
+];
 
 @Injectable()
 export class InstallService {
@@ -179,19 +203,84 @@ export class InstallService {
       });
       this.logger.log('Default data seeded.');
 
-      // 5. Update SEO visibility setting
+      // 5. Save extended site settings
+      this.logger.log('Saving site settings...');
+      const siteSettings = [
+        { group: 'general', key: 'site_title', value: input.site.title, autoload: true },
+        { group: 'general', key: 'tagline', value: input.site.description || '', autoload: true },
+        { group: 'general', key: 'site_url', value: input.site.url, autoload: true },
+        { group: 'general', key: 'admin_email', value: input.site.adminEmail, autoload: true },
+        {
+          group: 'general',
+          key: 'language',
+          value: input.site.language || 'en-US',
+          autoload: true,
+        },
+        { group: 'general', key: 'timezone', value: input.site.timezone || 'UTC', autoload: true },
+        { group: 'permalinks', key: 'structure', value: input.site.permalink, autoload: true },
+      ];
+
+      for (const setting of siteSettings) {
+        await prisma.setting.upsert({
+          where: { group_key: { group: setting.group, key: setting.key } },
+          update: { value: setting.value },
+          create: setting,
+        });
+      }
+
+      // 6. Update SEO visibility setting
       await prisma.setting.upsert({
         where: { group_key: { group: 'seo', key: 'search_engine_visibility' } },
-        update: { value: input.site.searchEngineVisibility },
+        update: { value: true },
         create: {
           group: 'seo',
           key: 'search_engine_visibility',
-          value: input.site.searchEngineVisibility,
+          value: true,
           autoload: true,
         },
       });
 
-      // 6. Save config file
+      // 7. Activate selected plugins
+      if (input.plugins && input.plugins.length > 0) {
+        this.logger.log(`Activating ${input.plugins.length} plugin(s)...`);
+        for (const slug of input.plugins) {
+          const pluginInfo = ALL_PLUGINS.find((p) => p.slug === slug);
+          if (!pluginInfo) {
+            this.logger.warn(`Unknown plugin slug "${slug}", skipping.`);
+            continue;
+          }
+          try {
+            await prisma.plugin.upsert({
+              where: { slug },
+              update: { active: true, version: '0.1.0' },
+              create: {
+                slug,
+                version: '0.1.0',
+                active: true,
+              },
+            });
+            this.logger.log(`Plugin "${pluginInfo.name}" activated.`);
+          } catch (pluginErr: any) {
+            this.logger.warn(`Failed to activate plugin "${slug}": ${pluginErr.message}`);
+          }
+        }
+      }
+
+      // 8. Save selected theme as active setting
+      if (input.theme) {
+        await prisma.setting.upsert({
+          where: { group_key: { group: 'theme', key: 'active_theme' } },
+          update: { value: input.theme },
+          create: {
+            group: 'theme',
+            key: 'active_theme',
+            value: input.theme,
+            autoload: true,
+          },
+        });
+      }
+
+      // 9. Save config file
       this.logger.log('Saving configuration...');
       const config = generateConfig(input.db, keys);
       saveConfig(config);

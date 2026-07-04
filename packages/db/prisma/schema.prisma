@@ -511,6 +511,24 @@ model PluginPermission {
 }
 
 // ============================================================
+// MODELS — Plugin Data Persistence
+// ============================================================
+
+model PluginData {
+  id         String   @id @default(cuid())
+  pluginId   String
+  namespace  String
+  key        String
+  value      Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([pluginId, namespace, key])
+  @@index([pluginId, namespace])
+  @@map("plugin_data")
+}
+
+// ============================================================
 // MODELS — Webhooks
 // ============================================================
 
@@ -592,6 +610,8 @@ model PasswordResetToken {
   usedAt    DateTime?
   createdAt DateTime  @default(now())
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([token])
   @@map("password_reset_tokens")
@@ -664,15 +684,18 @@ model LoginCookie {
 model Notification {
   id        String    @id @default(cuid())
   userId    String
-  type      String
-  payload   Json?
+  type      String    // 'content.published', 'comment.pending', 'plugin.update', 'system.alert'
+  title     String
+  message   String?
+  link      String?   // URL to navigate to
+  icon      String?   // icon name for display
   readAt    DateTime?
   createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
-  @@index([createdAt])
+  @@index([userId, createdAt])
   @@map("notifications")
 }
 

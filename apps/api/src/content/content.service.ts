@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 
@@ -25,7 +26,10 @@ export interface ContentEntry {
 export class ContentService {
   private readonly logger = new Logger(ContentService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async create(type: string, dto: CreateContentDto, authorId: string): Promise<ContentEntry> {
     const contentType = await this.prisma.contentType.findFirst({
@@ -60,6 +64,14 @@ export class ContentService {
     });
 
     this.logger.log(`Content ${type} created: ${entry.id}`);
+
+    // Notify admin users when content is published
+    if (status === 'PUBLISHED') {
+      this.notifyContentPublished(entry, authorId).catch((err) =>
+        this.logger.warn('Failed to send publish notification', err),
+      );
+    }
+
     return this.toContentEntry(entry);
   }
 
@@ -148,11 +160,25 @@ export class ContentService {
       }
     }
 
+    const wasPublished = dto.status === 'publish' && entry.status !== 'PUBLISHED';
+
     const updated = await this.prisma.contentEntry.update({
       where: { id },
       data: updateData,
       include: { contentType: true },
     });
+
+    // Notify admins when content is published via update
+    if (wasPublished) {
+      const updater = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, displayName: true },
+      });
+      const updaterName = updater?.displayName || updater?.name || 'A user';
+      this.notifyContentUpdated(updated, updaterName).catch((err) =>
+        this.logger.warn('Failed to send publish notification', err),
+      );
+    }
 
     return this.toContentEntry(updated);
   }
@@ -181,6 +207,71 @@ export class ContentService {
     await this.prisma.contentEntry.update({
       where: { id },
       data: { data: data as any },
+    });
+  }
+
+  /**
+   * Notify admin users when content is published.
+   */
+  private async notifyContentPublished(
+    entry: { id: string; contentTypeId: string; data: unknown; authorId: string },
+    authorId: string,
+  ): Promise<void> {
+    const data = entry.data as Record<string, unknown>;
+    const title = (data.title as string) || 'Untitled';
+
+    // Look up the author name
+    const author = await this.prisma.user.findUnique({
+      where: { id: authorId },
+      select: { name: true, displayName: true },
+    });
+    const authorName = author?.displayName || author?.name || 'A user';
+
+    // Find all admin/super admin users to notify (excluding the author)
+    const adminUsers = await this.prisma.user.findMany({
+      where: {
+        role: { in: ['ADMIN', 'SUPER_ADMIN'] },
+        id: { not: authorId },
+      },
+      select: { id: true },
+    });
+
+    const adminUserIds = adminUsers.map((u) => u.id);
+    if (adminUserIds.length === 0) return;
+
+    await this.notificationsService.createForUsers(adminUserIds, {
+      type: 'content.published',
+      title: `"${title}" published`,
+      message: `Content was published by ${authorName}`,
+      link: `/admin/content/${entry.contentTypeId}/${entry.id}`,
+      icon: 'file-text',
+    });
+  }
+
+  /**
+   * Notify admin users when content status changes to published via update.
+   */
+  private async notifyContentUpdated(
+    entry: { id: string; contentTypeId: string; data: unknown },
+    updaterName: string,
+  ): Promise<void> {
+    const data = entry.data as Record<string, unknown>;
+    const title = (data.title as string) || 'Untitled';
+
+    const adminUsers = await this.prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+      select: { id: true },
+    });
+
+    const adminUserIds = adminUsers.map((u) => u.id);
+    if (adminUserIds.length === 0) return;
+
+    await this.notificationsService.createForUsers(adminUserIds, {
+      type: 'content.published',
+      title: `"${title}" published`,
+      message: `Content was published by ${updaterName}`,
+      link: `/admin/content/${entry.contentTypeId}/${entry.id}`,
+      icon: 'file-text',
     });
   }
 

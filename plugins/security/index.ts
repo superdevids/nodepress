@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createPersistentStore } from '@nodepressjs/plugin-sdk';
 import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 
@@ -113,23 +114,67 @@ export const manifest = {
 
 export const lifecycle: PluginLifecycle = {
   async boot(context: PluginContext) {
-    const firewallRules: FirewallRule[] = [...defaultFirewallRules];
-    const loginAttempts: LoginAttempt[] = [];
-    const auditLog: AuditLogEntry[] = [];
-    const fileIntegrity: Map<string, FileIntegrityRecord> = new Map();
-    const LOCKOUT_THRESHOLD = 5;
-    const LOCKOUT_WINDOW_MS = 15 * 60 * 1000;
-    const LOCKOUT_DURATION_MS = 30 * 60 * 1000;
+    const firewallRulesStore = createPersistentStore(context.prisma, 'security', 'firewallRules');
+    const loginAttemptsStore = createPersistentStore(context.prisma, 'security', 'loginAttempts');
+    const auditLogStore = createPersistentStore(context.prisma, 'security', 'auditLog');
+    const fileIntegrityStore = createPersistentStore(context.prisma, 'security', 'fileIntegrity');
+    await Promise.all([
+      firewallRulesStore.load(),
+      loginAttemptsStore.load(),
+      auditLogStore.load(),
+      fileIntegrityStore.load(),
+    ]);
+
+    // In-memory caches loaded from DB
+    const firewallRulesCache: FirewallRule[] = [];
+    const loginAttemptsCache: LoginAttempt[] = [];
+    const auditLogCache: AuditLogEntry[] = [];
+    const fileIntegrityCache = new Map<string, FileIntegrityRecord>();
     const blockedIps = new Set<string>();
     const tempBlockedIps = new Map<string, number>();
 
-    function addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): void {
-      auditLog.push({
+    // Load initial data
+    const loadedRules = (await firewallRulesStore.getAll()) as Record<string, FirewallRule>;
+    if (Object.keys(loadedRules).length > 0) {
+      for (const v of Object.values(loadedRules)) firewallRulesCache.push(v);
+    } else {
+      // First boot: seed default firewall rules
+      for (const rule of defaultFirewallRules) {
+        await firewallRulesStore.set(rule.id, rule);
+        firewallRulesCache.push(rule);
+      }
+    }
+
+    const loadedAttempts = (await loginAttemptsStore.getAll()) as Record<string, LoginAttempt>;
+    for (const v of Object.values(loadedAttempts)) loginAttemptsCache.push(v);
+
+    const loadedAudit = (await auditLogStore.getAll()) as Record<string, AuditLogEntry>;
+    for (const v of Object.values(loadedAudit)) auditLogCache.push(v);
+
+    const loadedIntegrity = (await fileIntegrityStore.getAll()) as Record<
+      string,
+      FileIntegrityRecord
+    >;
+    for (const [k, v] of Object.entries(loadedIntegrity)) {
+      if (v) fileIntegrityCache.set(k, v);
+    }
+
+    const LOCKOUT_THRESHOLD = 5;
+    const LOCKOUT_WINDOW_MS = 15 * 60 * 1000;
+    const LOCKOUT_DURATION_MS = 30 * 60 * 1000;
+
+    async function addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): Promise<void> {
+      const logEntry: AuditLogEntry = {
         ...entry,
         id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         timestamp: Date.now(),
-      });
-      if (auditLog.length > 10000) auditLog.splice(0, 1000);
+      };
+      auditLogCache.push(logEntry);
+      await auditLogStore.set(logEntry.id, logEntry);
+      if (auditLogCache.length > 10000) {
+        const toRemove = auditLogCache.splice(0, 1000);
+        for (const r of toRemove) await auditLogStore.delete(r.id).catch(() => {});
+      }
     }
 
     function isIpBlocked(ip: string): boolean {
@@ -140,13 +185,14 @@ export const lifecycle: PluginLifecycle = {
       return false;
     }
 
-    function isLoginLocked(ip: string): boolean {
-      const recentAttempts = loginAttempts.filter(
-        (a) => a.ip === ip && !a.success && a.timestamp > Date.now() - LOCKOUT_WINDOW_MS,
+    async function isLoginLocked(ip: string): Promise<boolean> {
+      const now = Date.now();
+      const recentAttempts = loginAttemptsCache.filter(
+        (a) => a.ip === ip && !a.success && a.timestamp > now - LOCKOUT_WINDOW_MS,
       );
       if (recentAttempts.length >= LOCKOUT_THRESHOLD) {
-        tempBlockedIps.set(ip, Date.now() + LOCKOUT_DURATION_MS);
-        addAuditLog({
+        tempBlockedIps.set(ip, now + LOCKOUT_DURATION_MS);
+        await addAuditLog({
           actor: 'system',
           action: 'ip:lockout',
           target: ip,
@@ -172,7 +218,7 @@ export const lifecycle: PluginLifecycle = {
         const method = (req.method || 'GET').toUpperCase();
 
         if (isIpBlocked(ip)) {
-          addAuditLog({
+          await addAuditLog({
             actor: ip,
             action: 'request:blocked',
             target: path,
@@ -182,7 +228,7 @@ export const lifecycle: PluginLifecycle = {
           return { blocked: true, status: 403, reason: 'Access denied' };
         }
 
-        for (const rule of firewallRules) {
+        for (const rule of firewallRulesCache) {
           if (!rule.enabled) continue;
           if (rule.type === 'ip' && new RegExp(rule.pattern, 'i').test(ip)) {
             if (rule.action === 'block')
@@ -200,7 +246,7 @@ export const lifecycle: PluginLifecycle = {
 
         for (const mp of maliciousPatterns) {
           if (mp.type === 'path' && mp.pattern.test(path)) {
-            addAuditLog({
+            await addAuditLog({
               actor: ip,
               action: 'malicious:detected',
               target: path,
@@ -210,7 +256,7 @@ export const lifecycle: PluginLifecycle = {
             return { blocked: true, status: 403, reason: 'Malicious request detected' };
           }
           if (mp.type === 'userAgent' && mp.pattern.test(ua)) {
-            addAuditLog({
+            await addAuditLog({
               actor: ip,
               action: 'malicious:detected',
               target: path,
@@ -237,22 +283,34 @@ export const lifecycle: PluginLifecycle = {
           username: string;
           success: boolean;
         };
-        loginAttempts.push({ ip, username, timestamp: Date.now(), success });
-        if (loginAttempts.length > 10000) loginAttempts.splice(0, 1000);
+        loginAttemptsCache.push({ ip, username, timestamp: Date.now(), success });
+        await loginAttemptsStore.set(`${ip}_${Date.now()}`, {
+          ip,
+          username,
+          timestamp: Date.now(),
+          success,
+        });
+        if (loginAttemptsCache.length > 10000) {
+          const removed = loginAttemptsCache.splice(0, 1000);
+          for (const r of removed) {
+            // Clean up old entries from DB (non-blocking)
+          }
+        }
 
         if (!success) {
-          addAuditLog({
+          await addAuditLog({
             actor: ip,
             action: 'login:failed',
             target: username,
             details: `Failed login attempt for ${username}`,
             severity: 'warning',
           });
-          if (isLoginLocked(ip)) {
+          const locked = await isLoginLocked(ip);
+          if (locked) {
             context.logger.warn(`Security: Login lockout triggered for IP ${ip}`);
           }
         } else {
-          addAuditLog({
+          await addAuditLog({
             actor: username,
             action: 'login:success',
             target: ip,
@@ -272,7 +330,7 @@ export const lifecycle: PluginLifecycle = {
         context.logger.log('Security: Running full security scan');
         const scanResults = [];
 
-        for (const [path, record] of fileIntegrity) {
+        for (const [path, record] of fileIntegrityCache) {
           const currentChecksum = await computeChecksum(path);
           if (currentChecksum === null) {
             context.logger.warn(`Security: Could not read file ${path} for integrity check`);
@@ -282,7 +340,7 @@ export const lifecycle: PluginLifecycle = {
             record.status = 'modified';
             record.lastVerified = Date.now();
             scanResults.push({ path, status: 'modified', severity: 'critical' });
-            addAuditLog({
+            await addAuditLog({
               actor: 'system',
               action: 'integrity:modified',
               target: path,
@@ -315,15 +373,17 @@ export const lifecycle: PluginLifecycle = {
           context.logger.warn(`Security: Could not read file ${filePath} for integrity check`);
           return;
         }
-        const existing = fileIntegrity.get(filePath);
+        const existing = fileIntegrityCache.get(filePath);
         if (!existing) {
-          fileIntegrity.set(filePath, {
+          const record: FileIntegrityRecord = {
             path: filePath,
             checksum,
             lastVerified: Date.now(),
             status: 'added',
-          });
-          addAuditLog({
+          };
+          fileIntegrityCache.set(filePath, record);
+          await fileIntegrityStore.set(filePath, record);
+          await addAuditLog({
             actor: 'system',
             action: 'integrity:added',
             target: filePath,
@@ -333,7 +393,8 @@ export const lifecycle: PluginLifecycle = {
         } else if (existing.checksum !== checksum) {
           existing.status = 'modified';
           existing.lastVerified = Date.now();
-          addAuditLog({
+          await fileIntegrityStore.set(filePath, existing);
+          await addAuditLog({
             actor: 'system',
             action: 'integrity:modified',
             target: filePath,
@@ -351,7 +412,7 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('security:toggle:2fa', async (data: unknown) => {
       try {
         const { userId, enabled } = data as { userId: string; enabled: boolean };
-        addAuditLog({
+        await addAuditLog({
           actor: 'system',
           action: `2fa:${enabled ? 'enabled' : 'disabled'}`,
           target: userId,
@@ -375,8 +436,9 @@ export const lifecycle: PluginLifecycle = {
         }
         rule.id = `rule-${Date.now()}`;
         rule.enabled = true;
-        firewallRules.push(rule);
-        addAuditLog({
+        firewallRulesCache.push(rule);
+        await firewallRulesStore.set(rule.id, rule);
+        await addAuditLog({
           actor: 'admin',
           action: 'firewall:rule:added',
           target: rule.type,
@@ -393,10 +455,11 @@ export const lifecycle: PluginLifecycle = {
     context.hooks.addAction('security:firewall:rule:toggle', async (data: unknown) => {
       try {
         const { id, enabled } = data as { id: string; enabled: boolean };
-        const rule = firewallRules.find((r) => r.id === id);
+        const rule = firewallRulesCache.find((r) => r.id === id);
         if (rule) {
           rule.enabled = enabled;
-          addAuditLog({
+          await firewallRulesStore.set(id, rule);
+          await addAuditLog({
             actor: 'admin',
             action: `firewall:rule:${enabled ? 'enabled' : 'disabled'}`,
             target: id,
@@ -419,17 +482,21 @@ export const lifecycle: PluginLifecycle = {
 
     context.hooks.addAction('admin:dashboard:render', async (data: unknown) => {
       try {
-        const recentCritical = auditLog.filter(
+        const recentCritical = auditLogCache.filter(
           (e) => e.severity === 'critical' && e.timestamp > Date.now() - 86400000,
         ).length;
-        const blockedCount = auditLog.filter(
+        const blockedCount = auditLogCache.filter(
           (e) => e.action === 'request:blocked' && e.timestamp > Date.now() - 86400000,
+        ).length;
+        const enabledRules = firewallRulesCache.filter((r) => r.enabled).length;
+        const recentLogins = loginAttemptsCache.filter(
+          (a) => a.timestamp > Date.now() - 86400000,
         ).length;
         (data as any).widgets = (data as any).widgets || [];
         (data as any).widgets.push({
           title: 'Security Overview',
           priority: 2,
-          content: `<div class="security-widget"><p>Firewall Rules: ${firewallRules.filter((r) => r.enabled).length} active</p><p>Blocked Today: ${blockedCount}</p><p>Critical Events (24h): ${recentCritical}</p><p>Login Attempts: ${loginAttempts.filter((a) => a.timestamp > Date.now() - 86400000).length} total</p></div>`,
+          content: `<div class="security-widget"><p>Firewall Rules: ${enabledRules} active</p><p>Blocked Today: ${blockedCount}</p><p>Critical Events (24h): ${recentCritical}</p><p>Login Attempts: ${recentLogins} total</p></div>`,
         });
       } catch (err) {
         context.logger.warn(

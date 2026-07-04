@@ -34,7 +34,13 @@ export { registerCapability, type CapabilityDefinition } from './capabilities.js
 
 export { registerShortcode, type ShortcodeHandler } from './shortcode.js';
 
-export { PluginStorage, createPluginStorage, type PluginStorageOptions } from './storage.js';
+export {
+  PluginStorage,
+  createPluginStorage,
+  PersistentPluginStore,
+  createPersistentStore,
+  type PluginStorageOptions,
+} from './storage.js';
 
 import type { PrismaClient } from '@prisma/client';
 

@@ -23,6 +23,7 @@ import { OEmbedModule } from './oembed/oembed.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminMenuModule } from './admin/admin-menu.module';
 import { GraphqlAppModule } from './graphql/graphql.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './common/prisma.module';
 import { WorkerModule } from './worker/worker.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -65,6 +66,7 @@ import { InstallCheckMiddleware } from './common/middleware/install-check.middle
     DashboardModule,
     AdminMenuModule,
     GraphqlAppModule,
+    NotificationsModule,
 
     // Background Workers (cron, scheduled actions)
     WorkerModule,
