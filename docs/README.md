@@ -2,17 +2,18 @@
 
 ## Product Requirements
 
-| Document             | Description                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [PRD1.md](./PRD1.md) | Core Product Requirements Document (v1.0) — Living Document, all Must Have features implemented              |
-| [PRD2.md](./PRD2.md) | Extended PRD: Security, Performance, Scalability (v2.0) — Living Document, all pillars implemented           |
-| [PRD3.md](./PRD3.md) | Gap Analysis: 147 gaps across 9 domains — Historical, all gaps closed                                        |
-| [PRD4.md](./PRD4.md) | Final Comprehensive Audit & Remediation Analysis — 298 issues fixed, ~90% WordPress parity                   |
-| [PRD5.md](./PRD5.md) | Final Audit & Remediation v5.0 — 229+ issues identified and fixed across API, Admin, Core, Plugins, and Docs |
-| [PRD6.md](./PRD6.md) | Final Audit & Remediation v6.0 — 39 remaining issues fixed                                                   |
-| [PRD7.md](./PRD7.md) | Production Readiness Plan v7.0 — ✅ Implementation Complete (v1.0-beta ready)                                |
-| [PRD8.md](./PRD8.md) | Installation Simplification v8.0 — One-click installer for everyone                                          |
-| [PRD9.md](./PRD9.md) | Zero-Warning Installation v9.0 — All installation errors fixed (latest)                                      |
+| Document               | Description                                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [PRD1.md](./PRD1.md)   | Core Product Requirements Document (v1.0) — Living Document, all Must Have features implemented              |
+| [PRD2.md](./PRD2.md)   | Extended PRD: Security, Performance, Scalability (v2.0) — Living Document, all pillars implemented           |
+| [PRD3.md](./PRD3.md)   | Gap Analysis: 147 gaps across 9 domains — Historical, all gaps closed                                        |
+| [PRD4.md](./PRD4.md)   | Final Comprehensive Audit & Remediation Analysis — 298 issues fixed, ~90% WordPress parity                   |
+| [PRD5.md](./PRD5.md)   | Final Audit & Remediation v5.0 — 229+ issues identified and fixed across API, Admin, Core, Plugins, and Docs |
+| [PRD6.md](./PRD6.md)   | Final Audit & Remediation v6.0 — 39 remaining issues fixed                                                   |
+| [PRD7.md](./PRD7.md)   | Production Readiness Plan v7.0 — ✅ Implementation Complete (v1.0-beta ready)                                |
+| [PRD8.md](./PRD8.md)   | Installation Simplification v8.0 — One-click installer for everyone                                          |
+| [PRD9.md](./PRD9.md)   | Zero-Warning Installation v9.0 — All installation errors fixed                                               |
+| [PRD10.md](./PRD10.md) | Zero-Warning Installation v10.0 — All warnings & errors fixed (latest)                                       |
 
 ## Technical Reports
 
