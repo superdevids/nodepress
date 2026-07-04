@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
-import { useApi, ApiError } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 
 interface SecuritySettings {
   '2fa_required': boolean;
@@ -40,10 +40,10 @@ export default function SecuritySettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await api.get<SecuritySettings>('/settings/security');
-      setSettings({ ...DEFAULT_SETTINGS, ...data });
+      const res = await api.get<SecuritySettings>('/settings/security');
+      setSettings({ ...DEFAULT_SETTINGS, ...res.data });
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Failed to load settings';
+      const msg = err instanceof Error ? err.message : 'Failed to load settings';
       setFetchError(msg);
       showError('Error', msg);
     } finally {
@@ -58,10 +58,10 @@ export default function SecuritySettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/settings/security', settings);
+      await api.patch('/settings/security', settings);
       success('Security settings saved', 'Security settings have been updated.');
     } catch (err) {
-      showError('Failed to save', err instanceof ApiError ? err.message : 'Please try again.');
+      showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);
     }

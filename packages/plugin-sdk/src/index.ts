@@ -70,7 +70,13 @@ export interface PluginLifecycle {
 export interface PluginContext {
   hooks: HookRegistry;
   prisma: PrismaClient;
-  cache: unknown;
-  shortcode: unknown;
+  cache: Map<string, unknown>;
+  shortcode?: {
+    register: (
+      tag: string,
+      handler: (attrs: Record<string, string>, content?: string) => string | Promise<string>,
+      description?: string,
+    ) => void;
+  };
   logger: Console;
 }

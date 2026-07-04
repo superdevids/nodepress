@@ -3,13 +3,13 @@
  * Provides a full NodePress engine instance for integration testing.
  */
 
-import http from "node:http";
-import { PrismaClient } from "@nodepressjs/db";
-import type { NodePressEngine, NodePressEngineOptions } from "@nodepressjs/core";
+import http from 'node:http';
+import { PrismaClient } from '@nodepressjs/db';
+import type { NodePressEngine } from '@nodepressjs/core';
 
 export interface TestServerOptions {
   database?: {
-    type: "postgres" | "sqlite";
+    type: 'postgres' | 'sqlite';
     container?: boolean;
     url?: string;
   };
@@ -43,7 +43,10 @@ export class TestServer {
     const prisma = new PrismaClient({
       datasources: {
         db: {
-          url: this.options.database?.url ?? process.env.DATABASE_URL ?? "postgresql://nodepress:nodepress@localhost:5432/nodepress_test",
+          url:
+            this.options.database?.url ??
+            process.env.DATABASE_URL ??
+            'postgresql://nodepress:nodepress@localhost:5432/nodepress_test',
         },
       },
     });
@@ -51,20 +54,32 @@ export class TestServer {
     this.prisma = prisma;
     await prisma.$connect();
 
-    const { NodePressEngine, ContentEngine, PluginEngine, ThemeEngine, AuthService, MediaService, CacheService, ShortcodeEngine, OEmbedService, PermalinkService, SecurityService, ConfigService, HookRegistry } = await import("@nodepressjs/core");
+    const {
+      NodePressEngine,
+      ContentEngine,
+      PluginEngine,
+      ThemeEngine,
+      AuthService,
+      MediaService,
+      CacheService,
+      ShortcodeEngine,
+      OEmbedService,
+      PermalinkService,
+      SecurityService,
+      ConfigService,
+    } = await import('@nodepressjs/core');
 
     const config = new ConfigService();
-    const hooks = new HookRegistry();
     const cache = new CacheService();
     const shortcode = new ShortcodeEngine();
     const oembed = new OEmbedService();
     const permalink = new PermalinkService();
-    const security = new SecurityService(config);
+    const security = new SecurityService();
     const plugins = new PluginEngine(prisma);
-    const content = new ContentEngine(prisma, hooks);
+    const content = new ContentEngine(prisma);
     const themes = new ThemeEngine();
-    const auth = new AuthService(prisma, config);
-    const media = new MediaService(prisma, config);
+    const auth = new AuthService(prisma);
+    const media = new MediaService();
 
     if (this.options.plugins) {
       for (const pluginSlug of this.options.plugins) {
@@ -73,32 +88,40 @@ export class TestServer {
           if (pluginModule.manifest && pluginModule.lifecycle) {
             plugins.registerPlugin(pluginModule.manifest, pluginModule.lifecycle);
           }
-        } catch {
-        }
+        } catch {}
       }
     }
 
     this.engine = new NodePressEngine({
-      config, content, plugins, themes, auth, media, cache,
-      shortcode, oembed, permalink, security,
+      config,
+      content,
+      plugins,
+      themes,
+      auth,
+      media,
+      cache,
+      shortcode,
+      oembed,
+      permalink,
+      security,
     });
 
     await this.engine.initialize();
 
     return new Promise((resolve, reject) => {
       this.server = http.createServer(async (req, res) => {
-        res.setHeader("Content-Type", "application/json");
+        res.setHeader('Content-Type', 'application/json');
         try {
-          const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+          const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
           const path = url.pathname;
 
-          if (path === "/healthz") {
+          if (path === '/healthz') {
             res.writeHead(200);
-            res.end(JSON.stringify({ status: "ok" }));
+            res.end(JSON.stringify({ status: 'ok' }));
             return;
           }
 
-          if (path.startsWith("/api/content") && req.method === "GET") {
+          if (path.startsWith('/api/content') && req.method === 'GET') {
             const entries = await prisma.contentEntry.findMany({ take: 50 });
             res.writeHead(200);
             res.end(JSON.stringify({ data: entries }));
@@ -106,64 +129,73 @@ export class TestServer {
           }
 
           res.writeHead(404);
-          res.end(JSON.stringify({ error: "Not found" }));
+          res.end(JSON.stringify({ error: 'Not found' }));
         } catch (err) {
           res.writeHead(500);
-          res.end(JSON.stringify({ error: err instanceof Error ? err.message : "Internal server error" }));
+          res.end(
+            JSON.stringify({ error: err instanceof Error ? err.message : 'Internal server error' }),
+          );
         }
       });
 
       this.server.listen(this.port, () => {
         const addr = this.server?.address();
-        if (addr && typeof addr === "object") {
+        if (addr && typeof addr === 'object') {
           this.port = addr.port;
           resolve(addr.port);
         } else {
-          reject(new Error("Failed to get server port"));
+          reject(new Error('Failed to get server port'));
         }
       });
-      this.server.on("error", reject);
+      this.server.on('error', reject);
     });
   }
 
-  async request(path: string, options: { method?: string; headers?: Record<string, string>; body?: unknown } = {}): Promise<{ status: number; headers: Record<string, string>; body: unknown }> {
+  async request(
+    path: string,
+    options: { method?: string; headers?: Record<string, string>; body?: unknown } = {},
+  ): Promise<{ status: number; headers: Record<string, string>; body: unknown }> {
     return new Promise((resolve, reject) => {
       const url = `http://localhost:${this.port}${path}`;
       const req = http.request(
         url,
         {
-          method: options.method ?? "GET",
-          headers: { "Content-Type": "application/json", ...options.headers },
+          method: options.method ?? 'GET',
+          headers: { 'Content-Type': 'application/json', ...options.headers },
         },
         (res) => {
-          let data = "";
+          let data = '';
           const responseHeaders: Record<string, string> = {};
           for (let i = 0; i < (res.rawHeaders?.length ?? 0); i += 2) {
             responseHeaders[res.rawHeaders![i]!.toLowerCase()] = res.rawHeaders![i + 1]!;
           }
-          res.on("data", (chunk: Buffer) => (data += chunk.toString()));
-          res.on("end", () => {
+          res.on('data', (chunk: Buffer) => (data += chunk.toString()));
+          res.on('end', () => {
             try {
-              resolve({ status: res.statusCode ?? 500, headers: responseHeaders, body: JSON.parse(data) });
+              resolve({
+                status: res.statusCode ?? 500,
+                headers: responseHeaders,
+                body: JSON.parse(data),
+              });
             } catch {
               resolve({ status: res.statusCode ?? 500, headers: responseHeaders, body: data });
             }
           });
         },
       );
-      req.on("error", reject);
+      req.on('error', reject);
       if (options.body) req.write(JSON.stringify(options.body));
       req.end();
     });
   }
 
   getEngine(): NodePressEngine {
-    if (!this.engine) throw new Error("Server not started. Call start() first.");
+    if (!this.engine) throw new Error('Server not started. Call start() first.');
     return this.engine;
   }
 
   getPrisma(): PrismaClient {
-    if (!this.prisma) throw new Error("Server not started. Call start() first.");
+    if (!this.prisma) throw new Error('Server not started. Call start() first.');
     return this.prisma;
   }
 

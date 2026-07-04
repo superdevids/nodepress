@@ -79,7 +79,7 @@ export class ApiClient {
     body?: unknown,
     options?: { signal?: AbortSignal },
   ): Promise<ApiResponse<T>> {
-    const url = `${this.baseUrl}/api${path}`;
+    const url = `${this.baseUrl}${path}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Accept: 'application/json',
@@ -137,7 +137,7 @@ export class ApiClient {
     }
 
     this.refreshPromise = (async () => {
-      const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: this.refreshToken }),

@@ -1,14 +1,13 @@
-"use client";
+'use client';
 
-import { ThemeProvider } from "next-themes";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
-import { Toaster } from "sonner";
-import { ToastProvider } from "@/components/ui/toast";
-import { NoticeProvider } from "@/components/layout/admin-notices";
-import { AuthProvider } from "@/lib/auth";
-import { ErrorBoundary } from "@/components/error-boundary";
-import { env } from "@/lib/env";
+import { ThemeProvider } from 'next-themes';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+import { ToastProvider } from '@/components/ui/toast';
+import { NoticeProvider } from '@/components/layout/admin-notices';
+import { AuthProvider } from '@/lib/auth';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { env } from '@/lib/env';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -35,10 +34,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         >
           <ToastProvider>
             <NoticeProvider>
-              <AuthProvider apiUrl={env.NEXT_PUBLIC_API_URL}>
-                {children}
-                <Toaster richColors closeButton />
-              </AuthProvider>
+              <AuthProvider apiUrl={env.NEXT_PUBLIC_API_URL}>{children}</AuthProvider>
             </NoticeProvider>
           </ToastProvider>
         </ThemeProvider>

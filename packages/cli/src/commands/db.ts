@@ -34,6 +34,7 @@ function getDbPackageDir(): string {
 }
 
 function runPrisma(args: string[], label: string): void {
+  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL environment variable is required');
   const spinner = createSpinner(label);
   spinner.start();
   try {
@@ -48,7 +49,7 @@ function runPrisma(args: string[], label: string): void {
         stdio: 'pipe',
         env: {
           ...process.env,
-          DATABASE_URL: process.env.DATABASE_URL || 'postgresql://localhost:5432/nodepress',
+          DATABASE_URL: process.env.DATABASE_URL,
         },
       },
     );

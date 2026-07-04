@@ -21,22 +21,32 @@ export type CustomizerControl = {
   choices?: Record<string, string>;
 } & Record<string, unknown>;
 
-function getStorage(): Storage | null {
+const memoryStore = new Map<string, string>();
+
+/**
+ * Unified storage wrapper that prefers localStorage when available
+ * (browser environment) and falls back to an in-memory Map otherwise
+ * (SSR, Node.js, tests).
+ */
+function getItem(key: string): string | null {
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-    return localStorage;
+    return localStorage.getItem(key);
   }
-  return null;
+  return memoryStore.get(key) ?? null;
 }
 
-const memoryStore = new Map<string, string>();
+function setItem(key: string, value: string): void {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    localStorage.setItem(key, value);
+  } else {
+    memoryStore.set(key, value);
+  }
+}
 
 export class ThemeCustomizerPanel {
   private panels: Map<string, CustomizerPanel> = new Map();
-  private storage: Storage | null;
 
-  constructor() {
-    this.storage = getStorage();
-  }
+  constructor() {}
 
   registerPanel(panel: CustomizerPanel): void {
     this.panels.set(panel.id, panel);
@@ -52,22 +62,12 @@ export class ThemeCustomizerPanel {
 
   saveSetting(panelId: string, sectionId: string, controlId: string, value: unknown): void {
     const key = `customizer_${panelId}_${sectionId}_${controlId}`;
-    const serialized = JSON.stringify(value);
-    if (this.storage) {
-      this.storage.setItem(key, serialized);
-    } else {
-      memoryStore.set(key, serialized);
-    }
+    setItem(key, JSON.stringify(value));
   }
 
   getSetting(panelId: string, sectionId: string, controlId: string): unknown {
     const key = `customizer_${panelId}_${sectionId}_${controlId}`;
-    let raw: string | null = null;
-    if (this.storage) {
-      raw = this.storage.getItem(key);
-    } else {
-      raw = memoryStore.get(key) ?? null;
-    }
+    const raw = getItem(key);
     return raw ? JSON.parse(raw) : null;
   }
 }

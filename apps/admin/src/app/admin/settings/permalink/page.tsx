@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
-import { useApi, ApiError } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 
 interface PermalinkSettings {
   permalink_structure: string;
@@ -68,14 +68,15 @@ export default function PermalinkSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await api.get<PermalinkSettings>('/settings/permalink');
+      const res = await api.get<PermalinkSettings>('/settings/permalink');
+      const data = res.data;
       setSettings({ ...DEFAULT_SETTINGS, ...data });
       // Detect if current structure is custom
       if (data.permalink_structure && !PRESET_STRUCTURES.includes(data.permalink_structure)) {
         setCustomStructure(data.permalink_structure);
       }
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Failed to load settings';
+      const msg = err instanceof Error ? err.message : 'Failed to load settings';
       setFetchError(msg);
       showError('Error', msg);
     } finally {
@@ -111,10 +112,10 @@ export default function PermalinkSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/settings/permalink', settings);
+      await api.patch('/settings/permalink', settings);
       success('Permalink structure saved', 'URL structure has been updated.');
     } catch (err) {
-      showError('Failed to save', err instanceof ApiError ? err.message : 'Please try again.');
+      showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);
     }

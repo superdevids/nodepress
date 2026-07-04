@@ -132,8 +132,10 @@ export class WebhooksService {
   }
 
   async trigger(event: string, payload: Record<string, unknown>): Promise<void> {
+    // Events are stored as JSON array strings (e.g. '["user.created","post.published"]'),
+    // so we use `contains` to match webhooks whose event array includes the target event.
     const subs = await this.prisma.webhookSubscription.findMany({
-      where: { event, active: true },
+      where: { event: { contains: event }, active: true },
     });
     for (const sub of subs) {
       this.deliver(sub.id, sub.targetUrl, sub.secret, event, payload).catch((err) =>

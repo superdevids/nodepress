@@ -33,9 +33,9 @@ const DEFAULT_CSP_CONFIG: CspConfig = {
   defaultSrc: ["'self'"],
   scriptSrc: ["'self'", "'unsafe-eval'", "'unsafe-inline'"],
   styleSrc: ["'self'", "'unsafe-inline'"],
-  imgSrc: ["'self'", "data:", "https:", "blob:"],
-  mediaSrc: ["'self'", "https:"],
-  connectSrc: ["'self'", "https:"],
+  imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+  mediaSrc: ["'self'", 'https:'],
+  connectSrc: ["'self'", 'https:'],
   frameAncestors: ["'none'"],
   baseUri: ["'self'"],
   formAction: ["'self'"],
@@ -113,7 +113,6 @@ export class CspService {
     }
     if (this.config.reportUri) {
       parts.push(`report-uri ${this.config.reportUri}`);
-      parts.push(`report-to csp-endpoint`);
     }
 
     return parts.join('; ');

@@ -77,7 +77,9 @@ export class AuthService {
 
     // Send welcome email (non-blocking — failures are logged, not thrown)
     const userName = user.displayName || user.name || dto.email.split('@')[0];
-    this.mailService.sendWelcomeEmail(dto.email, userName).catch(() => {});
+    this.mailService
+      .sendWelcomeEmail(dto.email, userName)
+      .catch((err) => this.logger.warn('Failed to send welcome email', err));
 
     return this.sanitizeUser(user);
   }
@@ -169,6 +171,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       permissions: user.capabilities?.length ? user.capabilities : ['read'],
+      sessionId: session.id,
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -230,19 +233,8 @@ export class AuthService {
     user: Record<string, unknown>,
     sessionInfo?: { ipAddress: string; userAgent: string; rememberMe: boolean },
   ) {
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role ?? 'SUBSCRIBER',
-      permissions: user.permissions?.length ? user.permissions : ['read'],
-    };
-
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: JWT_ACCESS_TOKEN_EXPIRES_IN,
-      issuer: JWT_ISSUER,
-    });
-
     const refreshToken = uuidv4();
+    let sessionId = '';
 
     if (sessionInfo) {
       const session = await this.sessionService.create({
@@ -252,15 +244,25 @@ export class AuthService {
         userAgent: sessionInfo.userAgent,
         rememberMe: sessionInfo.rememberMe,
       });
-
-      return {
-        accessToken,
-        refreshToken,
-        sessionId: session.id,
-      };
+      sessionId = session.id;
     }
 
-    return { accessToken, refreshToken, sessionId: '' };
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role ?? 'SUBSCRIBER',
+      permissions: user.permissions?.length ? user.permissions : ['read'],
+    };
+    if (sessionId) {
+      payload.sessionId = sessionId;
+    }
+
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: JWT_ACCESS_TOKEN_EXPIRES_IN,
+      issuer: JWT_ISSUER,
+    });
+
+    return { accessToken, refreshToken, sessionId };
   }
 
   private sanitizeUser(user: Record<string, unknown>) {

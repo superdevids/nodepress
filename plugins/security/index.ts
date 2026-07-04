@@ -274,6 +274,10 @@ export const lifecycle: PluginLifecycle = {
 
         for (const [path, record] of fileIntegrity) {
           const currentChecksum = await computeChecksum(path);
+          if (currentChecksum === null) {
+            context.logger.warn(`Security: Could not read file ${path} for integrity check`);
+            continue;
+          }
           if (currentChecksum !== record.checksum) {
             record.status = 'modified';
             record.lastVerified = Date.now();
@@ -307,6 +311,10 @@ export const lifecycle: PluginLifecycle = {
           return;
         }
         const checksum = await computeChecksum(filePath);
+        if (checksum === null) {
+          context.logger.warn(`Security: Could not read file ${filePath} for integrity check`);
+          return;
+        }
         const existing = fileIntegrity.get(filePath);
         if (!existing) {
           fileIntegrity.set(filePath, {
@@ -442,11 +450,13 @@ export const lifecycle: PluginLifecycle = {
   },
 };
 
-async function computeChecksum(filePath: string): Promise<string> {
+async function computeChecksum(filePath: string): Promise<string | null> {
   try {
     const content = readFileSync(filePath);
     return createHash('sha256').update(content).digest('hex');
   } catch {
-    return `${filePath.length}-${Date.now()}`;
+    // Returning a fake checksum would silently mask integrity issues.
+    // Signal failure so callers can decide how to handle unreadable files.
+    return null;
   }
 }

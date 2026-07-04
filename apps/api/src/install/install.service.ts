@@ -86,14 +86,20 @@ export class InstallService {
       return { success: false, message };
     } finally {
       if (prisma) {
-        await prisma.$disconnect().catch(() => {});
+        await prisma
+          .$disconnect()
+          .catch((err: Error) =>
+            this.logger.warn('Failed to disconnect Prisma after DB test', err.message),
+          );
       }
     }
   }
 
   async runInstall(input: InstallInput): Promise<{ success: boolean; adminUrl: string }> {
     if (isInstalled()) {
-      throw new BadRequestException('NodePress is already installed. Delete config/nodepress.config.json to reinstall.');
+      throw new BadRequestException(
+        'NodePress is already installed. Delete config/nodepress.config.json to reinstall.',
+      );
     }
 
     this.logger.log('Starting NodePress installation...');
@@ -104,7 +110,9 @@ export class InstallService {
 
     // 2. Build database URL and connect
     const dbUrl = buildDatabaseUrl(input.db);
-    this.logger.log(`Connecting to database at ${input.db.host}:${input.db.port}/${input.db.name}...`);
+    this.logger.log(
+      `Connecting to database at ${input.db.host}:${input.db.port}/${input.db.name}...`,
+    );
 
     let prisma: PrismaClient | null = null;
     try {
@@ -117,7 +125,16 @@ export class InstallService {
       // 3. Run Prisma migrations
       this.logger.log('Running database migrations...');
       try {
-        const schemaPath = join(__dirname, '..', '..', 'node_modules', '@nodepress', 'db', 'prisma', 'schema.prisma');
+        const schemaPath = join(
+          __dirname,
+          '..',
+          '..',
+          'node_modules',
+          '@nodepress',
+          'db',
+          'prisma',
+          'schema.prisma',
+        );
         const migrateCommand = `npx prisma migrate deploy --schema="${schemaPath}"`;
         execSync(migrateCommand, {
           env: { ...process.env, DATABASE_URL: dbUrl },
@@ -128,7 +145,16 @@ export class InstallService {
       } catch (migrateErr: any) {
         this.logger.warn(`Migration deploy failed, trying db push: ${migrateErr.message}`);
         try {
-          const schemaPath = join(__dirname, '..', '..', 'node_modules', '@nodepress', 'db', 'prisma', 'schema.prisma');
+          const schemaPath = join(
+            __dirname,
+            '..',
+            '..',
+            'node_modules',
+            '@nodepress',
+            'db',
+            'prisma',
+            'schema.prisma',
+          );
           execSync(`npx prisma db push --schema="${schemaPath}" --accept-data-loss`, {
             env: { ...process.env, DATABASE_URL: dbUrl },
             stdio: 'pipe',
@@ -182,7 +208,11 @@ export class InstallService {
     } catch (err: any) {
       this.logger.error(`Installation failed: ${err.message}`);
       if (prisma) {
-        await prisma.$disconnect().catch(() => {});
+        await prisma
+          .$disconnect()
+          .catch((err: Error) =>
+            this.logger.warn('Failed to disconnect Prisma after install failure', err.message),
+          );
       }
       throw new BadRequestException(`Installation failed: ${err.message}`);
     }

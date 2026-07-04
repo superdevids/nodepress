@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
-import { useApi, ApiError } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 
 interface GeneralSettings {
   site_title: string;
@@ -95,10 +95,10 @@ export default function GeneralSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await api.get<GeneralSettings>('/settings/general');
-      setSettings({ ...DEFAULT_SETTINGS, ...data });
+      const res = await api.get<GeneralSettings>('/settings/general');
+      setSettings({ ...DEFAULT_SETTINGS, ...res.data });
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Failed to load settings';
+      const msg = err instanceof Error ? err.message : 'Failed to load settings';
       setFetchError(msg);
       showError('Error', msg);
     } finally {
@@ -113,10 +113,10 @@ export default function GeneralSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/settings/general', settings);
+      await api.patch('/settings/general', settings);
       success('Settings saved', 'General settings have been updated.');
     } catch (err) {
-      showError('Failed to save', err instanceof ApiError ? err.message : 'Please try again.');
+      showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);
     }

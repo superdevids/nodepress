@@ -110,12 +110,22 @@ export class ContentService {
     return this.toContentEntry(entry);
   }
 
-  async update(id: string, dto: UpdateContentDto): Promise<ContentEntry> {
+  async update(
+    id: string,
+    dto: UpdateContentDto,
+    userId?: string,
+    role?: string,
+  ): Promise<ContentEntry> {
     const entry = await this.prisma.contentEntry.findUnique({
       where: { id },
       include: { contentType: true },
     });
     if (!entry) throw new NotFoundException(`Content ${id} not found`);
+
+    // Editors can only update their own content
+    if (role === 'EDITOR' && userId && entry.authorId !== userId) {
+      throw new NotFoundException(`Content ${id} not found`);
+    }
 
     const data = entry.data as Record<string, unknown>;
     if (dto.title !== undefined) data.title = dto.title;
@@ -147,9 +157,15 @@ export class ContentService {
     return this.toContentEntry(updated);
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, userId?: string, role?: string): Promise<void> {
     const entry = await this.prisma.contentEntry.findUnique({ where: { id } });
     if (!entry) throw new NotFoundException(`Content ${id} not found`);
+
+    // Editors can only delete their own content
+    if (role === 'EDITOR' && userId && entry.authorId !== userId) {
+      throw new NotFoundException(`Content ${id} not found`);
+    }
+
     await this.prisma.contentEntry.delete({ where: { id } });
     this.logger.log(`Content deleted: ${id}`);
   }

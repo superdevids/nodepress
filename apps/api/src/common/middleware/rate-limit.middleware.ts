@@ -25,7 +25,7 @@ export class RateLimitMiddleware implements NestMiddleware {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const user = (req as any).user;
 
-    if (req.path?.includes('/auth/login')) {
+    if (req.path === '/auth/login' || req.path === '/api/auth/login') {
       const identifier = user?.sub || ip;
       const result = await this.rateLimitDetail.check(identifier, 'login');
       if (!result.allowed) {

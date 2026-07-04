@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { STORAGE_KEYS } from '@/lib/constants';
 
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'EDITOR' | 'AUTHOR' | 'CONTRIBUTOR' | 'SUBSCRIBER';
 
@@ -32,7 +33,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children, apiUrl }: { children: React.ReactNode; apiUrl: string }) {
   const [state, setState] = useState<AuthState>(() => ({
     user: null,
-    token: typeof window !== 'undefined' ? localStorage.getItem('np_token') : null,
+    token: typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) : null,
     refreshToken: null,
     isLoading: true,
     isAuthenticated: false,
@@ -84,7 +85,7 @@ export function AuthProvider({ children, apiUrl }: { children: React.ReactNode; 
 
         if (token) {
           try {
-            localStorage.setItem('np_token', token);
+            localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
           } catch {
             /* noop */
           }
@@ -111,7 +112,7 @@ export function AuthProvider({ children, apiUrl }: { children: React.ReactNode; 
       credentials: 'include',
     }).catch(() => {});
     try {
-      localStorage.removeItem('np_token');
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     } catch {
       /* noop */
     }

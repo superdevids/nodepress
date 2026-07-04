@@ -33,6 +33,7 @@ export class RecoveryController {
     return { success: true, message: 'Recovery mode deactivated' };
   }
 
+  @Public()
   @Get('status')
   @ApiOperation({ summary: 'Check recovery mode status' })
   async status() {

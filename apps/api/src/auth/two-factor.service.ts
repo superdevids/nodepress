@@ -75,7 +75,9 @@ export class TwoFactorService {
   }
 
   async disable(userId: string): Promise<void> {
-    await this.prisma.twoFactorSecret.delete({ where: { userId } }).catch(() => {});
+    await this.prisma.twoFactorSecret
+      .delete({ where: { userId } })
+      .catch((err: Error) => this.logger.warn('Failed to disable 2FA', err.message));
     this.logger.log(`2FA disabled for user ${userId}`);
   }
 

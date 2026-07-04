@@ -1,5 +1,6 @@
 import { Controller, Get, Query, Header, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Public } from '../common/decorators/public.decorator';
 import { FeedsService } from './feeds.service';
 
 @ApiTags('Feeds')
@@ -7,6 +8,7 @@ import { FeedsService } from './feeds.service';
 export class FeedsController {
   constructor(private readonly feedsService: FeedsService) {}
 
+  @Public()
   @Get('posts')
   @Header('Content-Type', 'application/rss+xml; charset=utf-8')
   @ApiOperation({ summary: 'Get RSS feed for published posts' })
@@ -22,6 +24,7 @@ export class FeedsController {
     );
   }
 
+  @Public()
   @Get('comments')
   @Header('Content-Type', 'application/rss+xml; charset=utf-8')
   @ApiOperation({ summary: 'Get RSS feed for recent comments' })

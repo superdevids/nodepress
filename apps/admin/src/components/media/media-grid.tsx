@@ -142,10 +142,18 @@ export function MediaGrid({
                         <DropdownMenuItem onClick={() => onEdit?.(item)}>
                           <Edit3 className="mr-2 h-4 w-4" /> Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            /* TODO: Implement view media */
+                          }}
+                        >
                           <Eye className="mr-2 h-4 w-4" /> View
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            /* TODO: Implement download */
+                          }}
+                        >
                           <Download className="mr-2 h-4 w-4" /> Download
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -210,7 +218,11 @@ export function MediaGrid({
                       <DropdownMenuItem onClick={() => onEdit?.(item)}>
                         <Edit3 className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          /* TODO: Implement download */
+                        }}
+                      >
                         <Download className="mr-2 h-4 w-4" /> Download
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />

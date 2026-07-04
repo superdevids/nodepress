@@ -51,6 +51,13 @@ const mockAuditService = {
 
 const mockConfigService = {};
 
+const mockMailService = {
+  sendWelcomeEmail: vi.fn().mockResolvedValue(undefined),
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+  sendCommentNotification: vi.fn().mockResolvedValue(undefined),
+  sendContentPublishedNotification: vi.fn().mockResolvedValue(undefined),
+};
+
 const { AuthService } = await import('../auth.service.js');
 
 describe('AuthService', () => {
@@ -66,6 +73,7 @@ describe('AuthService', () => {
       mockTwoFactorService as any,
       mockAuditService as any,
       mockPrisma as any,
+      mockMailService as any,
     );
   });
 

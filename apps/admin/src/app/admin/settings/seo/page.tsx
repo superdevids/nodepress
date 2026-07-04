@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
-import { useApi, ApiError } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 
 interface SEOSettings {
   meta_title: string;
@@ -43,10 +43,10 @@ export default function SEOSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await api.get<SEOSettings>('/settings/seo');
-      setSettings({ ...DEFAULT_SETTINGS, ...data });
+      const res = await api.get<SEOSettings>('/settings/seo');
+      setSettings({ ...DEFAULT_SETTINGS, ...res.data });
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Failed to load settings';
+      const msg = err instanceof Error ? err.message : 'Failed to load settings';
       setFetchError(msg);
       showError('Error', msg);
     } finally {
@@ -61,10 +61,10 @@ export default function SEOSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/settings/seo', settings);
+      await api.patch('/settings/seo', settings);
       success('SEO settings saved', 'Default meta settings have been updated.');
     } catch (err) {
-      showError('Failed to save', err instanceof ApiError ? err.message : 'Please try again.');
+      showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);
     }

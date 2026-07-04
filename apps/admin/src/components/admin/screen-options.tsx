@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Settings2, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import * as React from 'react';
+import { Settings2, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,16 +13,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useLocalStorage } from "@/lib/hooks";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/select';
+import { useLocalStorage } from '@/lib/hooks';
+import { Separator } from '@/components/ui/separator';
+import { STORAGE_KEYS } from '@/lib/constants';
 
 interface Column {
   id: string;
@@ -40,7 +41,7 @@ interface ScreenOptionsProps {
 interface ScreenOption {
   id: string;
   label: string;
-  type: "toggle" | "select" | "number";
+  type: 'toggle' | 'select' | 'number';
   defaultValue?: string | number | boolean;
   value?: string | number | boolean;
   options?: { label: string; value: string }[];
@@ -58,15 +59,14 @@ export function ScreenOptions({
   onPerPageChange,
   onColumnsChange,
 }: ScreenOptionsProps) {
-  const [perPage, setPerPage] = useLocalStorage("nodepress_screen_per_page", defaultPerPage);
+  const [perPage, setPerPage] = useLocalStorage(STORAGE_KEYS.SCREEN_PER_PAGE, defaultPerPage);
   const [visibleColumns, setVisibleColumns] = useLocalStorage<string[]>(
-    "nodepress_screen_columns",
+    STORAGE_KEYS.SCREEN_COLUMNS,
     columns.filter((c) => c.defaultVisible !== false).map((c) => c.id),
   );
-  const [pluginOptions, setPluginOptions] = useLocalStorage<Record<string, string | number | boolean>>(
-    "nodepress_screen_plugin_options",
-    {},
-  );
+  const [pluginOptions, setPluginOptions] = useLocalStorage<
+    Record<string, string | number | boolean>
+  >(STORAGE_KEYS.SCREEN_PLUGIN_OPTIONS, {});
 
   const handlePerPageChange = (value: string) => {
     const num = parseInt(value, 10);
@@ -86,7 +86,7 @@ export function ScreenOptions({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm">
-          <Settings2 className="h-4 w-4 mr-1.5" />
+          <Settings2 className="mr-1.5 h-4 w-4" />
           Screen Options
         </Button>
       </DropdownMenuTrigger>
@@ -94,11 +94,8 @@ export function ScreenOptions({
         <DropdownMenuLabel>Pagination</DropdownMenuLabel>
         <div className="px-2 py-1.5">
           <div className="flex items-center gap-2">
-            <Label className="text-xs w-20">Items per page:</Label>
-            <Select
-              value={String(perPage)}
-              onValueChange={handlePerPageChange}
-            >
+            <Label className="w-20 text-xs">Items per page:</Label>
+            <Select value={String(perPage)} onValueChange={handlePerPageChange}>
               <SelectTrigger className="h-8 w-20">
                 <SelectValue />
               </SelectTrigger>
@@ -134,28 +131,28 @@ export function ScreenOptions({
             <DropdownMenuLabel>Plugin Options</DropdownMenuLabel>
             {Array.from(registeredOptions.entries()).map(([id, option]) => (
               <div key={id} className="px-2 py-1.5">
-                {option.type === "toggle" && (
+                {option.type === 'toggle' && (
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id={`so-${id}`}
-                      checked={(pluginOptions[id] as boolean) ?? (option.defaultValue as boolean) ?? false}
+                      checked={
+                        (pluginOptions[id] as boolean) ?? (option.defaultValue as boolean) ?? false
+                      }
                       onCheckedChange={(checked) =>
                         setPluginOptions((prev) => ({ ...prev, [id]: !!checked }))
                       }
                     />
-                    <Label htmlFor={`so-${id}`} className="text-xs cursor-pointer">
+                    <Label htmlFor={`so-${id}`} className="cursor-pointer text-xs">
                       {option.label}
                     </Label>
                   </div>
                 )}
-                {option.type === "select" && option.options && (
+                {option.type === 'select' && option.options && (
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs w-20">{option.label}:</Label>
+                    <Label className="w-20 text-xs">{option.label}:</Label>
                     <Select
-                      value={String(pluginOptions[id] ?? option.defaultValue ?? "")}
-                      onValueChange={(val) =>
-                        setPluginOptions((prev) => ({ ...prev, [id]: val }))
-                      }
+                      value={String(pluginOptions[id] ?? option.defaultValue ?? '')}
+                      onValueChange={(val) => setPluginOptions((prev) => ({ ...prev, [id]: val }))}
                     >
                       <SelectTrigger className="h-8 flex-1">
                         <SelectValue />
@@ -170,15 +167,18 @@ export function ScreenOptions({
                     </Select>
                   </div>
                 )}
-                {option.type === "number" && (
+                {option.type === 'number' && (
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs w-20">{option.label}:</Label>
+                    <Label className="w-20 text-xs">{option.label}:</Label>
                     <Input
                       type="number"
                       className="h-8 w-20"
-                      value={String(pluginOptions[id] ?? option.defaultValue ?? "")}
+                      value={String(pluginOptions[id] ?? option.defaultValue ?? '')}
                       onChange={(e) =>
-                        setPluginOptions((prev) => ({ ...prev, [id]: parseInt(e.target.value, 10) || 0 }))
+                        setPluginOptions((prev) => ({
+                          ...prev,
+                          [id]: parseInt(e.target.value, 10) || 0,
+                        }))
                       }
                     />
                   </div>

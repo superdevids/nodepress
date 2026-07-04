@@ -130,7 +130,7 @@ export default function LoginPage() {
                     href="/admin/login/forgot-password"
                     className="text-primary text-sm hover:underline"
                   >
-                    {/* TODO: Implement forgot password flow at /admin/login/forgot-password */}
+                    {/* TODO: Implement forgot password flow at /admin/login/forgot-password — requires backend POST /auth/forgot-password endpoint */}
                     Forgot password?
                   </a>
                 </div>
@@ -165,7 +165,7 @@ export default function LoginPage() {
           <span>
             NodePress v0.1.0 —{' '}
             <a href="/admin/login/help" className="text-primary hover:underline">
-              {/* TODO: Implement help page at /admin/login/help */}
+              {/* TODO: Implement help page at /admin/login/help — create a static help page with login troubleshooting */}
               Need help?
             </a>
           </span>

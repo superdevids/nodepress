@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { AdminSidebar } from './admin-sidebar';
 import { AdminHeader } from './admin-header';
 import { AdminBar } from './admin-bar';
+import { APP_VERSION } from '@/lib/constants';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -51,7 +52,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
           <footer className="text-muted-foreground border-t px-6 py-3 text-xs">
             <div className="flex items-center justify-between">
-              <span>NodePress v0.1.0</span>
+              <span>NodePress v{APP_VERSION}</span>
               <span>
                 <a
                   href="https://nodepress.dev"

@@ -77,7 +77,12 @@ export function AdminBar() {
           <span>View Site</span>
         </a>
 
-        <button className="hover:bg-sidebar-accent flex h-full items-center px-3">
+        <button
+          onClick={() => {
+            /* TODO: Open notifications panel */
+          }}
+          className="hover:bg-sidebar-accent flex h-full items-center px-3"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"

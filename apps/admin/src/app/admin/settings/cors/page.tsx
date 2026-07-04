@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
-import { useApi, ApiError } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 
 interface CORSSettings {
   allowed_origins: string[];
@@ -40,7 +40,8 @@ export default function CORSSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await api.get<CORSSettings>('/settings/cors');
+      const res = await api.get<CORSSettings>('/settings/cors');
+      const data = res.data;
       setSettings({
         allowed_origins: Array.isArray(data.allowed_origins) ? data.allowed_origins : [],
         allowed_methods: Array.isArray(data.allowed_methods)
@@ -51,7 +52,7 @@ export default function CORSSettingsPage() {
           : [...DEFAULT_SETTINGS.allowed_headers],
       });
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Failed to load settings';
+      const msg = err instanceof Error ? err.message : 'Failed to load settings';
       setFetchError(msg);
       showError('Error', msg);
     } finally {
@@ -66,10 +67,10 @@ export default function CORSSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/settings/cors', settings);
+      await api.patch('/settings/cors', settings);
       success('CORS settings saved', 'Allowed origins have been updated.');
     } catch (err) {
-      showError('Failed to save', err instanceof ApiError ? err.message : 'Please try again.');
+      showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);
     }

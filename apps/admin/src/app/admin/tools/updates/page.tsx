@@ -58,9 +58,10 @@ export default function UpdatesPage() {
   const [progress, setProgress] = React.useState(0);
   const [lastChecked, setLastChecked] = React.useState<Date | null>(null);
 
-  const fetchUpdates = React.useCallback(async () => {
+  const fetchUpdates = React.useCallback(async (): Promise<number> => {
     setLoading(true);
     setFetchError(null);
+    let count = 0;
     try {
       const res = await get<UpdatesResponse>('/updates');
       const data = res.data;
@@ -69,6 +70,7 @@ export default function UpdatesPage() {
         ...(data.plugins || []),
         ...(data.themes || []),
       ];
+      count = all.length;
       setUpdates(all);
       setLastChecked(data.lastChecked ? new Date(data.lastChecked) : new Date());
     } catch (err: unknown) {
@@ -78,6 +80,7 @@ export default function UpdatesPage() {
     } finally {
       setLoading(false);
     }
+    return count;
   }, [get, showError]);
 
   React.useEffect(() => {
@@ -86,11 +89,10 @@ export default function UpdatesPage() {
 
   const checkUpdates = async () => {
     setChecking(true);
-    await fetchUpdates();
+    // Capture the count from fetchUpdates to avoid reading stale state
+    const count = await fetchUpdates();
     setChecking(false);
-    if (!fetchError) {
-      success('Update check complete', `${updates.length} updates available.`);
-    }
+    success('Update check complete', `${count} updates available.`);
   };
 
   const updateAll = async () => {

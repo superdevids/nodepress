@@ -1,4 +1,5 @@
-import { execSync } from "node:child_process";
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import {
   createReadStream,
   createWriteStream,
@@ -11,15 +12,18 @@ import {
   writeFileSync,
   rmSync,
   copyFileSync,
-} from "node:fs";
-import { join, basename } from "node:path";
-import { createGzip } from "node:zlib";
-import { pipeline } from "node:stream/promises";
-import { createHash } from "node:crypto";
-import type { PrismaClient } from "@nodepressjs/db";
+} from 'node:fs';
+import { cp, readdir } from 'node:fs/promises';
+import { join, basename, dirname } from 'node:path';
+import { createGzip } from 'node:zlib';
+import { pipeline } from 'node:stream/promises';
+import { createHash } from 'node:crypto';
+import type { PrismaClient } from '@nodepressjs/db';
 
-export type BackupType = "full" | "database" | "media" | "config";
-export type BackupStatus = "pending" | "running" | "completed" | "failed" | "restoring";
+const execAsync = promisify(exec);
+
+export type BackupType = 'full' | 'database' | 'media' | 'config';
+export type BackupStatus = 'pending' | 'running' | 'completed' | 'failed' | 'restoring';
 
 export interface BackupRecord {
   id: string;
@@ -95,23 +99,23 @@ export class S3StorageProvider implements StorageProvider {
   private bucket: string;
   private endpoint: string;
   private region: string;
-  private client: import("@aws-sdk/client-s3").S3Client | null = null;
+  private client: import('@aws-sdk/client-s3').S3Client | null = null;
 
-  constructor(bucket: string, endpoint: string, region: string = "us-east-1") {
+  constructor(bucket: string, endpoint: string, region: string = 'us-east-1') {
     this.bucket = bucket;
     this.endpoint = endpoint;
     this.region = region;
   }
 
-  private async getClient(): Promise<import("@aws-sdk/client-s3").S3Client> {
+  private async getClient(): Promise<import('@aws-sdk/client-s3').S3Client> {
     if (this.client) return this.client;
-    const { S3Client } = await import("@aws-sdk/client-s3");
+    const { S3Client } = await import('@aws-sdk/client-s3');
     this.client = new S3Client({
       endpoint: this.endpoint,
       region: this.region,
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
       },
       forcePathStyle: true,
     });
@@ -119,46 +123,40 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async upload(srcPath: string, destPath: string): Promise<void> {
-    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const { PutObjectCommand } = await import('@aws-sdk/client-s3');
     const client = await this.getClient();
     const body = createReadStream(srcPath);
-    await client.send(
-      new PutObjectCommand({ Bucket: this.bucket, Key: destPath, Body: body })
-    );
+    await client.send(new PutObjectCommand({ Bucket: this.bucket, Key: destPath, Body: body }));
   }
 
   async download(remotePath: string, localPath: string): Promise<void> {
-    const { GetObjectCommand } = await import("@aws-sdk/client-s3");
+    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
     const client = await this.getClient();
     const response = await client.send(
-      new GetObjectCommand({ Bucket: this.bucket, Key: remotePath })
+      new GetObjectCommand({ Bucket: this.bucket, Key: remotePath }),
     );
     const writeStream = createWriteStream(localPath);
     await pipeline(response.Body as NodeJS.ReadableStream, writeStream);
   }
 
   async list(prefix: string): Promise<{ name: string; size: number; modified: Date }[]> {
-    const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
+    const { ListObjectsV2Command } = await import('@aws-sdk/client-s3');
     const client = await this.getClient();
     const result = await client.send(
-      new ListObjectsV2Command({ Bucket: this.bucket, Prefix: prefix })
+      new ListObjectsV2Command({ Bucket: this.bucket, Prefix: prefix }),
     );
     return (result.Contents || []).map((obj) => ({
-      name: obj.Key || "",
+      name: obj.Key || '',
       size: obj.Size || 0,
       modified: obj.LastModified || new Date(),
     }));
   }
 
   async delete(path: string): Promise<void> {
-    const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+    const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
     const client = await this.getClient();
     await client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: path }));
   }
-}
-
-function dirname(p: string): string {
-  return p.substring(0, p.lastIndexOf("/") > 0 ? p.lastIndexOf("/") : p.lastIndexOf("\\") > 0 ? p.lastIndexOf("\\") : p.length);
 }
 
 export class BackupManager {
@@ -174,13 +172,13 @@ export class BackupManager {
       backupDir?: string;
       storageProvider?: StorageProvider;
       retention?: Partial<RetentionConfig>;
-    }
+    },
   ) {
     this.prisma = prisma;
-    this.backupDir = options?.backupDir || join(process.cwd(), "backups");
+    this.backupDir = options?.backupDir || join(process.cwd(), 'backups');
     this.storageProvider = options?.storageProvider || new LocalStorageProvider(this.backupDir);
     this.retention = { daily: 7, weekly: 4, monthly: 3, ...options?.retention };
-    this.dbUrl = process.env.DATABASE_URL || "";
+    this.dbUrl = process.env.DATABASE_URL || '';
 
     if (!existsSync(this.backupDir)) {
       mkdirSync(this.backupDir, { recursive: true });
@@ -188,39 +186,42 @@ export class BackupManager {
   }
 
   async createBackup(options: BackupOptions = {}): Promise<BackupRecord> {
-    const type = options.type || "full";
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const type = options.type || 'full';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `nodepress-backup-${timestamp}.tar.gz`;
     const tempDir = join(this.backupDir, `.tmp-${Date.now()}`);
     mkdirSync(tempDir, { recursive: true });
 
-    const id = createHash("sha256").update(filename + Date.now()).digest("hex").substring(0, 16);
+    const id = createHash('sha256')
+      .update(filename + Date.now())
+      .digest('hex')
+      .substring(0, 16);
 
     const record: BackupRecord = {
       id,
       path: filename,
       size: 0,
       type,
-      status: "running",
+      status: 'running',
       createdAt: new Date(),
       metadata: { description: options.description },
     };
 
     try {
-      if (type === "full" || type === "database") {
-        await this.dumpDatabase(join(tempDir, "db.sql"));
+      if (type === 'full' || type === 'database') {
+        await this.dumpDatabase(join(tempDir, 'db.sql'));
       }
 
-      if ((type === "full" || type === "media") && options.includeMedia !== false) {
-        await this.copyMediaFiles(join(tempDir, "media"));
+      if ((type === 'full' || type === 'media') && options.includeMedia !== false) {
+        await this.copyMediaFiles(join(tempDir, 'media'));
       }
 
-      if ((type === "full" || type === "config") && options.includeConfig !== false) {
-        await this.exportConfig(join(tempDir, "config"));
+      if ((type === 'full' || type === 'config') && options.includeConfig !== false) {
+        await this.exportConfig(join(tempDir, 'config'));
       }
 
-      if (type === "full") {
-        await this.exportPluginSettings(join(tempDir, "plugins.json"));
+      if (type === 'full') {
+        await this.exportPluginSettings(join(tempDir, 'plugins.json'));
       }
 
       await this.compressBackup(tempDir, join(this.backupDir, filename));
@@ -228,19 +229,16 @@ export class BackupManager {
 
       const stats = statSync(join(this.backupDir, filename));
       record.size = stats.size;
-      record.status = "completed";
+      record.status = 'completed';
 
-      await this.storageProvider.upload(
-        join(this.backupDir, filename),
-        filename
-      );
+      await this.storageProvider.upload(join(this.backupDir, filename), filename);
 
       await this.saveRecord(record);
       await this.applyRetention();
 
       return record;
     } catch (err) {
-      record.status = "failed";
+      record.status = 'failed';
       if (existsSync(tempDir)) rmSync(tempDir, { recursive: true, force: true });
       await this.saveRecord(record);
       throw err;
@@ -250,17 +248,17 @@ export class BackupManager {
   async listBackups(): Promise<BackupRecord[]> {
     try {
       const records = await this.prisma.$queryRawUnsafe<BackupRecord[]>(
-        'SELECT * FROM "backup_records" ORDER BY "created_at" DESC'
+        'SELECT * FROM "backup_records" ORDER BY "created_at" DESC',
       );
       return records;
     } catch {
-      const files = await this.storageProvider.list("nodepress-backup-");
+      const files = await this.storageProvider.list('nodepress-backup-');
       return files.map((f) => ({
         id: basename(f.name),
         path: f.name,
         size: f.size,
-        type: "full" as BackupType,
-        status: "completed" as BackupStatus,
+        type: 'full' as BackupType,
+        status: 'completed' as BackupStatus,
         createdAt: f.modified,
       }));
     }
@@ -272,19 +270,19 @@ export class BackupManager {
     try {
       const rows = await this.prisma.$queryRawUnsafe<BackupRecord[]>(
         'SELECT * FROM "backup_records" WHERE "id" = $1',
-        id
+        id,
       );
       record = rows[0];
     } catch {
-      const files = await this.storageProvider.list("nodepress-backup-");
+      const files = await this.storageProvider.list('nodepress-backup-');
       const match = files.find((f) => f.name.includes(id));
       if (match) {
         record = {
           id,
           path: match.name,
           size: match.size,
-          type: "full",
-          status: "completed",
+          type: 'full',
+          status: 'completed',
           createdAt: match.modified,
         };
       }
@@ -300,28 +298,28 @@ export class BackupManager {
       await this.storageProvider.download(record.path, localPath);
       await this.decompressBackup(localPath, tempDir);
 
-      if (options.type !== "media" && options.type !== "config") {
-        if (existsSync(join(tempDir, "db.sql"))) {
-          await this.restoreDatabase(join(tempDir, "db.sql"));
+      if (options.type !== 'media' && options.type !== 'config') {
+        if (existsSync(join(tempDir, 'db.sql'))) {
+          await this.restoreDatabase(join(tempDir, 'db.sql'));
         }
       }
 
-      if (options.type !== "database" && options.type !== "config") {
-        if (existsSync(join(tempDir, "media"))) {
-          await this.restoreMediaFiles(join(tempDir, "media"));
+      if (options.type !== 'database' && options.type !== 'config') {
+        if (existsSync(join(tempDir, 'media'))) {
+          await this.restoreMediaFiles(join(tempDir, 'media'));
         }
       }
 
-      if (options.type !== "database" && options.type !== "media") {
-        if (existsSync(join(tempDir, "config"))) {
-          await this.restoreConfig(join(tempDir, "config"));
+      if (options.type !== 'database' && options.type !== 'media') {
+        if (existsSync(join(tempDir, 'config'))) {
+          await this.restoreConfig(join(tempDir, 'config'));
         }
       }
 
-      record.status = "completed";
+      record.status = 'completed';
       await this.saveRecord(record);
     } catch (err) {
-      record.status = "failed";
+      record.status = 'failed';
       await this.saveRecord(record);
       throw err;
     } finally {
@@ -330,10 +328,7 @@ export class BackupManager {
   }
 
   async deleteBackup(id: string): Promise<void> {
-    await this.prisma.$executeRawUnsafe(
-      'DELETE FROM "backup_records" WHERE "id" = $1',
-      id
-    );
+    await this.prisma.$executeRawUnsafe('DELETE FROM "backup_records" WHERE "id" = $1', id);
   }
 
   async getBackupStats(): Promise<{
@@ -347,7 +342,7 @@ export class BackupManager {
         { total: bigint; size: bigint; last: Date | null }[]
       >(
         `SELECT COUNT(*)::bigint as total, COALESCE(SUM(size), 0)::bigint as size, MAX(created_at) as last
-         FROM "backup_records" WHERE status = 'completed'`
+         FROM "backup_records" WHERE status = 'completed'`,
       );
       const row = rows[0];
       return {
@@ -357,62 +352,69 @@ export class BackupManager {
         storageUsed: Number(row.size),
       };
     } catch {
-      const files = await this.storageProvider.list("nodepress-backup-");
+      const files = await this.storageProvider.list('nodepress-backup-');
       const totalSize = files.reduce((sum, f) => sum + f.size, 0);
-      const lastBackup = files.length > 0
-        ? files.sort((a, b) => b.modified.getTime() - a.modified.getTime())[0].modified
-        : null;
+      const lastBackup =
+        files.length > 0
+          ? files.sort((a, b) => b.modified.getTime() - a.modified.getTime())[0].modified
+          : null;
       return { totalBackups: files.length, totalSize, lastBackup, storageUsed: totalSize };
     }
   }
 
   private async dumpDatabase(outPath: string): Promise<void> {
     const url = new URL(this.dbUrl);
-    const dbName = url.pathname.replace("/", "");
+    const dbName = url.pathname.replace('/', '');
     const host = url.hostname;
-    const port = url.port || "5432";
+    const port = url.port || '5432';
     const user = url.username;
     const pass = url.password;
 
     const env = { ...process.env, PGPASSWORD: pass };
-    execSync(
-      `pg_dump -h ${host} -p ${port} -U ${user} -d ${dbName} -F p -f "${outPath}"`,
-      { env, stdio: "pipe" }
-    );
+    await execAsync(`pg_dump -h ${host} -p ${port} -U ${user} -d ${dbName} -F p -f "${outPath}"`, {
+      env,
+      windowsHide: true,
+    });
   }
 
   private async restoreDatabase(sqlPath: string): Promise<void> {
     const url = new URL(this.dbUrl);
-    const dbName = url.pathname.replace("/", "");
+    const dbName = url.pathname.replace('/', '');
     const host = url.hostname;
-    const port = url.port || "5432";
+    const port = url.port || '5432';
     const user = url.username;
     const pass = url.password;
 
     const env = { ...process.env, PGPASSWORD: pass };
-    execSync(
-      `psql -h ${host} -p ${port} -U ${user} -d ${dbName} -f "${sqlPath}"`,
-      { env, stdio: "pipe" }
-    );
+    await execAsync(`psql -h ${host} -p ${port} -U ${user} -d ${dbName} -f "${sqlPath}"`, {
+      env,
+      windowsHide: true,
+    });
   }
 
   private async copyMediaFiles(dest: string): Promise<void> {
-    const mediaDir = process.env.MEDIA_DIR || join(process.cwd(), "uploads");
+    const mediaDir = process.env.MEDIA_DIR || join(process.cwd(), 'uploads');
     if (existsSync(mediaDir)) {
-      execSync(`cp -r "${mediaDir}"/* "${dest}/"`, { stdio: "pipe" });
+      const entries = await readdir(mediaDir);
+      await Promise.all(
+        entries.map((entry) => cp(join(mediaDir, entry), join(dest, entry), { recursive: true })),
+      );
     }
   }
 
   private async restoreMediaFiles(src: string): Promise<void> {
-    const mediaDir = process.env.MEDIA_DIR || join(process.cwd(), "uploads");
+    const mediaDir = process.env.MEDIA_DIR || join(process.cwd(), 'uploads');
     if (!existsSync(mediaDir)) mkdirSync(mediaDir, { recursive: true });
-    execSync(`cp -r "${src}"/* "${mediaDir}/"`, { stdio: "pipe" });
+    const entries = await readdir(src);
+    await Promise.all(
+      entries.map((entry) => cp(join(src, entry), join(mediaDir, entry), { recursive: true })),
+    );
   }
 
   private async exportConfig(dest: string): Promise<void> {
-    const envPath = join(process.cwd(), ".env");
+    const envPath = join(process.cwd(), '.env');
     if (existsSync(envPath)) {
-      copyFileSync(envPath, join(dest, ".env"));
+      copyFileSync(envPath, join(dest, '.env'));
     }
 
     const config = {
@@ -423,13 +425,13 @@ export class BackupManager {
       logLevel: process.env.LOG_LEVEL,
       mailProvider: process.env.MAIL_PROVIDER,
     };
-    writeFileSync(join(dest, "settings.json"), JSON.stringify(config, null, 2));
+    writeFileSync(join(dest, 'settings.json'), JSON.stringify(config, null, 2));
   }
 
   private async restoreConfig(src: string): Promise<void> {
-    const envPath = join(src, ".env");
+    const envPath = join(src, '.env');
     if (existsSync(envPath)) {
-      copyFileSync(envPath, join(process.cwd(), ".env.restored"));
+      copyFileSync(envPath, join(process.cwd(), '.env.restored'));
     }
   }
 
@@ -443,17 +445,11 @@ export class BackupManager {
   }
 
   private async compressBackup(srcDir: string, outPath: string): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-      const tar = execSync(
-        `tar -czf "${outPath}" -C "${srcDir}" .`,
-        { stdio: "pipe" }
-      );
-      resolve();
-    });
+    await execAsync(`tar -czf "${outPath}" -C "${srcDir}" .`, { windowsHide: true });
   }
 
   private async decompressBackup(srcPath: string, destDir: string): Promise<void> {
-    execSync(`tar -xzf "${srcPath}" -C "${destDir}"`, { stdio: "pipe" });
+    await execAsync(`tar -xzf "${srcPath}" -C "${destDir}"`, { windowsHide: true });
   }
 
   private async saveRecord(record: BackupRecord): Promise<void> {
@@ -468,10 +464,9 @@ export class BackupManager {
         record.type,
         record.status,
         record.createdAt,
-        JSON.stringify(record.metadata || {})
+        JSON.stringify(record.metadata || {}),
       );
-    } catch {
-    }
+    } catch {}
   }
 
   private async applyRetention(): Promise<void> {

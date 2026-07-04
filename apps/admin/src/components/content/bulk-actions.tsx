@@ -62,10 +62,13 @@ export function BulkActions({
 
     try {
       setProgress(30);
-      await post('/content/bulk', {
-        action: act,
-        ids: selectedIds,
-      });
+      // TODO: The /content/bulk endpoint doesn't exist on the backend yet.
+      // Once the backend implements it, replace this warning with the actual API call:
+      //   await post('/content/bulk', { action: act, ids: selectedIds });
+      showError(
+        'Not implemented',
+        'The bulk action backend endpoint (/content/bulk) is not yet available. This is a placeholder.',
+      );
       setProgress(100);
 
       success(

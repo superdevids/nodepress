@@ -12,12 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ContentService } from './content.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
@@ -25,6 +20,8 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 
 @ApiTags('Content')
 @Controller('content')
@@ -67,34 +64,35 @@ export class ContentController {
   @Public()
   @Get(':type/:id')
   @ApiOperation({ summary: 'Get a single content entry' })
-  async findOne(
-    @Param('type') _type: string,
-    @Param('id') id: string,
-  ) {
+  async findOne(@Param('type') _type: string, @Param('id') id: string) {
     return this.contentService.findById(id);
   }
 
   @Patch(':type/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN', 'EDITOR')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a content entry' })
   async update(
     @Param('type') _type: string,
     @Param('id') id: string,
     @Body() dto: UpdateContentDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.contentService.update(id, dto);
+    return this.contentService.update(id, dto, user.sub, user.role);
   }
 
   @Delete(':type/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN', 'EDITOR')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a content entry' })
   async delete(
     @Param('type') _type: string,
     @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
   ) {
-    await this.contentService.delete(id);
+    await this.contentService.delete(id, user.sub, user.role);
   }
 }

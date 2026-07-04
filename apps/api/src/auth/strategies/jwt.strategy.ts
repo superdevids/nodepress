@@ -4,10 +4,11 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '../../config/config.service';
 
 export interface JwtPayload {
-  sub: string;      // user id
+  sub: string; // user id
   email: string;
   role: string;
   permissions: string[];
+  sessionId?: string;
   iat?: number;
   exp?: number;
 }

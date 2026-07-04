@@ -93,6 +93,9 @@ export function ContentList({ items, type }: ContentListProps) {
 
   const handleBulkAction = (_action: string) => {
     // TODO: implement bulk action using the API client
+    // The API endpoint at POST /content/bulk should perform the action on selected IDs.
+    // See bulk-actions.tsx executeAction() — currently a placeholder.
+    console.warn('Bulk action not implemented:', _action, selected);
     setSelected([]);
   };
 
@@ -218,17 +221,30 @@ export function ContentList({ items, type }: ContentListProps) {
                           >
                             <Edit className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              /* TODO: Implement view on frontend */
+                            }}
+                          >
                             <Eye className="mr-2 h-4 w-4" /> View
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setQuickEditId(item.id)}>
                             <Edit className="mr-2 h-4 w-4" /> Quick Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              /* TODO: Implement duplicate */
+                            }}
+                          >
                             <Copy className="mr-2 h-4 w-4" /> Duplicate
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => {
+                              /* TODO: Implement trash with confirmation */
+                            }}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" /> Trash
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -244,6 +260,9 @@ export function ContentList({ items, type }: ContentListProps) {
                             onClose={() => setQuickEditId(null)}
                             onSaved={(_data: unknown) => {
                               // TODO: refresh the content list after save
+                              // Call router.refresh() or re-fetch the content list when the API
+                              // integration is complete. Currently, quick-edit uses api-helper
+                              // updateContentEntry() which should be migrated to use-api.
                             }}
                           />
                         </div>

@@ -317,11 +317,18 @@ export class CronViewer extends EventEmitter {
   }
 
   private async executeHook(hook: string, _pluginId: string | null): Promise<void> {
-    // TODO (Gap C-019): This emits an event on the `hook:${hook}` channel, but nothing
-    // currently subscribes. The intended pattern is for CoreJobsService or plugin
-    // lifecycle hooks to register as subscribers via the EventEmitter, e.g.:
-    //   eventBus.on(`hook:nodepress/email-digest`, () => coreJobs.handleEmailDigest());
-    // This subscription should be wired up during system bootstrap.
+    // TODO (Gap C-019): Event emitted on `hook:${hook}` but nothing subscribes.
+    // Implementation plan:
+    //   1. Create a CoreJobsService that extends EventEmitter or accepts CronViewer
+    //      as a dependency.
+    //   2. During system bootstrap, wire up subscribers, e.g.:
+    //        cronViewer.on('hook:nodepress/email-digest', () => coreJobs.handleEmailDigest());
+    //        cronViewer.on('hook:nodepress/cleanup-temp', () => coreJobs.cleanupTempFiles());
+    //   3. Plugin lifecycle hooks should register additional subscribers via:
+    //        context.cron.on(`hook:${pluginSlug}/my-job`, handler);
+    //      This requires exposing CronViewer (or an event bus) on the plugin context.
+    //   4. Consider using a dedicated EventBus (e.g., from HookRegistry) instead of
+    //      direct CronViewer EventEmitter to keep concerns separated.
     this.emit(`hook:${hook}`);
   }
 

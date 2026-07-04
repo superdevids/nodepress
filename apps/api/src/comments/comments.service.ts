@@ -82,7 +82,9 @@ export class CommentsService {
     this.logger.log(`Comment created: ${comment.id}`);
 
     // Notify the content author about the new comment (non-blocking)
-    this.notifyContentAuthor(comment).catch(() => {});
+    this.notifyContentAuthor(comment).catch((err) =>
+      this.logger.warn('Failed to notify content author', err),
+    );
 
     return this.toComment(comment);
   }

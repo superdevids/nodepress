@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
-import { useApi, ApiError } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 
 interface ReadingSettings {
   posts_per_page: number;
@@ -47,10 +47,10 @@ export default function ReadingSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await api.get<ReadingSettings>('/settings/reading');
-      setSettings({ ...DEFAULT_SETTINGS, ...data });
+      const res = await api.get<ReadingSettings>('/settings/reading');
+      setSettings({ ...DEFAULT_SETTINGS, ...res.data });
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Failed to load settings';
+      const msg = err instanceof Error ? err.message : 'Failed to load settings';
       setFetchError(msg);
       showError('Error', msg);
     } finally {
@@ -65,10 +65,10 @@ export default function ReadingSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/settings/reading', settings);
+      await api.patch('/settings/reading', settings);
       success('Settings saved', 'Reading settings have been updated.');
     } catch (err) {
-      showError('Failed to save', err instanceof ApiError ? err.message : 'Please try again.');
+      showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);
     }

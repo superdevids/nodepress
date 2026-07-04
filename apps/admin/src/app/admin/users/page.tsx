@@ -54,7 +54,7 @@ import { Separator } from '@/components/ui/separator';
 import { formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast';
 import { ScreenOptions } from '@/components/admin/screen-options';
-import { useApi, ApiError } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 
 interface User {
   id: string;
@@ -122,10 +122,10 @@ export default function UsersPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await api.get<User[]>('/users');
-      setUsers(Array.isArray(data) ? data : []);
+      const res = await api.get<User[]>('/users');
+      setUsers(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Failed to load users';
+      const msg = err instanceof Error ? err.message : 'Failed to load users';
       setFetchError(msg);
       showError('Error', msg);
     } finally {
@@ -184,7 +184,7 @@ export default function UsersPage() {
       setNewRole('CONTRIBUTOR');
       await fetchUsers();
     } catch (err) {
-      showError('Failed to create', err instanceof ApiError ? err.message : 'Please try again.');
+      showError('Failed to create', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);
     }
@@ -208,7 +208,7 @@ export default function UsersPage() {
       setEditPassword('');
       await fetchUsers();
     } catch (err) {
-      showError('Failed to update', err instanceof ApiError ? err.message : 'Please try again.');
+      showError('Failed to update', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);
     }
@@ -223,7 +223,7 @@ export default function UsersPage() {
       setDeleteUser(null);
       await fetchUsers();
     } catch (err) {
-      showError('Failed to delete', err instanceof ApiError ? err.message : 'Please try again.');
+      showError('Failed to delete', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);
     }

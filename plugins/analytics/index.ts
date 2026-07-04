@@ -265,12 +265,16 @@ export const lifecycle: PluginLifecycle = {
           .sort((a, b) => b[1] - a[1])
           .slice(0, 5)
           .map(([path, views]) => ({ path, views }));
+        // Only pageViewCount and topPages reflect real tracked data.
+        // sessions, bounceRate, avgSessionDuration, and activeVisitors
+        // require a real analytics backend (e.g., Google Analytics 4 API,
+        // Plausible, or a local event aggregation pipeline).
         const stats: AnalyticsStats = {
           pageViews: pageViewCount,
-          sessions: Math.floor(pageViewCount / 1.8),
-          bounceRate: 42.3,
-          avgSessionDuration: 184,
-          activeVisitors: Math.floor(pageViewCount / 330) + 1,
+          sessions: 0,
+          bounceRate: 0,
+          avgSessionDuration: 0,
+          activeVisitors: 0,
           topPages: topPages.length > 0 ? topPages : [{ path: '/', views: 0 }],
         };
         (data as any).widgets = (data as any).widgets || [];

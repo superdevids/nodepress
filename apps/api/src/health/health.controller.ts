@@ -137,9 +137,22 @@ export class HealthChecker {
   private async checkDisk(): Promise<{ status: string; latency: number; error?: string }> {
     const start = Date.now();
     try {
+      const os = await import('node:os');
+      const platform = os.platform();
+
+      if (platform === 'win32') {
+        // Windows: use CheckDisk space info via wmic
+        const { execSync } = await import('node:child_process');
+        execSync('wmic logicaldisk get size,freespace,caption 2>nul', {
+          encoding: 'utf-8',
+          timeout: 5000,
+        });
+        return { status: 'healthy', latency: Date.now() - start };
+      }
+
+      // Unix: use df
       const { execSync } = await import('node:child_process');
-      const output = execSync('df -h / | tail -1', { encoding: 'utf-8' });
-      const available = output.trim().split(/\s+/)[3] || 'unknown';
+      execSync('df -h / | tail -1', { encoding: 'utf-8' });
       return { status: 'healthy', latency: Date.now() - start };
     } catch {
       return { status: 'healthy', latency: Date.now() - start };
