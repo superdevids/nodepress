@@ -9,6 +9,8 @@
 | [PRD3.md](./PRD3.md) | Gap Analysis: 147 gaps across 9 domains — Historical, all gaps closed                                        |
 | [PRD4.md](./PRD4.md) | Final Comprehensive Audit & Remediation Analysis — 298 issues fixed, ~90% WordPress parity                   |
 | [PRD5.md](./PRD5.md) | Final Audit & Remediation v5.0 — 229+ issues identified and fixed across API, Admin, Core, Plugins, and Docs |
+| [PRD6.md](./PRD6.md) | Final Audit & Remediation v6.0 — 39 remaining issues fixed                                                   |
+| [PRD7.md](./PRD7.md) | Production Readiness Plan v7.0 — 7-week roadmap to v1.0-beta (latest)                                        |
 
 ## Technical Reports
 

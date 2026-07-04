@@ -103,7 +103,7 @@ pnpm go
 
 147 features mapped → 132 implemented (~90%). See [docs/WORDPRESS-COMPARISON.md](docs/WORDPRESS-COMPARISON.md)
 
-> **Test Status:** ~5 test files exist. Test coverage is a work in progress — target is 190+ tests. See [docs/PRD5.md](docs/PRD5.md) (latest) for the audit roadmap.
+> **Test Status:** ~5 test files exist. Test coverage is a work in progress — target is 190+ tests. See [docs/PRD6.md](docs/PRD6.md) (latest) for the final audit roadmap.
 
 ## Documentation
 
@@ -113,7 +113,8 @@ pnpm go
 | [docs/PRD2.md](docs/PRD2.md)                                   | Security, Performance, Scalability v2.0 |
 | [docs/PRD3.md](docs/PRD3.md)                                   | Gap Analysis - 147 items (historical)   |
 | [docs/PRD4.md](docs/PRD4.md)                                   | Final Audit & Remediation Analysis      |
-| [docs/PRD5.md](docs/PRD5.md)                                   | Final Audit & Remediation v5.0 (latest) |
+| [docs/PRD5.md](docs/PRD5.md)                                   | Final Audit & Remediation v5.0          |
+| [docs/PRD6.md](docs/PRD6.md)                                   | Final Audit & Remediation v6.0 (latest) |
 | [docs/AUDIT-REPORT-COMPLETE.md](docs/AUDIT-REPORT-COMPLETE.md) | Codebase audit - 298 issues fixed       |
 | [docs/WORDPRESS-COMPARISON.md](docs/WORDPRESS-COMPARISON.md)   | NodePress vs WordPress comparison       |
 
