@@ -43,7 +43,7 @@ export default function SEOSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await api.get<SEOSettings>('/settings/seo');
+      const res = await api.get<SEOSettings>('/api/settings/seo');
       setSettings({ ...DEFAULT_SETTINGS, ...res.data });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load settings';
@@ -61,7 +61,7 @@ export default function SEOSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.patch('/settings/seo', settings);
+      await api.patch('/api/settings/seo', settings);
       success('SEO settings saved', 'Default meta settings have been updated.');
     } catch (err) {
       showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');

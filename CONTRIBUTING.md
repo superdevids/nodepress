@@ -1,99 +1,155 @@
-# Contributing to NodePress
-
-> **Updated:** July 4, 2026 — Consistency fixes applied per PRD5 audit findings. Coverage claims reflect actual state (~5 test files); coverage is a goal, not a current requirement.
+# 🤝 Contributing to NodePress
 
 Thank you for considering contributing to NodePress! This guide will help you get started.
 
-## Quick Start
+> **Current Status:** Beta (v1.0.0-beta.2) — active development. All contributions welcome!
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
 - Node.js >= 20
-- pnpm >= 9
-- Docker & Docker Compose (for database)
+- npm >= 9 (or pnpm >= 9)
+- Docker & Docker Compose (for database — optional but recommended)
 
-### 1-Click Dev Setup
+### One-Click Dev Setup
 
 ```bash
-# Start database services
+# Clone the repo
+git clone https://github.com/superdevids/nodepress.git
+cd nodepress
+
+# Start database services (PostgreSQL, Redis, MinIO)
 docker compose up -d
 
 # Install dependencies
-pnpm install
+npm install
 
 # Generate Prisma client
-pnpm db:generate
+npm run db:generate
 
 # Run database migrations
-pnpm db:migrate
+npm run db:migrate
 
-# Run dev servers
-pnpm dev
+# Seed sample data (optional)
+npm run db:seed
+
+# Start dev servers
+npm start
 ```
 
 Visit http://localhost:3000 for the admin panel and http://localhost:3001 for the API.
 
-## Project Structure
+### Without Docker
+
+If you don't have Docker, install PostgreSQL 16 and Redis 7 locally, then:
+
+```bash
+# Copy and edit .env with your local database credentials
+cp .env.example .env
+# Edit .env to point to your local PostgreSQL and Redis
+
+npm install
+npm run db:generate
+npm run db:migrate
+npm start
+```
+
+---
+
+## 📁 Project Structure
 
 ```
 nodepress/
-├── apps/           # Application shells (admin, api, web-starter)
-├── packages/       # Shared packages
-│   ├── core/       # Business logic engine
-│   ├── db/         # Database client & Prisma schema
-│   ├── plugin-sdk/ # Plugin Development Kit
-│   ├── testing/    # Test utilities & factories
-│   ├── ui/         # UI components
-│   ├── editor/     # Rich text editor
-│   ├── config/     # Configuration
-│   └── cli/        # CLI tools
-├── plugins/        # Official plugins (13 WordPress-equivalent plugins)
-└── rfcs/           # RFC proposals
+├── apps/               # Application shells
+│   ├── admin/          # Admin panel (Next.js 14)
+│   ├── api/            # REST + GraphQL API (NestJS)
+│   ├── web-starter/    # Public-facing theme
+│   └── e2e/            # End-to-end tests (Playwright)
+├── packages/           # Shared libraries
+│   ├── core/           # Business logic engine
+│   ├── db/             # Database client & Prisma schema
+│   ├── plugin-sdk/     # Plugin Development Kit
+│   ├── testing/        # Test utilities & factories
+│   ├── ui/             # Shared UI components
+│   ├── editor/         # Rich text editor (Tiptap)
+│   ├── config/         # Configuration
+│   └── cli/            # CLI tools
+├── plugins/            # 13 official plugins
+└── docs/               # Documentation
 ```
 
-## Coding Standards
+---
+
+## 📐 Coding Standards
 
 ### Linting & Formatting
 
-This project uses ESLint and Prettier for code quality:
-
 ```bash
 # Lint all packages
-pnpm lint
+npm run lint
 
 # Format code
-pnpm format
+npm run format
 
 # Check formatting
-pnpm format:check
+npm run format:check
+
+# TypeScript type check
+npm run typecheck
 ```
 
 ### TypeScript
 
-- Strict mode enabled
+- **Strict mode** enabled — don't disable it
 - Use explicit return types for public APIs
 - Prefer `interface` over `type` for object definitions
 - Use `type` for unions, intersections, and utility types
-- Avoid `any` — use `unknown` when type is uncertain
+- **Avoid `any`** — use `unknown` when the type is uncertain
+- No `// @ts-ignore` or `// @ts-expect-error` without justification
 
-### Testing
+---
+
+## 🧪 Testing
+
+### Current Coverage
+
+```
+📊 Test files: 24 (and growing!)
+   ├── Core engine:     6 test files
+   ├── API:             8 test files
+   ├── Admin UI:        5 test files
+   ├── Media:           2 test files
+   ├── E2E:             2 test files
+   └── Other:           1 test file
+```
+
+### Running Tests
 
 ```bash
 # Run all tests
-pnpm test
+npm test
 
 # Run tests with coverage
-pnpm test -- --coverage
+npm test -- --coverage
 
-# Run tests for a specific package
-pnpm --filter @nodepress/core test
+# Run a specific package's tests
+npx turbo run test --filter=@nodepress/core
 ```
 
-- Write tests for all new features
-- Coverage is a **goal** (target: >80%), not a current requirement — ~5 test files exist as of this writing. Help us grow coverage!
-- Use `@nodepress/testing` factories for test data
+### Testing Guidelines
 
-## Commit Convention
+- Write tests for **all new features** and **bug fixes**
+- Use `@nodepress/testing` factories for test data
+- Aim for meaningful tests, not just coverage numbers
+- We're working toward 100+ tests — help us get there!
+- **Current priority:** API integration tests and plugin tests
+
+---
+
+## 📝 Commit Convention
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
@@ -107,84 +163,85 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### Types
 
-| Type       | Usage                         |
-| ---------- | ----------------------------- |
-| `feat`     | New feature                   |
-| `fix`      | Bug fix                       |
-| `chore`    | Maintenance                   |
-| `docs`     | Documentation                 |
-| `refactor` | Code refactoring              |
-| `test`     | Tests                         |
-| `style`    | Code style (formatting, etc.) |
-| `perf`     | Performance improvement       |
-| `ci`       | CI/CD changes                 |
+| Type       | Usage                   |
+| ---------- | ----------------------- |
+| `feat`     | New feature             |
+| `fix`      | Bug fix                 |
+| `chore`    | Maintenance             |
+| `docs`     | Documentation           |
+| `refactor` | Code refactoring        |
+| `test`     | Tests                   |
+| `style`    | Code style (formatting) |
+| `perf`     | Performance improvement |
+| `ci`       | CI/CD changes           |
 
 ### Scopes
 
-| Scope        | Area                  |
-| ------------ | --------------------- |
-| `core`       | @nodepress/core       |
-| `db`         | @nodepress/db         |
-| `plugin-sdk` | @nodepress/plugin-sdk |
-| `testing`    | @nodepress/testing    |
-| `ui`         | @nodepress/ui         |
-| `editor`     | @nodepress/editor     |
-| `admin`      | Admin panel           |
-| `api`        | API server            |
-| `plugin:*`   | Specific plugin       |
+| Scope        | Area                                 |
+| ------------ | ------------------------------------ |
+| `core`       | @nodepress/core                      |
+| `db`         | @nodepress/db                        |
+| `plugin-sdk` | @nodepress/plugin-sdk                |
+| `admin`      | Admin panel                          |
+| `api`        | API server                           |
+| `plugin:*`   | Specific plugin (e.g., `plugin:seo`) |
 
 ### Examples
 
 ```
 feat(core): add content revision diff API
 fix(db): resolve migration ordering issue
-docs: update API reference for v2.1
-test(testing): add factory builder pattern tests
+docs: update API reference
+test(api): add auth service tests
 ```
 
-## Pull Request Process
+---
+
+## 🔄 Pull Request Process
 
 ### PR Checklist
 
 Before submitting a PR:
 
-- [ ] Code follows coding standards (lint + format)
+- [ ] Code follows coding standards (lint + format pass)
 - [ ] TypeScript compiles without errors
-- [ ] Tests pass (coverage target >80% — help us get there!)
+- [ ] Tests pass (`npm test`)
 - [ ] New features include tests
 - [ ] Documentation updated (if applicable)
-- [ ] Changeset added (`pnpm changeset`)
 - [ ] PR title follows Conventional Commits
 
 ### Review Process
 
-1. All PRs require at least one approval from a maintainer
-2. CI must pass (lint, typecheck, test, build, security)
-3. Changes that affect the database schema require review from the core team
-4. Plugin API changes require review from the plugin-sdk maintainer
+1. All PRs require at least **one approval** from a maintainer
+2. CI must pass (lint, typecheck, test, build)
+3. Database schema changes need core team review
+4. Plugin API changes need plugin-sdk maintainer review
 
-## Release Process
+---
 
-Releases are automated via Changesets:
+## 🔌 Plugin Development
 
-1. Run `pnpm changeset` to create a changeset file
-2. Commit the changeset file with your changes
-3. When PR is merged to `main`, the release workflow creates a version PR
-4. Merging the version PR publishes updates to npm
+See the Plugin SDK documentation for creating plugins:
 
-## Plugin Development
+```bash
+# Generate a new plugin scaffold
+npx nodepressjs generate plugin my-plugin
+```
 
-See [packages/plugin-sdk/README.md](packages/plugin-sdk/README.md) for the Plugin Development Kit documentation, including:
+The plugin SDK provides:
 
-- Creating a new plugin with `npx nodepress-cli generate plugin`
-- Registering hooks (actions & filters)
-- Adding custom REST/GraphQL endpoints
-- Creating custom block editor extensions
-- Plugin manifest and permission system
-- Testing plugins with `@nodepress/testing`
+- Hook registration (actions & filters)
+- Custom REST/GraphQL endpoints
+- Block editor extensions
+- Manifest and permission system
+- Testing utilities
 
-## Questions?
+Location: `packages/plugin-sdk/`
 
-- Check existing issues or open a new one
-- Join our community discussions
-- See SUPPORT.md for more ways to get help
+---
+
+## ❓ Questions?
+
+- 💬 **GitHub Discussions:** https://github.com/superdevids/nodepress/discussions
+- 🐛 **Report bugs:** https://github.com/superdevids/nodepress/issues
+- 📖 **Documentation:** See `docs/` and `SUPPORT.md`

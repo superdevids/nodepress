@@ -46,7 +46,7 @@ export function QuickDraft() {
 
   const onSubmit = async (data: DraftForm) => {
     try {
-      const res = await post<{ id: string }>('/content/post', {
+      const res = await post<{ id: string }>('/api/content/post', {
         title: data.title,
         content: data.content || '',
         status: 'draft',

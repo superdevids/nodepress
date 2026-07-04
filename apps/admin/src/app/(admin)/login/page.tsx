@@ -130,7 +130,6 @@ export default function LoginPage() {
                     href="/admin/login/forgot-password"
                     className="text-primary text-sm hover:underline"
                   >
-                    {/* TODO: Implement forgot password flow at /admin/login/forgot-password — requires backend POST /auth/forgot-password endpoint */}
                     Forgot password?
                   </a>
                 </div>

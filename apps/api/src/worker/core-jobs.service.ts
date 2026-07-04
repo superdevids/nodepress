@@ -1,16 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
- * CoreJobsService implements the 7 default cron job handlers for NodePress.
- * These jobs are registered as CronEvent rows during system initialization
- * and executed by the CronWorkerService on schedule.
+ * CoreJobsService implements the default cron job handlers for NodePress,
+ * including scheduled publishing, cleanup, and notification triggers.
  */
 @Injectable()
 export class CoreJobsService {
   private readonly logger = new Logger(CoreJobsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   /**
    * Register the 7 default cron jobs into the cron_events table.
@@ -57,6 +60,11 @@ export class CoreJobsService {
         schedule: '0 8 * * 1',
         description: 'Send scheduled email digests weekly on Monday',
       },
+      {
+        hook: 'nodepress/notify-plugin-updates',
+        schedule: '30 */6 * * *',
+        description: 'Notify super admins about available plugin updates',
+      },
     ];
 
     for (const job of defaults) {
@@ -102,11 +110,45 @@ export class CoreJobsService {
         this.logger.debug(`Checked plugin: ${plugin.slug} (v${plugin.version})`);
       }
 
+      // Notify super admins if updates are available
+      if (updatesFound > 0) {
+        await this.notifyPluginUpdatesAvailable(updatesFound);
+      }
+
       this.logger.log(`Plugin update check complete: ${activePlugins.length} plugins checked`);
       return { checked: activePlugins.length, updates: updatesFound };
     } catch (error) {
       this.logger.error(`Plugin update check failed: ${(error as Error).message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Notify super admin users about available plugin updates.
+   */
+  private async notifyPluginUpdatesAvailable(updateCount: number): Promise<void> {
+    try {
+      const superAdmins = await this.prisma.user.findMany({
+        where: { role: 'SUPER_ADMIN' },
+        select: { id: true },
+      });
+
+      if (superAdmins.length === 0) return;
+
+      await this.notificationsService.createForUsers(
+        superAdmins.map((u) => u.id),
+        {
+          type: 'plugin.update',
+          title: `${updateCount} plugin update(s) available`,
+          message: `${updateCount} plugin(s) have new versions available. Review and update from the Plugins page.`,
+          link: '/admin/plugins',
+          icon: 'package',
+        },
+      );
+
+      this.logger.log(`Notified ${superAdmins.length} super admin(s) about ${updateCount} plugin updates`);
+    } catch (err) {
+      this.logger.warn(`Failed to notify about plugin updates: ${err}`);
     }
   }
 
@@ -387,13 +429,94 @@ export class CoreJobsService {
 
       if (result > 0) {
         this.logger.log(`Published ${result} scheduled content entries`);
+
+        // Notify admins about the automatically published entries
+        try {
+          const publishedEntries = await this.prisma.contentEntry.findMany({
+            where: {
+              status: 'PUBLISHED',
+              publishedAt: { gte: new Date(Date.now() - 60000) }, // within last minute
+            },
+            include: {
+              author: { select: { id: true, name: true, displayName: true } },
+            },
+          });
+
+          for (const entry of publishedEntries) {
+            const data = entry.data as Record<string, unknown>;
+            const title = (data.title as string) || 'Untitled';
+
+            const adminUsers = await this.prisma.user.findMany({
+              where: {
+                role: { in: ['ADMIN', 'SUPER_ADMIN'] },
+                id: { not: entry.authorId },
+              },
+              select: { id: true },
+            });
+
+            if (adminUsers.length > 0) {
+              await this.notificationsService.createForUsers(
+                adminUsers.map((u) => u.id),
+                {
+                  type: 'content.published',
+                  title: `"${title}" published (auto-scheduled)`,
+                  message: `Content was automatically published by the scheduler.`,
+                  link: `/admin/content/${entry.contentTypeId}/${entry.id}`,
+                  icon: 'clock',
+                },
+              );
+            }
+          }
+        } catch (notifyErr) {
+          this.logger.warn(`Failed to notify about scheduled publications: ${notifyErr}`);
+        }
       }
+
       return { published: result };
     } catch (error) {
       this.logger.error(`Scheduled publishing failed: ${(error as Error).message}`);
       throw error;
     }
   }
+
+  // ─── System Alert Helpers ────────────────────────────────
+
+  /**
+   * Send a system alert notification to all admin and super admin users.
+   * Can be called by any system component (backup plugin, etc.).
+   */
+  async sendSystemAlert(params: {
+    title: string;
+    message: string;
+    link?: string;
+    icon?: string;
+  }): Promise<void> {
+    try {
+      const adminUsers = await this.prisma.user.findMany({
+        where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+        select: { id: true },
+      });
+
+      if (adminUsers.length === 0) return;
+
+      await this.notificationsService.createForUsers(
+        adminUsers.map((u) => u.id),
+        {
+          type: 'system.alert',
+          title: params.title,
+          message: params.message,
+          link: params.link ?? '/admin',
+          icon: params.icon ?? 'alert-triangle',
+        },
+      );
+
+      this.logger.log(`System alert sent to ${adminUsers.length} admins: ${params.title}`);
+    } catch (err) {
+      this.logger.warn(`Failed to send system alert: ${err}`);
+    }
+  }
+
+  // ─── Hook Router ─────────────────────────────────────────
 
   /**
    * Route a cron hook to the appropriate handler based on the hook name.

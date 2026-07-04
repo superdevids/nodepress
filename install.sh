@@ -121,15 +121,6 @@ fi
 echo -e "  ${GREEN}✅${NC} Node.js detected! Setting up NodePress..."
 echo ""
 
-# --- pnpm ---
-if ! command -v pnpm &> /dev/null; then
-    echo -e "  ${YELLOW}📥${NC} Installing pnpm package manager..."
-    npm install -g pnpm
-    echo -e "  ${GREEN}✅${NC} pnpm installed!"
-else
-    echo -e "  ${GREEN}✅${NC} pnpm detected!"
-fi
-
 # --- .env ---
 if [ ! -f .env ]; then
     echo -e "  ${YELLOW}📝${NC} Creating .env from .env.example..."
@@ -138,21 +129,21 @@ fi
 
 echo ""
 
-# --- Install dependencies ---
+# --- Install dependencies (using npm) ---
 echo -e "  ${CYAN}🛠️${NC} Installing NodePress dependencies..."
 echo ""
-pnpm install
+npm install
 
 # --- Database ---
 echo ""
 echo -e "  ${CYAN}🗄️${NC} Setting up database..."
 echo ""
-pnpm db:migrate
+npm run db:migrate
 
 echo ""
 echo -e "  ${CYAN}🌱${NC} Seeding database with sample data..."
 echo ""
-pnpm db:seed
+npm run db:seed
 
 echo ""
 echo -e "  ${GREEN}============================================================${NC}"
@@ -166,4 +157,13 @@ echo -e "  ${YELLOW}Login: admin@nodepress.local / admin${NC}"
 echo ""
 echo -e "  ${CYAN}Starting NodePress now...${NC}"
 echo ""
-pnpm dev
+
+# Open browser automatically
+echo -e "  ${CYAN}Opening browser...${NC}"
+if [ "$OS" = "Mac" ]; then
+    open http://localhost:3000 &
+elif command -v xdg-open &> /dev/null; then
+    xdg-open http://localhost:3000 2>/dev/null &
+fi
+
+npm run dev

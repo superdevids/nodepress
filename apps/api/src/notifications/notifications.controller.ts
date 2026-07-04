@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -11,15 +11,18 @@ export class NotificationsController {
   constructor(private readonly service: NotificationsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List notifications for the current user' })
-  @ApiQuery({ name: 'limit', required: false, example: '20' })
-  @ApiQuery({ name: 'offset', required: false, example: '0' })
+  @ApiOperation({ summary: 'List notifications for the current user (paginated, newest first)' })
+  @ApiQuery({ name: 'page', required: false, example: '1' })
+  @ApiQuery({ name: 'per_page', required: false, example: '20' })
   async findAll(
     @CurrentUser() user: JwtPayload,
-    @Query('limit') limit = '20',
-    @Query('offset') offset = '0',
+    @Query('page') page?: string,
+    @Query('per_page') perPage?: string,
   ) {
-    return this.service.findByUser(user.sub, parseInt(limit, 10), parseInt(offset, 10));
+    const pageNum = page ? Math.max(1, parseInt(page, 10)) : 1;
+    const perPageNum = perPage ? Math.min(100, Math.max(1, parseInt(perPage, 10))) : 20;
+
+    return this.service.findByUser(user.sub, pageNum, perPageNum);
   }
 
   @Get('unread-count')
@@ -30,13 +33,14 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark a single notification as read' })
   async markRead(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     await this.service.markAsRead(id, user.sub);
     return { success: true };
   }
 
-  @Post('mark-all-read')
+  @Patch('read-all')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark all notifications as read' })
   async markAllRead(@CurrentUser() user: JwtPayload) {

@@ -59,7 +59,7 @@ export default function PluginsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await get<Plugin[]>('/plugins');
+      const res = await get<Plugin[]>('/api/plugins');
       setPlugins(res.data || []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load plugins';
@@ -81,11 +81,11 @@ export default function PluginsPage() {
     setToggling(id);
     try {
       if (plugin.active) {
-        await post(`/plugins/${id}/deactivate`);
+        await post(`/api/plugins/${id}/deactivate`);
         setPlugins((prev) => prev.map((p) => (p.id === id ? { ...p, active: false } : p)));
         success('Plugin Deactivated', plugin.name);
       } else {
-        await post(`/plugins/${id}/activate`);
+        await post(`/api/plugins/${id}/activate`);
         setPlugins((prev) => prev.map((p) => (p.id === id ? { ...p, active: true } : p)));
         success('Plugin Activated', plugin.name);
       }
@@ -104,7 +104,7 @@ export default function PluginsPage() {
     if (!deletePlugin) return;
     setDeletingPlugin(true);
     try {
-      await del(`/plugins/${deletePlugin.id}`);
+      await del(`/api/plugins/${deletePlugin.id}`);
       success('Plugin deleted', `${deletePlugin.name} has been deleted.`);
       setDeletePlugin(null);
       await fetchPlugins();

@@ -95,7 +95,7 @@ export default function GeneralSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await api.get<GeneralSettings>('/settings/general');
+      const res = await api.get<GeneralSettings>('/api/settings/general');
       setSettings({ ...DEFAULT_SETTINGS, ...res.data });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load settings';
@@ -113,7 +113,7 @@ export default function GeneralSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.patch('/settings/general', settings);
+      await api.patch('/api/settings/general', settings);
       success('Settings saved', 'General settings have been updated.');
     } catch (err) {
       showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');

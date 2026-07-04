@@ -44,7 +44,7 @@ export function AtAGlance() {
     setLoading(true);
     setError(null);
     try {
-      const res = await get<DashboardStats>('/dashboard/at-a-glance');
+      const res = await get<DashboardStats>('/api/dashboard/at-a-glance');
       setStats(res.data);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load stats';

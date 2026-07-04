@@ -98,9 +98,9 @@ export class PluginEngine {
     this.hooks = new HookRegistry();
 
     this.options = {
-      pluginsDir: options?.pluginsDir ?? join(process.cwd(), 'plugins'),
-      backupDir: options?.backupDir ?? join(process.cwd(), '.backups', 'plugins'),
-      muDir: options?.muDir ?? join(process.cwd(), 'plugins', 'mu'),
+      pluginsDir: options?.pluginsDir ?? path.join(process.cwd(), 'plugins'),
+      backupDir: options?.backupDir ?? path.join(process.cwd(), '.backups', 'plugins'),
+      muDir: options?.muDir ?? path.join(process.cwd(), 'plugins', 'mu'),
       registryUrl: options?.registryUrl ?? 'https://registry.nodepress.dev',
     };
 
@@ -118,7 +118,7 @@ export class PluginEngine {
     this.uninstallManager = new UninstallManager(prisma, this.hooks, this.options.pluginsDir);
     this.settingsApi = new SettingsApi(prisma, this.hooks);
     this.muPluginLoader = new MuPluginLoader(
-      this.options.muDir ?? join(this.options.pluginsDir, 'mu'),
+      this.options.muDir ?? path.join(this.options.pluginsDir, 'mu'),
       this.hooks,
     );
     this.activationHooks = new ActivationHookManager(prisma, this.hooks);
@@ -331,10 +331,6 @@ export class PluginEngine {
   }
 }
 
-/**
- * Cross-platform path join using the Node.js path module.
- * Replaces backslashes with forward slashes for consistent internal paths.
- */
-function join(...parts: string[]): string {
-  return path.join(...parts).replace(/\\/g, '/');
-}
+// Cross-platform path handling: use path.join() from Node.js directly.
+// On Windows, path.join() produces backslashes which are correct for the OS.
+// File operations (readFile, writeFile, existsSync) all accept backslashes on Windows.

@@ -14,21 +14,21 @@ if (-not (Test-Path .env)) {
 
 # Step 2: Install dependencies
 Write-Host "[2/4] Installing dependencies..." -ForegroundColor Blue
-pnpm install
+npm install
 Write-Host "  ✅ Dependencies installed" -ForegroundColor Green
 
 # Step 3: Run database migrations
 Write-Host "[3/4] Running database migrations..." -ForegroundColor Blue
-pnpm db:migrate
+npm run db:migrate
 Write-Host "  ✅ Migrations applied" -ForegroundColor Green
 
 # Step 4: Seed database
 Write-Host "[4/4] Seeding database..." -ForegroundColor Blue
-pnpm db:seed
+npm run db:seed
 Write-Host "  ✅ Database seeded" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "NodePress is ready!" -ForegroundColor Green
-Write-Host "  Start with: pnpm dev" -ForegroundColor Green
+Write-Host "  Start with: npm run dev" -ForegroundColor Green
 Write-Host "  Admin Panel: http://localhost:3000" -ForegroundColor Green
 Write-Host "  API:          http://localhost:3001" -ForegroundColor Green

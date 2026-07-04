@@ -1,8 +1,9 @@
 import { getDatabaseUrl, getBackupDir } from './config.js';
 import { createSpinner, success, error } from './logger.js';
-import { execSync, spawn } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // ─── Database Connection ────────────────────────────────────────────────────
 
@@ -44,25 +45,12 @@ export async function disconnectPrisma(): Promise<void> {
 
 // ─── Prisma CLI Wrapper ────────────────────────────────────────────────────
 
-function findPrismaCli(): string {
-  const candidates = [
-    path.join(process.cwd(), 'node_modules', '.bin', 'prisma'),
-    path.join(process.cwd(), 'node_modules', '.prisma', 'client'),
-    path.join(process.cwd(), '..', 'db', 'node_modules', '.bin', 'prisma'),
-    'npx.cmd',
-  ];
-
-  for (const c of candidates) {
-    if (fs.existsSync(c)) return c;
-  }
-
-  // On Windows, check for .cmd variants
-  for (const c of candidates) {
-    const cmdPath = c + '.cmd';
-    if (fs.existsSync(cmdPath)) return cmdPath;
-  }
-
-  return 'npx.cmd';
+function resolveDbPackageDir(): string {
+  // Cross-platform: use fileURLToPath instead of .pathname for Windows compat
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const pkgDir = path.resolve(__dirname, '..', '..', '..', 'db');
+  if (fs.existsSync(pkgDir)) return pkgDir;
+  return process.cwd();
 }
 
 export async function pushSchema(): Promise<void> {
@@ -70,11 +58,10 @@ export async function pushSchema(): Promise<void> {
   spinner.start();
 
   try {
-    const dbPackageDir = path.resolve(getConfigPathRelative(), '..', '..', 'db');
-    const prismaBin = findPrismaCli();
-
+    const dbPackageDir = resolveDbPackageDir();
+    // Use 'npx prisma' which works cross-platform on both Windows and Unix
     execSync(
-      `${prismaBin} prisma db push --schema=${path.join(dbPackageDir, 'prisma', 'schema.prisma')}`,
+      `npx prisma db push --schema="${path.join(dbPackageDir, 'prisma', 'schema.prisma')}"`,
       {
         cwd: dbPackageDir,
         stdio: 'pipe',
@@ -95,10 +82,9 @@ export async function runMigrations(): Promise<void> {
   spinner.start();
 
   try {
-    const dbPackageDir = path.resolve(getConfigPathRelative(), '..', '..', 'db');
-    const prismaBin = findPrismaCli();
+    const dbPackageDir = resolveDbPackageDir();
 
-    execSync(`${prismaBin} prisma migrate deploy`, {
+    execSync(`npx prisma migrate deploy`, {
       cwd: dbPackageDir,
       stdio: 'pipe',
       env: { ...process.env, DATABASE_URL: getDatabaseUrl() },
@@ -117,10 +103,9 @@ export async function rollbackMigration(): Promise<void> {
   spinner.start();
 
   try {
-    const dbPackageDir = path.resolve(getConfigPathRelative(), '..', '..', 'db');
-    const prismaBin = findPrismaCli();
+    const dbPackageDir = resolveDbPackageDir();
 
-    execSync(`${prismaBin} prisma migrate resolve --rolled-back`, {
+    execSync(`npx prisma migrate resolve --rolled-back`, {
       cwd: dbPackageDir,
       stdio: 'pipe',
       env: { ...process.env, DATABASE_URL: getDatabaseUrl() },
@@ -294,16 +279,15 @@ export async function seedDatabase(): Promise<void> {
 // ─── Database Export/Import ─────────────────────────────────────────────────
 
 export async function exportDatabase(filePath?: string): Promise<string> {
-  const spinner = createSpinner('Exporting database...');
+  const spinner = createSpinner('Exporting database via Prisma...');
   spinner.start();
 
   try {
-    const url = new URL(getDatabaseUrl());
     const outputPath =
       filePath ||
       path.join(
         getBackupDir(),
-        `nodepress-export-${new Date().toISOString().replace(/[:.]/g, '-')}.sql`,
+        `nodepress-export-${new Date().toISOString().replace(/[:.]/g, '-')}.json`,
       );
 
     // Ensure output directory exists
@@ -312,13 +296,19 @@ export async function exportDatabase(filePath?: string): Promise<string> {
       fs.mkdirSync(outDir, { recursive: true });
     }
 
-    execSync(
-      `pg_dump --no-owner --no-acl -h ${url.hostname} -p ${url.port || 5432} -U ${url.username} -d ${url.pathname.replace('/', '')} -f "${outputPath}"`,
-      {
-        stdio: 'pipe',
-        env: { ...process.env, PGPASSWORD: url.password },
-      },
+    // Cross-platform: Use Prisma to export all tables as JSON instead of pg_dump
+    const prisma = await getPrismaClient();
+    const tables = await prisma.$queryRawUnsafe<{ tablename: string }[]>(
+      `SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename != '_prisma_migrations' ORDER BY tablename`,
     );
+
+    const data: Record<string, unknown[]> = {};
+    for (const { tablename } of tables) {
+      data[tablename] = await prisma.$queryRawUnsafe<unknown[]>(`SELECT * FROM "${tablename}"`);
+    }
+
+    fs.writeFileSync(outputPath, JSON.stringify(data, null, 2), 'utf-8');
+    await disconnectPrisma();
 
     spinner.succeed(`Database exported to: ${outputPath}`);
     return outputPath;
@@ -338,16 +328,42 @@ export async function importDatabase(filePath: string): Promise<void> {
       throw new Error(`File not found: ${filePath}`);
     }
 
-    const url = new URL(getDatabaseUrl());
+    // Cross-platform: Use Prisma to import JSON data instead of psql
+    const prisma = await getPrismaClient();
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const data: Record<string, unknown[]> = JSON.parse(content);
 
-    execSync(
-      `psql -h ${url.hostname} -p ${url.port || 5432} -U ${url.username} -d ${url.pathname.replace('/', '')} -f "${filePath}"`,
-      {
-        stdio: 'pipe',
-        env: { ...process.env, PGPASSWORD: url.password },
-      },
-    );
+    // Disable foreign key triggers during restore to avoid ordering issues
+    await prisma.$executeRawUnsafe('SET session_replication_role = replica');
 
+    try {
+      for (const [table, rows] of Object.entries(data)) {
+        if (!rows || rows.length === 0) continue;
+
+        await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE`);
+
+        const batchSize = 50;
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize);
+          for (const row of batch) {
+            const r = row as Record<string, unknown>;
+            const keys = Object.keys(r);
+            const cols = keys.map((k) => `"${k}"`).join(', ');
+            const placeholders = keys.map((_, idx) => `$${idx + 1}`).join(', ');
+            const values = keys.map((k) => r[k]);
+
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO "${table}" (${cols}) VALUES (${placeholders})`,
+              ...values,
+            );
+          }
+        }
+      }
+    } finally {
+      await prisma.$executeRawUnsafe('SET session_replication_role = origin');
+    }
+
+    await disconnectPrisma();
     spinner.succeed('Database imported successfully');
   } catch (err: any) {
     spinner.fail('Failed to import database');
@@ -406,7 +422,5 @@ export async function optimizeDatabase(): Promise<void> {
 }
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
-
-function getConfigPathRelative(): string {
-  return path.dirname(new URL(import.meta.url).pathname);
-}
+// Path resolution is handled by resolveDbPackageDir() using fileURLToPath
+// which works correctly on both Windows and Unix.

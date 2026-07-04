@@ -40,7 +40,7 @@ export default function SecuritySettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await api.get<SecuritySettings>('/settings/security');
+      const res = await api.get<SecuritySettings>('/api/settings/security');
       setSettings({ ...DEFAULT_SETTINGS, ...res.data });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load settings';
@@ -58,7 +58,7 @@ export default function SecuritySettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.patch('/settings/security', settings);
+      await api.patch('/api/settings/security', settings);
       success('Security settings saved', 'Security settings have been updated.');
     } catch (err) {
       showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');

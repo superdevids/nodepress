@@ -1,91 +1,252 @@
-# Frequently Asked Questions
+# ❓ Frequently Asked Questions
+
+---
 
 ## General
 
 ### What is NodePress?
 
-NodePress is a modern, open-source Content Management System (CMS) built entirely in TypeScript. It's designed as a WordPress alternative for JavaScript/TypeScript development teams.
+NodePress is a modern, open-source Content Management System (CMS) built entirely in TypeScript. It's designed as a modern alternative to WordPress for JavaScript/TypeScript development teams. It runs on Node.js, uses PostgreSQL for data, and has a Next.js admin panel.
+
+### Is NodePress production-ready?
+
+**Not yet.** NodePress is currently in **beta** (v1.0.0-beta.2). It's under active development and works well for testing and development, but we don't recommend it for production websites yet. Key features like the install wizard and forgot password flow are still being built. Check [docs/PRD7.md](PRD7.md) for the full production readiness plan.
 
 ### Is NodePress a WordPress clone?
 
-No. NodePress is inspired by WordPress's content model and plugin architecture, but built from scratch using modern technology (NestJS, Next.js, Prisma, PostgreSQL).
+No. NodePress is **inspired by WordPress** — it uses similar concepts (posts, pages, plugins, themes, hooks) — but it's built from scratch using modern technology. It's not a drop-in replacement. You can't install WordPress plugins or themes on it.
 
 ### Do I need to know coding to use NodePress?
 
-No. Content editors can use the admin panel without any coding knowledge. Installation requires basic command line skills or Docker.
+- **Using the admin panel:** No — content editors can create and manage content without coding.
+- **Installing NodePress:** Basic terminal/command line skills are needed.
+- **Building plugins/themes:** Yes, you'll need TypeScript/React knowledge.
+
+### Can I migrate my WordPress site to NodePress?
+
+**Tools exist, but expect manual work.**
+
+We provide a WXR (WordPress eXtended RSS) importer that handles:
+
+- ✅ Posts, pages, custom content types
+- ✅ Media library (images, files)
+- ✅ Users
+- ✅ Comments
+- ✅ Menus
+- ✅ ACF field groups
+
+**What requires manual work:**
+
+- ⚠️ Gutenberg custom blocks (known blocks map cleanly)
+- ⚠️ WordPress plugins must be rewritten as NodePress plugins
+- ⚠️ Themes must be rebuilt in React/Next.js
+- ❌ WooCommerce data (migration tool coming in v2.0)
+
+**Estimated migration time:** 1-4 hours for a standard site.
+
+### What about plugins?
+
+NodePress ships with **13 official plugins** covering the most common CMS needs:
+
+| Plugin         | What It Does                                  |
+| -------------- | --------------------------------------------- |
+| SEO            | Meta tags, sitemaps, Open Graph, JSON-LD      |
+| Cache-Redis    | Redis caching, cache invalidation             |
+| Comments       | Gravatar, moderation, anti-spam (Akismet)     |
+| Forms          | Drag-and-drop form builder, Stripe, reCAPTCHA |
+| Analytics      | Google Analytics 4, real-time dashboard       |
+| Security       | Web firewall, malware scan, 2FA, audit log    |
+| Social Sharing | Share buttons, count tracking                 |
+| Backup         | Scheduled backups, S3/GDrive storage          |
+| Newsletter     | Email campaigns, subscriber management        |
+| Redirection    | 301/302 redirects, 404 tracking               |
+| Performance    | Minification, lazy loading, CDN               |
+| Multilingual   | 11 languages, auto-translate (DeepL/Google)   |
+| File Editor    | Monaco code editor, file browser              |
+
+This is **not as extensive** as WordPress's 60,000+ plugin ecosystem. For niche plugins, you'll need to build your own using the Plugin SDK.
+
+### Do I need to know coding to contribute?
+
+Yes for code contributions (TypeScript/React). No for documentation, bug reports, or translations — those are all welcome regardless of coding skill.
+
+---
 
 ## Installation
 
 ### What are the system requirements?
 
-- Node.js 20+ or Docker Desktop
-- 4GB RAM minimum
-- 10GB free disk space
-- PostgreSQL 16
-- Redis 7
+| Requirement    | Minimum                             |
+| -------------- | ----------------------------------- |
+| **Node.js**    | v20 or higher                       |
+| **RAM**        | 4 GB                                |
+| **Disk Space** | 10 GB                               |
+| **OS**         | Windows 10+, macOS 12+, Linux       |
+| **Database**   | PostgreSQL 16 (via Docker or local) |
+| **Redis**      | v7 (via Docker or local)            |
 
-### Can I install NodePress on shared hosting?
+### Can I install on shared hosting?
 
-No. NodePress requires Node.js runtime and PostgreSQL, which are not available on most shared hosting plans.
+**No.** NodePress requires Node.js and PostgreSQL, which aren't available on most shared hosting plans ($5-20/month cPanel). You'll need a VPS, cloud server, or Docker-capable host.
 
-### Is there a one-click installer?
+### Do I need Docker?
 
-The Docker installation is one command: `docker compose up -d`. Then the web-based Install Wizard guides you through setup.
+**No, but it helps.** NodePress can run with just Node.js + npm. Docker makes it easier (PostgreSQL, Redis, and MinIO spin up automatically). If Docker isn't available, you'll need to install PostgreSQL and Redis separately.
+
+### What if Docker fails on Windows?
+
+1. **Download Docker Desktop:** https://www.docker.com/products/docker-desktop/
+2. Install and start it
+3. Re-run the installer
+
+**Still failing?** Use the pure Node.js approach:
+
+```bash
+npm install
+npm start
+```
+
+You'll need PostgreSQL and Redis installed separately or running via a cloud service.
+
+### The installer says "command not found"
+
+You probably need to install Node.js first:
+
+- Download from https://nodejs.org (LTS v20 or higher)
+- Restart your terminal after installing
+
+### Can I use MySQL instead of PostgreSQL?
+
+**No.** NodePress is designed specifically for PostgreSQL 16, taking advantage of its advanced features (JSONB, `tsvector` full-text search, etc.).
+
+---
 
 ## Usage
 
-### How do I create content?
+### How do I create a blog post?
 
-Go to Content → [Content Type] → Add New. Fill in the fields and publish.
+1. Go to **Content → Posts**
+2. Click **"Add New"**
+3. Enter your title and content
+4. Set categories and tags on the right sidebar
+5. Click **"Publish"**
 
 ### How do I change my password?
 
-Click your avatar → Profile → Change Password.
+Click your avatar (top-right) → **Profile** → **Change Password**.
 
-### How do I reset a forgotten password?
+### I forgot my password. What do I do?
 
-Click "Forgot Password?" on the login page and enter your email.
+Currently the "Forgot Password" flow on the login page is **still being built**. As a workaround:
 
-### Can I have multiple users?
+- Contact your admin to reset it
+- Or use the CLI: `npx nodepressjs user reset-password <email>`
 
-Yes. Go to Users → Add New to create additional users with different roles.
+### How do I add users?
+
+Go to **Users → Add New**. Fill in their details and assign a role.
+
+### What user roles are available?
+
+| Role            | Permissions                    |
+| --------------- | ------------------------------ |
+| **Super Admin** | Full access to everything      |
+| **Admin**       | Manage all content and users   |
+| **Editor**      | Manage and publish all content |
+| **Author**      | Create and publish own content |
+| **Contributor** | Create drafts only             |
+| **Subscriber**  | Read only, manage own profile  |
+
+### Can I have multiple websites (multisite)?
+
+**Not yet.** Multisite/Network support is planned for v2.0.
+
+---
 
 ## Technical
 
-### What database does NodePress use?
+### What's the tech stack?
 
-PostgreSQL 16 with Prisma ORM.
-
-### Can I use MySQL?
-
-No. NodePress is designed for PostgreSQL.
+| Layer         | Technology                 |
+| ------------- | -------------------------- |
+| Runtime       | Node.js 20+                |
+| Language      | TypeScript (strict mode)   |
+| API Framework | NestJS                     |
+| Admin Panel   | Next.js 14 (React 18, RSC) |
+| Database      | PostgreSQL 16              |
+| ORM           | Prisma                     |
+| Cache         | Redis 7                    |
+| Queue         | BullMQ                     |
+| Container     | Docker + Compose           |
+| Styling       | Tailwind CSS               |
 
 ### Is there a REST API?
 
-Yes. REST API at `/api/` with Swagger documentation at `/docs`.
+Yes. Auto-generated for every content type, at `/api/` path. Swagger documentation at `/docs`.
 
 ### Is there GraphQL?
 
-Yes. GraphQL API at `/graphql` with Apollo Sandbox.
+Yes — built-in, no plugin needed. Apollo Server at `/graphql` with code-first schema.
 
 ### Can I create custom content types?
 
-Yes. Developers can define custom content types in code, or admins can create them via the admin panel.
+Yes — two ways:
 
-## Migration
+1. **Code-first:** Register via `registerPostType()` in your plugin
+2. **UI-first:** Admins can create custom types via the admin panel
 
-### Can I migrate from WordPress?
+### How does caching work?
 
-Yes. Use Tools → Import in the admin panel to upload a WordPress WXR export file.
+Redis is built-in for:
 
-### Will my URLs break?
+- Object cache (database query results)
+- Page cache (rendered HTML)
+- Session storage
+- Rate limiting counters
 
-No. NodePress supports WordPress-style permalink structures.
+### How does the search work?
+
+PostgreSQL `tsvector` full-text search (with Meilisearch integration planned). Supports typo-tolerant and faceted search.
+
+---
+
+## Troubleshooting
+
+### "npm install" hangs or fails
+
+```bash
+npm cache clean --force
+npm install --no-optional
+```
+
+### The server won't start
+
+```bash
+# Check if ports are free
+netstat -ano | findstr :3000   # Windows
+lsof -i :3000                   # Mac/Linux
+
+# Check Node.js version
+node -v   # Must be v20+
+```
+
+### The admin panel shows a blank page
+
+```bash
+# Check the terminal running npm start for errors
+# Make sure the API server (port 3001) is running too
+# Try clearing browser cache (Ctrl+Shift+R)
+```
+
+---
 
 ## Support
 
 ### Where can I get help?
 
-- GitHub Issues: https://github.com/superdevids/nodepress/issues
-- GitHub Discussions: https://github.com/superdevids/nodepress/discussions
-- Documentation: /docs/
+- 📖 **This FAQ** — `docs/FAQ.md`
+- 📘 **User Guide** — `docs/USER-GUIDE.md`
+- 🐛 **Report bugs** — https://github.com/superdevids/nodepress/issues
+- 💬 **Ask questions** — https://github.com/superdevids/nodepress/discussions
+- 💬 **Discord** — (coming soon)
+- 🔒 **Security issues** — See `SECURITY.md`

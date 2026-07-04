@@ -101,7 +101,7 @@ export function ActivityWidget() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await get<Activity[]>('/dashboard/activity');
+      const res = await get<Activity[]>('/api/dashboard/activity');
       setActivities(res.data || []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load activity';

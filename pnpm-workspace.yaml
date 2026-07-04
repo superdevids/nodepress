@@ -2,3 +2,12 @@ packages:
   - "apps/*"
   - "packages/*"
   - "plugins/*"
+allowBuilds:
+  '@apollo/protobufjs': set this to true or false
+  '@nestjs/core': set this to true or false
+  '@prisma/client': set this to true or false
+  '@prisma/engines': set this to true or false
+  esbuild: set this to true or false
+  msgpackr-extract: set this to true or false
+  prisma: set this to true or false
+  unrs-resolver: set this to true or false

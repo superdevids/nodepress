@@ -23,17 +23,17 @@ fi
 
 # Step 2: Install dependencies
 echo -e "${BLUE}[2/4]${NC} Installing dependencies..."
-pnpm install 2>&1 | tail -1
+npm install 2>&1 | tail -1
 echo -e "${GREEN}  ✅ Dependencies installed${NC}"
 
 # Step 3: Run database migrations
 echo -e "${BLUE}[3/4]${NC} Running database migrations..."
-pnpm db:migrate 2>&1 | tail -1
+npm run db:migrate 2>&1 | tail -1
 echo -e "${GREEN}  ✅ Migrations applied${NC}"
 
 # Step 4: Seed database
 echo -e "${BLUE}[4/4]${NC} Seeding database..."
-pnpm db:seed 2>&1 | tail -1
+npm run db:seed 2>&1 | tail -1
 echo -e "${GREEN}  ✅ Database seeded${NC}"
 
 echo ""
@@ -42,7 +42,7 @@ echo "  NodePress is ready!"
 echo "================================"
 echo ""
 echo "  Start development:"
-echo "    pnpm dev"
+echo "    npm run dev"
 echo ""
 echo "  Or with Docker:"
 echo "    docker compose up"

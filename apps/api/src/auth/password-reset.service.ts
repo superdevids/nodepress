@@ -1,8 +1,16 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { PasswordResetEngine } from '@nodepressjs/core';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../common/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { RateLimitDetailService } from '../common/rate-limit-detail.service';
 
 @Injectable()
 export class PasswordResetService {
@@ -12,9 +20,21 @@ export class PasswordResetService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly rateLimiter: RateLimitDetailService,
   ) {}
 
   async requestReset(email: string): Promise<{ message: string }> {
+    // Rate limit: max 3 requests per email per hour (no-enumeration safe — check BEFORE user lookup)
+    const rateLimitResult = await this.rateLimiter.check(email, 'password-reset');
+    if (!rateLimitResult.allowed) {
+      // Return generic message even when rate-limited to prevent user enumeration
+      this.logger.warn(`Password reset rate-limited for email: ${email}`);
+      throw new HttpException(
+        { message: 'If that email is registered, a reset link has been sent.' },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
       // Always return the same message regardless of whether the email exists

@@ -45,7 +45,7 @@ export function RecentlyPublished() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await get<Entry[]>('/content/post?status=publish&limit=5');
+      const res = await get<Entry[]>('/api/content/post?status=publish&limit=5');
       setEntries(res.data || []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load content';

@@ -68,7 +68,7 @@ export default function PermalinkSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await api.get<PermalinkSettings>('/settings/permalink');
+      const res = await api.get<PermalinkSettings>('/api/settings/permalink');
       const data = res.data;
       setSettings({ ...DEFAULT_SETTINGS, ...data });
       // Detect if current structure is custom
@@ -112,7 +112,7 @@ export default function PermalinkSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.patch('/settings/permalink', settings);
+      await api.patch('/api/settings/permalink', settings);
       success('Permalink structure saved', 'URL structure has been updated.');
     } catch (err) {
       showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');

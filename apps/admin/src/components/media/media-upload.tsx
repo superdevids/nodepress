@@ -124,7 +124,7 @@ export function MediaUpload({
       formData.append('file', originalFile);
       formData.append('stripExif', String(stripExif));
 
-      upload<{ id: string; url: string }>('/media/upload', formData, (pct) => {
+      upload<{ id: string; url: string }>('/api/media/upload', formData, (pct) => {
         setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, progress: pct } : f)));
       })
         .then(() => {

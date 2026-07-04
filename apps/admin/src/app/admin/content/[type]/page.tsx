@@ -2,22 +2,33 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ContentList } from '@/components/content/content-list';
-import { useAuth } from '@/lib/auth';
-import { fetchContentList, type ContentEntry } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 
 const typeLabels: Record<string, string> = {
   post: 'Posts',
   page: 'Pages',
 };
 
+interface ContentEntry {
+  id: string;
+  title: string;
+  slug: string;
+  status: 'draft' | 'publish' | 'pending' | 'private';
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+  type: string;
+}
+
 export default function ContentTypePage() {
   const params = useParams();
   const router = useRouter();
   const type = params.type as string;
-  const { token } = useAuth();
+  const { get } = useApi();
 
   const [items, setItems] = React.useState<ContentEntry[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -29,26 +40,23 @@ export default function ContentTypePage() {
 
   const label = typeLabels[type] || type.charAt(0).toUpperCase() + type.slice(1);
 
-  const loadItems = React.useCallback(() => {
-    if (token === undefined) return;
+  const loadItems = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
-
-    fetchContentList(type, token, { page, pageSize })
-      .then((res) => {
-        setItems(res.data ?? []);
-        if (res.meta) {
-          setTotalPages(res.meta.totalPages);
-          setTotal(res.meta.total);
-        }
-      })
-      .catch((err: Error) => {
-        setError(err.message);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [type, token, page]);
+    try {
+      const res = await get<ContentEntry[]>(`/api/content/${type}?page=${page}&limit=${pageSize}`);
+      setItems(res.data ?? []);
+      if (res.meta) {
+        setTotalPages(res.meta.totalPages);
+        setTotal(res.meta.total);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load content';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [type, page, get]);
 
   React.useEffect(() => {
     loadItems();
@@ -59,18 +67,34 @@ export default function ContentTypePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{label}</h1>
-          <p className="text-muted-foreground mt-1">Manage all {label.toLowerCase()}.</p>
+          <p className="text-muted-foreground mt-1">
+            Manage all {label.toLowerCase()}. {total > 0 && `${total} total`}
+          </p>
         </div>
-        <Button onClick={() => router.push(`/admin/content/${type}/new`)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={loadItems} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button onClick={() => router.push(`/admin/content/${type}/new`)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add New
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
-          <span className="text-muted-foreground ml-3">Loading {label.toLowerCase()}...</span>
+        <div className="bg-background rounded-md border">
+          <div className="p-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 border-b py-3 last:border-0">
+                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-5 flex-1" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            ))}
+          </div>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -88,11 +112,8 @@ export default function ContentTypePage() {
               id: entry.id,
               title: entry.title,
               slug: entry.slug,
-              status: entry.status,
-              author:
-                typeof entry.author === 'object' && entry.author !== null
-                  ? entry.author.name
-                  : (entry.author ?? 'Unknown'),
+              status: entry.status as 'draft' | 'published' | 'pending' | 'trashed',
+              author: entry.authorId,
               date: new Date(entry.createdAt),
               type: entry.type,
             }))}

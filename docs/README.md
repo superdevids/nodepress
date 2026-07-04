@@ -1,30 +1,59 @@
 # NodePress Documentation
 
-## Product Requirements
+> NodePress v1.0.0-beta.2 — Modern CMS inspired by WordPress
 
-| Document               | Description                                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [PRD1.md](./PRD1.md)   | Core Product Requirements Document (v1.0) — Living Document, all Must Have features implemented              |
-| [PRD2.md](./PRD2.md)   | Extended PRD: Security, Performance, Scalability (v2.0) — Living Document, all pillars implemented           |
-| [PRD3.md](./PRD3.md)   | Gap Analysis: 147 gaps across 9 domains — Historical, all gaps closed                                        |
-| [PRD4.md](./PRD4.md)   | Final Comprehensive Audit & Remediation Analysis — 298 issues fixed, ~90% WordPress parity                   |
-| [PRD5.md](./PRD5.md)   | Final Audit & Remediation v5.0 — 229+ issues identified and fixed across API, Admin, Core, Plugins, and Docs |
-| [PRD6.md](./PRD6.md)   | Final Audit & Remediation v6.0 — 39 remaining issues fixed                                                   |
-| [PRD7.md](./PRD7.md)   | Production Readiness Plan v7.0 — ✅ Implementation Complete (v1.0-beta ready)                                |
-| [PRD8.md](./PRD8.md)   | Installation Simplification v8.0 — One-click installer for everyone                                          |
-| [PRD9.md](./PRD9.md)   | Zero-Warning Installation v9.0 — All installation errors fixed                                               |
-| [PRD10.md](./PRD10.md) | Zero-Warning Installation v10.0 — All warnings & errors fixed (latest)                                       |
+---
 
-## Technical Reports
+## 📖 User-Facing Documentation
 
-| Document                                               | Description                                                     |
-| ------------------------------------------------------ | --------------------------------------------------------------- |
-| [AUDIT-REPORT-COMPLETE.md](./AUDIT-REPORT-COMPLETE.md) | Full codebase audit: 286 issues found & fixed (original report) |
-| [WORDPRESS-COMPARISON.md](./WORDPRESS-COMPARISON.md)   | NodePress vs WordPress: comprehensive 147-feature comparison    |
+| Document                                       | What It's For                                  |
+| ---------------------------------------------- | ---------------------------------------------- |
+| 🚀 [GETTING-STARTED.md](../GETTING-STARTED.md) | Step-by-step installation with troubleshooting |
+| ⚡ [QUICK-START.md](../QUICK-START.md)         | Developer cheat sheet (commands, services)     |
+| ❓ [FAQ.md](FAQ.md)                            | Frequently asked questions                     |
+| 📘 [USER-GUIDE.md](USER-GUIDE.md)              | User manual for content editors                |
+| 🔄 [UPGRADE.md](../UPGRADE.md)                 | How to upgrade between versions                |
 
-## RFCs
+---
 
-| Document                               | Description                             |
-| -------------------------------------- | --------------------------------------- |
-| [rfcs/README.md](./rfcs/README.md)     | RFC process for architectural decisions |
-| [rfcs/template.md](./rfcs/template.md) | RFC proposal template                   |
+## 📋 Project Documents
+
+| Document                                           | Description                                                             |
+| -------------------------------------------------- | ----------------------------------------------------------------------- |
+| [WORDPRESS-COMPARISON.md](WORDPRESS-COMPARISON.md) | Honest comparison with WordPress (feature parity, gaps, decision guide) |
+
+---
+
+## 🏗️ Product Requirements (Historical)
+
+These documents trace the project's development. PRD7 is the most current assessment.
+
+| Document             | Status                                           |
+| -------------------- | ------------------------------------------------ |
+| [PRD1.md](PRD1.md)   | Core product requirements (implemented)          |
+| [PRD2.md](PRD2.md)   | Security, performance, scalability (implemented) |
+| [PRD3.md](PRD3.md)   | Gap analysis - 147 gaps closed                   |
+| [PRD4.md](PRD4.md)   | Audit & remediation - 298 issues fixed           |
+| [PRD5.md](PRD5.md)   | Audit v5 - 229+ issues fixed                     |
+| [PRD6.md](PRD6.md)   | Audit v6 - 39 issues fixed                       |
+| [PRD7.md](PRD7.md)   | **Current** — Production readiness plan          |
+| [PRD8.md](PRD8.md)   | Installation simplification                      |
+| [PRD9.md](PRD9.md)   | Zero-warning installation                        |
+| [PRD10.md](PRD10.md) | Zero-warning installation (latest)               |
+
+---
+
+## 📊 Technical Reports
+
+| Document                                             | Description                                   |
+| ---------------------------------------------------- | --------------------------------------------- |
+| [AUDIT-REPORT-COMPLETE.md](AUDIT-REPORT-COMPLETE.md) | Full codebase audit: 286 issues found & fixed |
+
+---
+
+## 📝 RFCs
+
+| Document                             | Description                             |
+| ------------------------------------ | --------------------------------------- |
+| [rfcs/README.md](rfcs/README.md)     | RFC process for architectural decisions |
+| [rfcs/template.md](rfcs/template.md) | RFC proposal template                   |

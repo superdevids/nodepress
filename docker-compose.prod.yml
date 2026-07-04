@@ -202,7 +202,7 @@ services:
     logging: *prod-logging
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
     container_name: nodepress-minio
     <<: [*restart-policy, *resources-db]
     ports:
@@ -238,7 +238,7 @@ services:
     logging: *prod-logging
 
   minio-init:
-    image: minio/mc:latest
+    image: minio/mc:RELEASE.2024-12-18T13-15-44Z
     container_name: nodepress-minio-init
     restart: 'no'
     depends_on:

@@ -4,10 +4,10 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-    API_URL: z.string().url().default("http://localhost:3001/api"),
+    API_URL: z.string().url().default("http://localhost:3001"),
   },
   client: {
-    NEXT_PUBLIC_API_URL: z.string().url().default("http://localhost:3001/api"),
+    NEXT_PUBLIC_API_URL: z.string().url().default("http://localhost:3001"),
     NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
     NEXT_PUBLIC_ADMIN_TITLE: z.string().default("NodePress Admin"),
   },

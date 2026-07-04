@@ -40,7 +40,7 @@ export default function CORSSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await api.get<CORSSettings>('/settings/cors');
+      const res = await api.get<CORSSettings>('/api/settings/cors');
       const data = res.data;
       setSettings({
         allowed_origins: Array.isArray(data.allowed_origins) ? data.allowed_origins : [],
@@ -67,7 +67,7 @@ export default function CORSSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.patch('/settings/cors', settings);
+      await api.patch('/api/settings/cors', settings);
       success('CORS settings saved', 'Allowed origins have been updated.');
     } catch (err) {
       showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');

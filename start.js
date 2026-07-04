@@ -203,28 +203,22 @@ async function startInfra() {
   return true;
 }
 
+function getRunCmd(pm) {
+  return pm === 'pnpm' ? 'pnpm' : 'npm run';
+}
+
 async function setupDb(pm) {
   console.log('');
   log('🗄️  Setting up database...');
 
+  const cmd = getRunCmd(pm);
+
   log('Generating Prisma client...');
-  if (pm === 'pnpm') {
-    run('pnpm db:generate');
-  } else {
-    run('npx prisma generate --schema=packages/db/prisma/schema.prisma');
-  }
+  run(`${cmd} db:generate`);
   ok('Prisma client ready');
 
   log('Applying database schema...');
-  let pushed = false;
-  if (pm === 'pnpm') {
-    pushed = run('pnpm db:push', { silent: true });
-  } else {
-    pushed = run(
-      'npx prisma db push --schema=packages/db/prisma/schema.prisma --accept-data-loss',
-      { silent: true },
-    );
-  }
+  let pushed = run(`${cmd} db:push`, { silent: true });
 
   if (!pushed) {
     fail('Could not connect to PostgreSQL!');
@@ -243,13 +237,7 @@ async function setupDb(pm) {
   ok('Database schema ready');
 
   log('Adding default data...');
-  if (pm === 'pnpm') {
-    run('pnpm db:seed', { silent: true });
-  } else {
-    run('npx ts-node --project packages/db/tsconfig.json packages/db/src/seed.ts', {
-      silent: true,
-    });
-  }
+  run(`${cmd} db:seed`, { silent: true });
   ok('Default data seeded');
 
   return true;

@@ -47,7 +47,7 @@ export default function ReadingSettingsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await api.get<ReadingSettings>('/settings/reading');
+      const res = await api.get<ReadingSettings>('/api/settings/reading');
       setSettings({ ...DEFAULT_SETTINGS, ...res.data });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load settings';
@@ -65,7 +65,7 @@ export default function ReadingSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.patch('/settings/reading', settings);
+      await api.patch('/api/settings/reading', settings);
       success('Settings saved', 'Reading settings have been updated.');
     } catch (err) {
       showError('Failed to save', err instanceof Error ? err.message : 'Please try again.');

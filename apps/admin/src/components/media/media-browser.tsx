@@ -81,7 +81,7 @@ export function MediaBrowser() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await get<MediaItem[]>('/media');
+      const res = await get<MediaItem[]>('/api/media');
       setMediaItems(res.data || []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load media';
@@ -134,7 +134,7 @@ export function MediaBrowser() {
     if (!editItem) return;
     setSavingEdit(true);
     try {
-      await patch(`/media/${editItem.id}`, {
+      await patch(`/api/media/${editItem.id}`, {
         name: editTitle,
         altText: editAlt,
         caption: editCaption,
@@ -155,7 +155,7 @@ export function MediaBrowser() {
     if (!deleteItem) return;
     setDeleting(true);
     try {
-      await del(`/media/${deleteItem.id}`);
+      await del(`/api/media/${deleteItem.id}`);
       success('Media deleted', `${deleteItem.name} has been deleted.`);
       setDeleteItem(null);
       await fetchMedia();

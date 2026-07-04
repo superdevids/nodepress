@@ -5,30 +5,12 @@ import { createSpinner, error, info } from '../utils/logger.js';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-function findPrismaBin(): string {
-  const candidates = [
-    path.join(process.cwd(), 'node_modules', '.bin', 'prisma'),
-    path.join(process.cwd(), '..', 'db', 'node_modules', '.bin', 'prisma'),
-    'npx.cmd',
-  ];
-  for (const c of candidates) {
-    if (fs.existsSync(c)) return c;
-  }
-  for (const c of candidates) {
-    if (fs.existsSync(c + '.cmd')) return c + '.cmd';
-  }
-  return 'npx.cmd';
-}
-
-function getDbPackageDir(): string {
-  const pkgDir = path.resolve(
-    path.dirname(new URL(import.meta.url).pathname),
-    '..',
-    '..',
-    '..',
-    'db',
-  );
+function resolveDbPackageDir(): string {
+  // Cross-platform: use fileURLToPath instead of .pathname for Windows compat
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const pkgDir = path.resolve(__dirname, '..', '..', '..', 'db');
   if (fs.existsSync(pkgDir)) return pkgDir;
   return process.cwd();
 }
@@ -38,21 +20,18 @@ function runPrisma(args: string[], label: string): void {
   const spinner = createSpinner(label);
   spinner.start();
   try {
-    const prismaBin = findPrismaBin();
-    const cwd = getDbPackageDir();
+    const cwd = resolveDbPackageDir();
     const schemaPath = path.join(cwd, 'prisma', 'schema.prisma');
     const schemaArg = fs.existsSync(schemaPath) ? ` --schema="${schemaPath}"` : '';
-    execSync(
-      `${prismaBin}${prismaBin === 'npx.cmd' ? ' prisma' : ''} ${args.join(' ')}${schemaArg}`,
-      {
-        cwd,
-        stdio: 'pipe',
-        env: {
-          ...process.env,
-          DATABASE_URL: process.env.DATABASE_URL,
-        },
+    // Use 'npx prisma' which works cross-platform on both Windows and Unix
+    execSync(`npx prisma ${args.join(' ')}${schemaArg}`, {
+      cwd,
+      stdio: 'pipe',
+      env: {
+        ...process.env,
+        DATABASE_URL: process.env.DATABASE_URL,
       },
-    );
+    });
     spinner.succeed(`${label} completed`);
   } catch (err: any) {
     spinner.fail(`${label} failed`);

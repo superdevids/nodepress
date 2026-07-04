@@ -1,5 +1,3 @@
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
 import {
   createReadStream,
   createWriteStream,
@@ -15,12 +13,11 @@ import {
 } from 'node:fs';
 import { cp, readdir } from 'node:fs/promises';
 import { join, basename, dirname } from 'node:path';
-import { createGzip } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 import { createHash } from 'node:crypto';
 import type { PrismaClient } from '@nodepressjs/db';
-
-const execAsync = promisify(exec);
+import archiver from 'archiver';
+import AdmZip from 'adm-zip';
 
 export type BackupType = 'full' | 'database' | 'media' | 'config';
 export type BackupStatus = 'pending' | 'running' | 'completed' | 'failed' | 'restoring';
@@ -164,7 +161,6 @@ export class BackupManager {
   private backupDir: string;
   private storageProvider: StorageProvider;
   private retention!: RetentionConfig;
-  private dbUrl: string;
 
   constructor(
     prisma: PrismaClient,
@@ -178,7 +174,6 @@ export class BackupManager {
     this.backupDir = options?.backupDir || join(process.cwd(), 'backups');
     this.storageProvider = options?.storageProvider || new LocalStorageProvider(this.backupDir);
     this.retention = { daily: 7, weekly: 4, monthly: 3, ...options?.retention };
-    this.dbUrl = process.env.DATABASE_URL || '';
 
     if (!existsSync(this.backupDir)) {
       mkdirSync(this.backupDir, { recursive: true });
@@ -188,7 +183,7 @@ export class BackupManager {
   async createBackup(options: BackupOptions = {}): Promise<BackupRecord> {
     const type = options.type || 'full';
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `nodepress-backup-${timestamp}.tar.gz`;
+    const filename = `nodepress-backup-${timestamp}.zip`;
     const tempDir = join(this.backupDir, `.tmp-${Date.now()}`);
     mkdirSync(tempDir, { recursive: true });
 
@@ -363,33 +358,65 @@ export class BackupManager {
   }
 
   private async dumpDatabase(outPath: string): Promise<void> {
-    const url = new URL(this.dbUrl);
-    const dbName = url.pathname.replace('/', '');
-    const host = url.hostname;
-    const port = url.port || '5432';
-    const user = url.username;
-    const pass = url.password;
+    // Cross-platform: Use Prisma to export all tables as JSON instead of pg_dump
+    const tables = await this.prisma.$queryRawUnsafe<{ tablename: string }[]>(
+      `SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename != '_prisma_migrations' ORDER BY tablename`,
+    );
 
-    const env = { ...process.env, PGPASSWORD: pass };
-    await execAsync(`pg_dump -h ${host} -p ${port} -U ${user} -d ${dbName} -F p -f "${outPath}"`, {
-      env,
-      windowsHide: true,
-    });
+    const data: Record<string, unknown[]> = {};
+    for (const { tablename } of tables) {
+      data[tablename] = await this.prisma.$queryRawUnsafe<unknown[]>(
+        `SELECT * FROM "${tablename}"`,
+      );
+    }
+
+    writeFileSync(outPath, JSON.stringify(data));
   }
 
-  private async restoreDatabase(sqlPath: string): Promise<void> {
-    const url = new URL(this.dbUrl);
-    const dbName = url.pathname.replace('/', '');
-    const host = url.hostname;
-    const port = url.port || '5432';
-    const user = url.username;
-    const pass = url.password;
+  private async restoreDatabase(jsonPath: string): Promise<void> {
+    // Cross-platform: Use Prisma to import JSON data instead of psql
+    const content = readFileSync(jsonPath, 'utf-8');
+    const data: Record<string, unknown[]> = JSON.parse(content);
 
-    const env = { ...process.env, PGPASSWORD: pass };
-    await execAsync(`psql -h ${host} -p ${port} -U ${user} -d ${dbName} -f "${sqlPath}"`, {
-      env,
-      windowsHide: true,
-    });
+    // Disable foreign key triggers during restore to avoid ordering issues
+    await this.prisma.$executeRawUnsafe('SET session_replication_role = replica');
+
+    try {
+      for (const [table, rows] of Object.entries(data)) {
+        if (!rows || (rows as unknown[]).length === 0) continue;
+
+        // Truncate table
+        await this.prisma.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE`);
+
+        // Insert rows in batches
+        const batchSize = 50;
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize);
+          for (const row of batch) {
+            const r = row as Record<string, unknown>;
+            const keys = Object.keys(r);
+            const cols = keys.map((k) => `"${k}"`).join(', ');
+            const placeholders = keys.map((_, idx) => `$${idx + 1}`).join(', ');
+            const values = keys.map((k) => {
+              const v = r[k];
+              // Handle Date serialization from JSON
+              if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) {
+                return v;
+              }
+              return v;
+            });
+
+            await this.prisma.$executeRawUnsafe(
+              `INSERT INTO "${table}" (${cols}) VALUES (${placeholders})`,
+              ...values,
+            );
+          }
+        }
+      }
+    } finally {
+      // Re-enable foreign key triggers
+      await this.prisma.$executeRawUnsafe('SET session_replication_role = origin');
+    }
   }
 
   private async copyMediaFiles(dest: string): Promise<void> {
@@ -445,11 +472,23 @@ export class BackupManager {
   }
 
   private async compressBackup(srcDir: string, outPath: string): Promise<void> {
-    await execAsync(`tar -czf "${outPath}" -C "${srcDir}" .`, { windowsHide: true });
+    return new Promise<void>((resolve, reject) => {
+      const output = createWriteStream(outPath);
+      const archive = archiver('zip', { zlib: { level: 9 } });
+
+      output.on('close', () => resolve());
+      archive.on('error', (err: Error) => reject(err));
+
+      archive.pipe(output);
+      archive.directory(srcDir, false);
+      archive.finalize();
+    });
   }
 
   private async decompressBackup(srcPath: string, destDir: string): Promise<void> {
-    await execAsync(`tar -xzf "${srcPath}" -C "${destDir}"`, { windowsHide: true });
+    // Use adm-zip for cross-platform zip extraction (pure JS, no system deps)
+    const zip = new AdmZip(srcPath);
+    zip.extractAllTo(destDir, true);
   }
 
   private async saveRecord(record: BackupRecord): Promise<void> {

@@ -2,6 +2,8 @@ import { Controller, Get, HttpCode, HttpStatus, Injectable } from '@nestjs/commo
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
 import { PrismaService } from '../common/prisma.service';
+import { access, constants } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 
 export interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -137,25 +139,17 @@ export class HealthChecker {
   private async checkDisk(): Promise<{ status: string; latency: number; error?: string }> {
     const start = Date.now();
     try {
-      const os = await import('node:os');
-      const platform = os.platform();
-
-      if (platform === 'win32') {
-        // Windows: use CheckDisk space info via wmic
-        const { execSync } = await import('node:child_process');
-        execSync('wmic logicaldisk get size,freespace,caption 2>nul', {
-          encoding: 'utf-8',
-          timeout: 5000,
-        });
-        return { status: 'healthy', latency: Date.now() - start };
-      }
-
-      // Unix: use df
-      const { execSync } = await import('node:child_process');
-      execSync('df -h / | tail -1', { encoding: 'utf-8' });
+      // Cross-platform: Check if the temp/system directory is writable
+      // instead of using platform-specific 'df' or 'wmic' commands
+      const tempDir = process.env.TMPDIR || process.env.TMP || process.env.TEMP || tmpdir();
+      await access(tempDir, constants.W_OK);
       return { status: 'healthy', latency: Date.now() - start };
-    } catch {
-      return { status: 'healthy', latency: Date.now() - start };
+    } catch (err) {
+      return {
+        status: 'degraded',
+        latency: Date.now() - start,
+        error: err instanceof Error ? err.message : 'Temp directory not writable',
+      };
     }
   }
 }

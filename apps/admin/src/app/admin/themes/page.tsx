@@ -55,7 +55,7 @@ export default function ThemesPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await get<Theme[]>('/themes');
+      const res = await get<Theme[]>('/api/themes');
       setThemes(res.data || []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load themes';
@@ -73,7 +73,7 @@ export default function ThemesPage() {
   const activateTheme = async (id: string) => {
     setActivating(id);
     try {
-      await post(`/themes/${id}/activate`);
+      await post(`/api/themes/${id}/activate`);
       setThemes((prev) => prev.map((t) => ({ ...t, active: t.id === id })));
       const theme = themes.find((t) => t.id === id);
       success('Theme Activated', `${theme?.name || 'Theme'} is now the active theme.`);
@@ -89,7 +89,7 @@ export default function ThemesPage() {
     if (!deleteTheme) return;
     setDeletingTheme(true);
     try {
-      await del(`/themes/${deleteTheme.id}`);
+      await del(`/api/themes/${deleteTheme.id}`);
       success('Theme deleted', `${deleteTheme.name} has been deleted.`);
       setDeleteTheme(null);
       await fetchThemes();

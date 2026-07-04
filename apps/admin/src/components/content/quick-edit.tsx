@@ -17,8 +17,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { useDebounce } from '@/lib/hooks';
-import { useAuth } from '@/lib/auth';
-import { updateContentEntry } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 
 const quickEditSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -42,6 +41,7 @@ interface QuickEditProps {
 
 export function QuickEdit({ entry, onClose, onSaved }: QuickEditProps) {
   const { success, error } = useToast();
+  const { patch } = useApi();
   const autoSaveTimer = React.useRef<ReturnType<typeof setTimeout>>();
   const [isAutoSaving, setIsAutoSaving] = React.useState(false);
 
@@ -72,21 +72,14 @@ export function QuickEdit({ entry, onClose, onSaved }: QuickEditProps) {
     }
   }, [debouncedTitle]);
 
-  const { token } = useAuth();
-
   const handleAutoSave = async () => {
     setIsAutoSaving(true);
     try {
-      await updateContentEntry(
-        entry.type || 'post',
-        entry.id,
-        {
-          title,
-          slug: slug || '',
-          status: (status === 'pending' ? 'draft' : status) as 'draft' | 'published',
-        },
-        token,
-      );
+      await patch(`/api/content/${entry.type || 'post'}/${entry.id}`, {
+        title,
+        slug: slug || '',
+        status: (status === 'pending' ? 'draft' : status) as 'draft' | 'published',
+      });
       onSaved({ title, slug: slug || '', status });
     } catch {
       // silent
@@ -103,13 +96,12 @@ export function QuickEdit({ entry, onClose, onSaved }: QuickEditProps) {
 
   const onSubmit = async (data: QuickEditForm) => {
     try {
-      const status = data.status === 'pending' ? 'draft' : data.status;
-      await updateContentEntry(
-        entry.type || 'post',
-        entry.id,
-        { title: data.title, slug: data.slug || '', status },
-        token,
-      );
+      const bodyStatus = data.status === 'pending' ? 'draft' : data.status;
+      await patch(`/api/content/${entry.type || 'post'}/${entry.id}`, {
+        title: data.title,
+        slug: data.slug || '',
+        status: bodyStatus,
+      });
       onSaved(data);
       success('Updated!', 'Content has been updated.');
       onClose();

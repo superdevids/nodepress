@@ -4,8 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { ContentForm, type ContentFormData } from './content-form';
-import { useAuth } from '@/lib/auth';
-import { createContentEntry, updateContentEntry } from '@/lib/api-helper';
+import { useApi } from '@/lib/use-api';
 import { useToast } from '@/components/ui/toast';
 
 const BlockEditor = dynamic(() => import('@nodepressjs/editor').then((mod) => mod.BlockEditor), {
@@ -22,7 +21,7 @@ export function ContentEditor({ contentType, entryId, initialData }: ContentEdit
   const [content, setContent] = React.useState<string>(initialData?.content || '');
   const [showBlockEditor, setShowBlockEditor] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const { token } = useAuth();
+  const { post, patch } = useApi();
   const { success, error: showError } = useToast();
   const router = useRouter();
 
@@ -44,10 +43,10 @@ export function ContentEditor({ contentType, entryId, initialData }: ContentEdit
 
     try {
       if (entryId) {
-        await updateContentEntry(contentType, entryId, payload, token);
+        await patch(`/api/content/${contentType}/${entryId}`, payload);
         success('Updated!', 'Content has been updated successfully.');
       } else {
-        const res = await createContentEntry(contentType, payload, token);
+        const res = await post<{ id: string }>(`/api/content/${contentType}`, payload);
         success('Created!', 'Content has been created successfully.');
         router.push(`/admin/content/${contentType}/${res.data.id}`);
       }

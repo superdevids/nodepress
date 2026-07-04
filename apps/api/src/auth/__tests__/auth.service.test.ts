@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UnauthorizedException, ConflictException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 
 vi.mock('bcryptjs', () => ({
   default: {
@@ -13,68 +12,62 @@ vi.mock('bcryptjs', () => ({
 
 import * as bcrypt from 'bcryptjs';
 
-const mockPrisma = {
+interface MockPrisma {
   user: {
-    findUnique: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-  },
-};
+    findUnique: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+  };
+}
 
-const mockJwtService = {
-  sign: vi.fn().mockReturnValue('mock-access-token'),
-};
+function createMocks() {
+  return {
+    prisma: {
+      user: {
+        findUnique: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+    } as MockPrisma,
+    jwtService: { sign: vi.fn().mockReturnValue('mock-access-token') },
+    appPasswordsService: { verify: vi.fn() },
+    sessionService: { create: vi.fn(), findByRefreshToken: vi.fn(), rotateRefreshToken: vi.fn() },
+    passwordPolicyService: { validateAndEnforce: vi.fn(), addToHistory: vi.fn() },
+    twoFactorService: { isEnabled: vi.fn().mockResolvedValue(false), verifyToken: vi.fn() },
+    auditService: { logLogin: vi.fn() },
+    mailService: {
+      sendWelcomeEmail: vi.fn().mockResolvedValue(undefined),
+      sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+      sendCommentNotification: vi.fn().mockResolvedValue(undefined),
+      sendContentPublishedNotification: vi.fn().mockResolvedValue(undefined),
+    },
+  };
+}
 
-const mockAppPasswordsService = {
-  verify: vi.fn(),
-};
-
-const mockSessionService = {
-  create: vi.fn(),
-  findByRefreshToken: vi.fn(),
-  rotateRefreshToken: vi.fn(),
-};
-
-const mockPasswordPolicyService = {
-  validateAndEnforce: vi.fn(),
-  addToHistory: vi.fn(),
-};
-
-const mockTwoFactorService = {
-  isEnabled: vi.fn().mockResolvedValue(false),
-  verifyToken: vi.fn(),
-};
-
-const mockAuditService = {
-  logLogin: vi.fn(),
-};
-
-const mockConfigService = {};
-
-const mockMailService = {
-  sendWelcomeEmail: vi.fn().mockResolvedValue(undefined),
-  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
-  sendCommentNotification: vi.fn().mockResolvedValue(undefined),
-  sendContentPublishedNotification: vi.fn().mockResolvedValue(undefined),
-};
+type Mocks = ReturnType<typeof createMocks>;
 
 const { AuthService } = await import('../auth.service.js');
 
+function createAuthService(mocks: Mocks) {
+  return new AuthService(
+    mocks.jwtService as any,
+    mocks.appPasswordsService as any,
+    mocks.sessionService as any,
+    mocks.passwordPolicyService as any,
+    mocks.twoFactorService as any,
+    mocks.auditService as any,
+    mocks.prisma as any,
+    mocks.mailService as any,
+  );
+}
+
 describe('AuthService', () => {
+  let mocks: Mocks;
   let authService: AuthService;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    authService = new AuthService(
-      mockJwtService as any,
-      mockAppPasswordsService as any,
-      mockSessionService as any,
-      mockPasswordPolicyService as any,
-      mockTwoFactorService as any,
-      mockAuditService as any,
-      mockPrisma as any,
-      mockMailService as any,
-    );
+    mocks = createMocks();
+    authService = createAuthService(mocks);
   });
 
   describe('validateUser', () => {
@@ -86,18 +79,18 @@ describe('AuthService', () => {
         name: 'Test User',
         role: 'ADMIN',
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
       vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
       const result = await authService.validateUser('test@example.com', 'password');
 
       expect(result).not.toBeNull();
       expect(result).not.toHaveProperty('passwordHash');
-      expect(result.email).toBe('test@example.com');
+      expect(result!.email).toBe('test@example.com');
     });
 
     it('returns null when user is not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
       const result = await authService.validateUser('missing@example.com', 'password');
       expect(result).toBeNull();
     });
@@ -108,7 +101,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         passwordHash: '$2a$12$hashed',
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
       vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
 
       const result = await authService.validateUser('test@example.com', 'wrong-password');
@@ -121,7 +114,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         passwordHash: null,
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
 
       const result = await authService.validateUser('test@example.com', 'password');
       expect(result).toBeNull();
@@ -135,13 +128,29 @@ describe('AuthService', () => {
         name: 'Test User',
         role: 'ADMIN',
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
       vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
-      mockAppPasswordsService.verify.mockResolvedValue(true);
+      mocks.appPasswordsService.verify.mockResolvedValue(true);
 
       const result = await authService.validateUser('test@example.com', 'app-password');
       expect(result).not.toBeNull();
-      expect(result.email).toBe('test@example.com');
+      expect(result!.email).toBe('test@example.com');
+    });
+
+    it('calls bcrypt.compare with correct password hash', async () => {
+      const mockUser = {
+        id: 'user-1',
+        email: 'test@example.com',
+        passwordHash: '$2a$12$specific-hash-value',
+        name: 'Test User',
+        role: 'ADMIN',
+      };
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+      await authService.validateUser('test@example.com', 'my-password');
+
+      expect(bcrypt.compare).toHaveBeenCalledWith('my-password', '$2a$12$specific-hash-value');
     });
   });
 
@@ -154,10 +163,10 @@ describe('AuthService', () => {
       username: 'johndoe',
     };
 
-    it('creates a new user', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+    it('creates a new user with hashed password', async () => {
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
       vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$hashed' as never);
-      mockPrisma.user.create.mockResolvedValue({
+      mocks.prisma.user.create.mockResolvedValue({
         id: 'new-user-id',
         email: 'new@example.com',
         name: 'John Doe',
@@ -170,15 +179,24 @@ describe('AuthService', () => {
 
       expect(result.email).toBe('new@example.com');
       expect(result).not.toHaveProperty('passwordHash');
-      expect(mockPrisma.user.create).toHaveBeenCalled();
-      expect(mockPasswordPolicyService.addToHistory).toHaveBeenCalled();
+      expect(bcrypt.hash).toHaveBeenCalledWith('Str0ng!Pass', 12);
+      expect(mocks.prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            email: 'new@example.com',
+            role: 'SUBSCRIBER',
+            capabilities: ['read'],
+          }),
+        }),
+      );
+      expect(mocks.passwordPolicyService.addToHistory).toHaveBeenCalled();
     });
 
     it('creates a user without lastName', async () => {
       const dto = { ...registerDto, lastName: undefined };
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
       vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$hashed' as never);
-      mockPrisma.user.create.mockResolvedValue({
+      mocks.prisma.user.create.mockResolvedValue({
         id: 'new-user-id',
         email: 'new@example.com',
         name: 'John',
@@ -189,7 +207,7 @@ describe('AuthService', () => {
 
       const result = await authService.register(dto);
       expect(result.email).toBe('new@example.com');
-      expect(mockPrisma.user.create).toHaveBeenCalledWith(
+      expect(mocks.prisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             name: 'John',
@@ -198,16 +216,41 @@ describe('AuthService', () => {
       );
     });
 
+    it('generates displayName from email when username is not provided', async () => {
+      const dto = { ...registerDto, username: undefined, email: 'newuser@example.com' };
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$hashed' as never);
+      mocks.prisma.user.create.mockResolvedValue({
+        id: 'new-user-id',
+        email: 'newuser@example.com',
+        name: 'John Doe',
+        displayName: 'newuser',
+        role: 'SUBSCRIBER',
+        capabilities: ['read'],
+      });
+
+      const result = await authService.register(dto);
+      expect(result.displayName).toBe('newuser');
+      expect(mocks.prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            displayName: 'newuser',
+          }),
+        }),
+      );
+    });
+
     it('throws ConflictException when email is already registered', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'existing', email: 'new@example.com' });
+      mocks.prisma.user.findUnique.mockResolvedValue({ id: 'existing', email: 'new@example.com' });
 
       await expect(authService.register(registerDto)).rejects.toThrow(ConflictException);
+      expect(mocks.prisma.user.create).not.toHaveBeenCalled();
     });
 
     it('does not throw when welcome email fails (non-blocking)', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
       vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$hashed' as never);
-      mockPrisma.user.create.mockResolvedValue({
+      mocks.prisma.user.create.mockResolvedValue({
         id: 'new-user-id',
         email: 'new@example.com',
         name: 'John Doe',
@@ -215,10 +258,30 @@ describe('AuthService', () => {
         role: 'SUBSCRIBER',
         capabilities: ['read'],
       });
-      mockMailService.sendWelcomeEmail.mockRejectedValue(new Error('SMTP error'));
+      mocks.mailService.sendWelcomeEmail.mockRejectedValue(new Error('SMTP error'));
 
       const result = await authService.register(registerDto);
       expect(result.email).toBe('new@example.com');
+    });
+
+    it('calls password policy service to validate password strength', async () => {
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$hashed' as never);
+      mocks.prisma.user.create.mockResolvedValue({
+        id: 'new-user-id',
+        email: 'new@example.com',
+        name: 'John Doe',
+        displayName: 'johndoe',
+        role: 'SUBSCRIBER',
+        capabilities: ['read'],
+      });
+
+      await authService.register(registerDto);
+
+      expect(mocks.passwordPolicyService.validateAndEnforce).toHaveBeenCalledWith(
+        'new',
+        'Str0ng!Pass',
+      );
     });
   });
 
@@ -234,9 +297,9 @@ describe('AuthService', () => {
         role: 'ADMIN',
         capabilities: ['read', 'write'],
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
       vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
-      mockSessionService.create.mockResolvedValue({ id: 'session-1' });
+      mocks.sessionService.create.mockResolvedValue({ id: 'session-1' });
 
       const result = await authService.login(loginDto, '127.0.0.1', 'test-agent');
 
@@ -247,19 +310,49 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException for invalid credentials', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.login(loginDto)).rejects.toThrow(UnauthorizedException);
     });
 
-    it('logs failed login attempt', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+    it('logs failed login attempt via SecurityAuditService', async () => {
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.login(loginDto, '1.2.3.4', 'bot')).rejects.toThrow(
         UnauthorizedException,
       );
-      expect(mockAuditService.logLogin).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, failReason: 'Invalid credentials' }),
+      expect(mocks.auditService.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          failReason: 'Invalid credentials',
+          ipAddress: '1.2.3.4',
+          userAgent: 'bot',
+        }),
+      );
+    });
+
+    it('logs successful login attempt via SecurityAuditService', async () => {
+      const mockUser = {
+        id: 'user-1',
+        email: 'test@example.com',
+        passwordHash: '$2a$12$hashed',
+        name: 'Test User',
+        role: 'ADMIN',
+        capabilities: ['read', 'write'],
+      };
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+      mocks.sessionService.create.mockResolvedValue({ id: 'session-1' });
+
+      await authService.login(loginDto, '192.168.1.1', 'chrome');
+
+      expect(mocks.auditService.logLogin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          email: 'test@example.com',
+          ipAddress: '192.168.1.1',
+          userAgent: 'chrome',
+        }),
       );
     });
 
@@ -271,9 +364,9 @@ describe('AuthService', () => {
         name: 'Test User',
         role: 'ADMIN',
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
       vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
-      mockTwoFactorService.isEnabled.mockResolvedValue(true);
+      mocks.twoFactorService.isEnabled.mockResolvedValue(true);
 
       const result = await authService.login(loginDto);
 
@@ -290,14 +383,117 @@ describe('AuthService', () => {
         name: 'Test User',
         role: 'ADMIN',
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
       vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
-      mockTwoFactorService.isEnabled.mockResolvedValue(true);
-      mockTwoFactorService.verifyToken.mockResolvedValue(false);
+      mocks.twoFactorService.isEnabled.mockResolvedValue(true);
+      mocks.twoFactorService.verifyToken.mockResolvedValue(false);
 
       await expect(
         authService.login({ ...loginDto, twoFactorCode: 'wrong' }, '1.2.3.4', 'agent'),
       ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('proceeds with login when 2FA code is valid', async () => {
+      const mockUser = {
+        id: 'user-1',
+        email: 'test@example.com',
+        passwordHash: '$2a$12$hashed',
+        name: 'Test User',
+        role: 'ADMIN',
+      };
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+      mocks.twoFactorService.isEnabled.mockResolvedValue(true);
+      mocks.twoFactorService.verifyToken.mockResolvedValue(true);
+      mocks.sessionService.create.mockResolvedValue({ id: 'session-1' });
+
+      const result = await authService.login(
+        { ...loginDto, twoFactorCode: '123456' },
+        '1.2.3.4',
+        'agent',
+      );
+
+      expect(result.requires2fa).toBe(false);
+      expect(result.accessToken).toBe('mock-access-token');
+    });
+
+    it('passes rememberMe flag to session service', async () => {
+      const mockUser = {
+        id: 'user-1',
+        email: 'test@example.com',
+        passwordHash: '$2a$12$hashed',
+        name: 'Test User',
+        role: 'ADMIN',
+      };
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+      mocks.sessionService.create.mockResolvedValue({ id: 'session-1' });
+
+      await authService.login({ ...loginDto, rememberMe: true }, '1.2.3.4', 'agent');
+
+      expect(mocks.sessionService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ rememberMe: true }),
+      );
+    });
+  });
+
+  describe('JWT token generation', () => {
+    it('signs JWT with correct payload', async () => {
+      const mockUser = {
+        id: 'user-1',
+        email: 'test@example.com',
+        passwordHash: '$2a$12$hashed',
+        name: 'Test User',
+        role: 'ADMIN',
+        capabilities: ['read', 'write'],
+      };
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+      mocks.sessionService.create.mockResolvedValue({ id: 'session-1' });
+
+      await authService.login(
+        { email: 'test@example.com', password: 'password' },
+        '127.0.0.1',
+        'test-agent',
+      );
+
+      expect(mocks.jwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sub: 'user-1',
+          email: 'test@example.com',
+          role: 'ADMIN',
+          sessionId: 'session-1',
+        }),
+        expect.objectContaining({
+          expiresIn: expect.any(String),
+          issuer: 'nodepress',
+        }),
+      );
+    });
+
+    it('uses default permissions when user has no capabilities', async () => {
+      const mockUser = {
+        id: 'user-2',
+        email: 'sub@example.com',
+        passwordHash: '$2a$12$hashed',
+        role: 'SUBSCRIBER',
+      };
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+      mocks.sessionService.create.mockResolvedValue({ id: 'session-2' });
+
+      await authService.login(
+        { email: 'sub@example.com', password: 'password' },
+        '127.0.0.1',
+        'test-agent',
+      );
+
+      expect(mocks.jwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({
+          permissions: ['read'],
+        }),
+        expect.any(Object),
+      );
     });
   });
 
@@ -315,9 +511,9 @@ describe('AuthService', () => {
         role: 'ADMIN',
         capabilities: ['read', 'write'],
       };
-      mockSessionService.findByRefreshToken.mockResolvedValue(mockSession);
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockSessionService.rotateRefreshToken.mockResolvedValue(undefined);
+      mocks.sessionService.findByRefreshToken.mockResolvedValue(mockSession);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.sessionService.rotateRefreshToken.mockResolvedValue(undefined);
 
       const result = await authService.refresh('valid-refresh-token');
 
@@ -325,11 +521,11 @@ describe('AuthService', () => {
       expect(result.refreshToken).toBeDefined();
       expect(result.refreshToken).not.toBe('old-refresh');
       expect(result.sessionId).toBe('session-1');
-      expect(mockSessionService.rotateRefreshToken).toHaveBeenCalled();
+      expect(mocks.sessionService.rotateRefreshToken).toHaveBeenCalled();
     });
 
     it('throws UnauthorizedException when session is not found', async () => {
-      mockSessionService.findByRefreshToken.mockResolvedValue(null);
+      mocks.sessionService.findByRefreshToken.mockResolvedValue(null);
 
       await expect(authService.refresh('invalid-token')).rejects.toThrow(UnauthorizedException);
     });
@@ -341,7 +537,7 @@ describe('AuthService', () => {
         refreshToken: 'expired',
         expiresAt: new Date(Date.now() - 86400000),
       };
-      mockSessionService.findByRefreshToken.mockResolvedValue(expiredSession);
+      mocks.sessionService.findByRefreshToken.mockResolvedValue(expiredSession);
 
       await expect(authService.refresh('expired-token')).rejects.toThrow('Session expired');
     });
@@ -353,10 +549,42 @@ describe('AuthService', () => {
         refreshToken: 'old-refresh',
         expiresAt: new Date(Date.now() + 86400000),
       };
-      mockSessionService.findByRefreshToken.mockResolvedValue(mockSession);
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mocks.sessionService.findByRefreshToken.mockResolvedValue(mockSession);
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.refresh('valid-token')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('generates new access token with correct issuer on refresh', async () => {
+      const mockSession = {
+        id: 'session-1',
+        userId: 'user-1',
+        refreshToken: 'old-refresh',
+        expiresAt: new Date(Date.now() + 86400000),
+      };
+      const mockUser = {
+        id: 'user-1',
+        email: 'test@example.com',
+        role: 'ADMIN',
+        capabilities: ['read', 'write'],
+      };
+      mocks.sessionService.findByRefreshToken.mockResolvedValue(mockSession);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.sessionService.rotateRefreshToken.mockResolvedValue(undefined);
+
+      await authService.refresh('valid-refresh-token');
+
+      expect(mocks.jwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sub: 'user-1',
+          email: 'test@example.com',
+          role: 'ADMIN',
+          sessionId: 'session-1',
+        }),
+        expect.objectContaining({
+          issuer: 'nodepress',
+        }),
+      );
     });
   });
 
@@ -372,7 +600,7 @@ describe('AuthService', () => {
         capabilities: ['read', 'write'],
         forcePasswordChange: false,
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
 
       const result = await authService.getProfile('user-1');
 
@@ -382,7 +610,7 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException for non-existent user', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.getProfile('nonexistent')).rejects.toThrow(UnauthorizedException);
     });
@@ -394,20 +622,20 @@ describe('AuthService', () => {
         id: 'user-1',
         passwordHash: '$2a$12$oldhash',
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
       vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
       vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$newhash' as never);
-      mockPrisma.user.update.mockResolvedValue({ id: 'user-1' });
+      mocks.prisma.user.update.mockResolvedValue({ id: 'user-1' });
 
       const result = await authService.changePassword('user-1', 'currentPass', 'newStr0ngPass1!');
 
       expect(result.success).toBe(true);
-      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      expect(mocks.prisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
         data: { passwordHash: '$2a$12$newhash', forcePasswordChange: false },
       });
-      expect(mockPasswordPolicyService.validateAndEnforce).toHaveBeenCalled();
-      expect(mockPasswordPolicyService.addToHistory).toHaveBeenCalled();
+      expect(mocks.passwordPolicyService.validateAndEnforce).toHaveBeenCalled();
+      expect(mocks.passwordPolicyService.addToHistory).toHaveBeenCalled();
     });
 
     it('throws UnauthorizedException when current password is incorrect', async () => {
@@ -415,7 +643,7 @@ describe('AuthService', () => {
         id: 'user-1',
         passwordHash: '$2a$12$oldhash',
       };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
       vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
 
       await expect(
@@ -424,7 +652,7 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException when user is not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(
         authService.changePassword('nonexistent', 'pass', 'newStr0ngPass1!'),
@@ -432,33 +660,98 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException when user has no passwordHash', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', passwordHash: null });
+      mocks.prisma.user.findUnique.mockResolvedValue({ id: 'user-1', passwordHash: null });
 
       await expect(authService.changePassword('user-1', 'pass', 'newStr0ngPass1!')).rejects.toThrow(
         UnauthorizedException,
       );
     });
+
+    it('hashes new password with cost factor 12', async () => {
+      const mockUser = {
+        id: 'user-1',
+        passwordHash: '$2a$12$oldhash',
+      };
+      mocks.prisma.user.findUnique.mockResolvedValue(mockUser);
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+      vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$newhash' as never);
+      mocks.prisma.user.update.mockResolvedValue({ id: 'user-1' });
+
+      await authService.changePassword('user-1', 'currentPass', 'newStr0ngPass1!');
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('newStr0ngPass1!', 12);
+    });
   });
 
   describe('adminForcePasswordChange', () => {
     it('forces password change for a user', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'test@test.com' });
-      mockPrisma.user.update.mockResolvedValue({ id: 'user-1' });
+      mocks.prisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'test@test.com' });
+      mocks.prisma.user.update.mockResolvedValue({ id: 'user-1' });
 
       const result = await authService.adminForcePasswordChange('user-1');
 
       expect(result.success).toBe(true);
-      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      expect(mocks.prisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
         data: { forcePasswordChange: true },
       });
     });
 
     it('throws UnauthorizedException when user is not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(authService.adminForcePasswordChange('nonexistent')).rejects.toThrow(
         UnauthorizedException,
+      );
+    });
+  });
+
+  describe('bcrypt password hashing', () => {
+    it('hash is called with salt rounds for register', async () => {
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$hashed' as never);
+      mocks.prisma.user.create.mockResolvedValue({
+        id: 'new-user-id',
+        email: 'new@example.com',
+        name: 'Test',
+        displayName: 'test',
+        role: 'SUBSCRIBER',
+        capabilities: ['read'],
+      });
+
+      await authService.register({
+        email: 'new@example.com',
+        password: 'Str0ng!Pass',
+        firstName: 'Test',
+      });
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('Str0ng!Pass', 12);
+    });
+
+    it('hash output is stored as passwordHash', async () => {
+      mocks.prisma.user.findUnique.mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$custom-hash-value' as never);
+      mocks.prisma.user.create.mockResolvedValue({
+        id: 'new-user-id',
+        email: 'new@example.com',
+        name: 'Test',
+        displayName: 'test',
+        role: 'SUBSCRIBER',
+        capabilities: ['read'],
+      });
+
+      await authService.register({
+        email: 'new@example.com',
+        password: 'Str0ng!Pass',
+        firstName: 'Test',
+      });
+
+      expect(mocks.prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            passwordHash: '$2a$12$custom-hash-value',
+          }),
+        }),
       );
     });
   });

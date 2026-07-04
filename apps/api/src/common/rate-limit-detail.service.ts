@@ -16,9 +16,30 @@ export interface RateLimitConfig {
 }
 
 const ACTION_CONFIGS: Record<string, RateLimitConfig> = {
-  login: { windowMs: 60000, maxAttempts: 5, lockoutDurations: [300000, 900000, 3600000], captchaAfter: 5 },
-  'api.create': { windowMs: 60000, maxAttempts: 30, lockoutDurations: [300000, 900000, 3600000], captchaAfter: 20 },
-  'api.read': { windowMs: 60000, maxAttempts: 1000, lockoutDurations: [60000, 300000, 900000], captchaAfter: 500 },
+  login: {
+    windowMs: 60000,
+    maxAttempts: 5,
+    lockoutDurations: [300000, 900000, 3600000],
+    captchaAfter: 5,
+  },
+  'password-reset': {
+    windowMs: 3600000,
+    maxAttempts: 3,
+    lockoutDurations: [3600000, 7200000],
+    captchaAfter: 3,
+  },
+  'api.create': {
+    windowMs: 60000,
+    maxAttempts: 30,
+    lockoutDurations: [300000, 900000, 3600000],
+    captchaAfter: 20,
+  },
+  'api.read': {
+    windowMs: 60000,
+    maxAttempts: 1000,
+    lockoutDurations: [60000, 300000, 900000],
+    captchaAfter: 500,
+  },
 };
 
 @Injectable()
@@ -26,7 +47,10 @@ export class RateLimitDetailService {
   private readonly logger = new Logger(RateLimitDetailService.name);
   private readonly records = new Map<string, RateLimitRecord>();
 
-  async check(identifier: string, action: string): Promise<{
+  async check(
+    identifier: string,
+    action: string,
+  ): Promise<{
     allowed: boolean;
     remaining: number;
     retryAfter: number;
@@ -59,7 +83,9 @@ export class RateLimitDetailService {
       const duration = config.lockoutDurations[record.lockoutLevel];
       record.blockedUntil = now + duration;
       const retryAfter = Math.ceil(duration / 1000);
-      this.logger.warn(`Rate limit exceeded for ${identifier}:${action}, blocked for ${duration}ms`);
+      this.logger.warn(
+        `Rate limit exceeded for ${identifier}:${action}, blocked for ${duration}ms`,
+      );
       return { allowed: false, remaining: 0, retryAfter, requiresCaptcha: true };
     }
 

@@ -39,7 +39,10 @@ interface TagItem {
   name: string;
   slug: string;
   description: string;
-  postCount: number;
+  count: number;
+  taxonomy: string;
+  parentId: string | null;
+  createdAt: string;
 }
 
 export default function TagsPage() {
@@ -65,7 +68,7 @@ export default function TagsPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await get<TagItem[]>('/tags');
+      const res = await get<TagItem[]>('/api/taxonomy?taxonomy=tag');
       setTags(res.data || []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load tags';
@@ -93,7 +96,7 @@ export default function TagsPage() {
       const name = createNameRef.current?.value || '';
       const slug = createSlugRef.current?.value || '';
       const description = createDescRef.current?.value || '';
-      await post('/tags', { name, slug, description });
+      await post('/api/taxonomy', { taxonomy: 'tag', name, slug, description });
       success('Tag created', 'New tag has been added.');
       if (createNameRef.current) createNameRef.current.value = '';
       if (createSlugRef.current) createSlugRef.current.value = '';
@@ -115,7 +118,7 @@ export default function TagsPage() {
       const name = editNameRef.current?.value || editTag.name;
       const slug = editSlugRef.current?.value || editTag.slug;
       const description = editDescRef.current?.value || editTag.description;
-      await patch(`/tags/${editTag.id}`, { name, slug, description });
+      await patch(`/api/taxonomy/${editTag.id}`, { name, slug, description });
       success('Tag updated', 'Tag has been updated.');
       setEditTag(null);
       await fetchTags();
@@ -131,7 +134,7 @@ export default function TagsPage() {
     if (!deleteTag) return;
     setSubmitting(true);
     try {
-      await del(`/tags/${deleteTag.id}`);
+      await del(`/api/taxonomy/${deleteTag.id}`);
       success('Tag deleted', `${deleteTag.name} has been deleted.`);
       setDeleteTag(null);
       await fetchTags();
@@ -240,7 +243,7 @@ export default function TagsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{tags.reduce((a, t) => a + t.postCount, 0)}</div>
+            <div className="text-2xl font-bold">{tags.reduce((a, t) => a + t.count, 0)}</div>
           </CardContent>
         </Card>
       </div>
@@ -281,7 +284,7 @@ export default function TagsPage() {
                     {tag.description || '—'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{tag.postCount}</Badge>
+                      <Badge variant="secondary">{tag.count}</Badge>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

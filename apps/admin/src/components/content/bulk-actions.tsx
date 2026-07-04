@@ -68,7 +68,7 @@ export function BulkActions({
         success: boolean;
         message: string;
         details: { success: number; failed: number; errors: string[] };
-      }>('/content/bulk', { action: act, ids: selectedIds });
+      }>('/api/content/bulk', { action: act, ids: selectedIds });
 
       setProgress(90);
 

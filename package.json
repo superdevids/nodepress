@@ -34,7 +34,7 @@
   ],
   "license": "MIT",
   "author": "NodePress Team",
-  "description": "Production-ready WordPress-compatible CMS built with Node.js / TypeScript — NestJS, Next.js, Prisma, PostgreSQL",
+  "description": "Modern CMS inspired by WordPress, built with Node.js / TypeScript — NestJS, Next.js, Prisma, PostgreSQL (beta)",
   "scripts": {
     "start": "node start.js",
     "dev": "turbo run dev --parallel",

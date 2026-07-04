@@ -47,8 +47,10 @@ interface Category {
   name: string;
   slug: string;
   description: string;
-  postCount: number;
-  parent: string | null;
+  count: number;
+  taxonomy: string;
+  parentId: string | null;
+  createdAt: string;
 }
 
 export default function CategoriesPage() {
@@ -75,7 +77,7 @@ export default function CategoriesPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await get<Category[]>('/categories');
+      const res = await get<Category[]>('/api/taxonomy?taxonomy=category');
       setCategories(res.data || []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load categories';
@@ -108,9 +110,9 @@ export default function CategoriesPage() {
     try {
       const name = createNameRef.current?.value || '';
       const slug = createSlugRef.current?.value || '';
-      const parent = createParentRef.current?.value || null;
+      const parentId = createParentRef.current?.value || null;
       const description = createDescRef.current?.value || '';
-      await post('/categories', { name, slug, parent, description });
+      await post('/api/taxonomy', { taxonomy: 'category', name, slug, parentId, description });
       success('Category created', 'New category has been added.');
       if (createNameRef.current) createNameRef.current.value = '';
       if (createSlugRef.current) createSlugRef.current.value = '';
@@ -133,7 +135,7 @@ export default function CategoriesPage() {
       const name = editNameRef.current?.value || editCategory.name;
       const slug = editSlugRef.current?.value || editCategory.slug;
       const description = editDescRef.current?.value || editCategory.description;
-      await patch(`/categories/${editCategory.id}`, { name, slug, description });
+      await patch(`/api/taxonomy/${editCategory.id}`, { name, slug, description });
       success('Category updated', 'Category has been updated.');
       setEditCategory(null);
       await fetchCategories();
@@ -149,7 +151,7 @@ export default function CategoriesPage() {
     if (!deleteCategory) return;
     setSubmitting(true);
     try {
-      await del(`/categories/${deleteCategory.id}`);
+      await del(`/api/taxonomy/${deleteCategory.id}`);
       success('Category deleted', `${deleteCategory.name} has been deleted.`);
       setDeleteCategory(null);
       await fetchCategories();
@@ -275,7 +277,7 @@ export default function CategoriesPage() {
             <CardTitle className="text-muted-foreground text-sm font-medium">Top-level</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{categories.filter((c) => !c.parent).length}</div>
+            <div className="text-2xl font-bold">            {categories.filter((c) => !c.parentId).length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -284,7 +286,7 @@ export default function CategoriesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {categories.reduce((a, c) => a + c.postCount, 0)}
+              {categories.reduce((a, c) => a + c.count, 0)}
             </div>
           </CardContent>
         </Card>
@@ -325,10 +327,10 @@ export default function CategoriesPage() {
                     {cat.slug}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {getParentName(cat.parent)}
+                    {getParentName(cat.parentId)}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{cat.postCount}</Badge>
+                    <Badge variant="secondary">{cat.count}</Badge>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

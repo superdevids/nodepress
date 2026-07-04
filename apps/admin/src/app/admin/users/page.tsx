@@ -59,11 +59,15 @@ import { useApi } from '@/lib/use-api';
 interface User {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
+  username: string;
   email: string;
   role: string;
-  avatar?: string;
+  permissions?: string[];
+  avatarUrl?: string;
   createdAt: string;
-  postsCount: number;
+  updatedAt: string;
 }
 
 const roleColors: Record<
@@ -118,12 +122,27 @@ export default function UsersPage() {
 
   // ─── Data fetching ──────────────────────────────────────────────
 
+  const normalizeUser = (u: Record<string, unknown>): User => ({
+    id: u.id as string,
+    name: (u.name as string) || `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+    firstName: (u.firstName as string) || '',
+    lastName: (u.lastName as string) || '',
+    username: (u.username as string) || '',
+    email: u.email as string,
+    role: ((u.role as string) || 'SUBSCRIBER').toUpperCase(),
+    permissions: u.permissions as string[] | undefined,
+    avatarUrl: u.avatarUrl as string | undefined,
+    createdAt: u.createdAt as string,
+    updatedAt: u.updatedAt as string,
+  });
+
   const fetchUsers = React.useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await api.get<User[]>('/users');
-      setUsers(Array.isArray(res.data) ? res.data : []);
+      const res = await api.get<unknown[]>('/api/users');
+      const raw = Array.isArray(res.data) ? res.data : [];
+      setUsers(raw.map((u: unknown) => normalizeUser(u as Record<string, unknown>)));
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load users';
       setFetchError(msg);
@@ -151,7 +170,7 @@ export default function UsersPage() {
       if (sortField === 'name') cmp = a.name.localeCompare(b.name);
       else if (sortField === 'date')
         cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      else if (sortField === 'posts') cmp = a.postsCount - b.postsCount;
+      else if (sortField === 'posts') cmp = 0;
       return sortDir === 'asc' ? cmp : -cmp;
     });
 
@@ -170,8 +189,9 @@ export default function UsersPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post<User>('/users', {
-        name: newName,
+      await api.post<User>('/api/users', {
+        firstName: newName.split(' ')[0] || newName,
+        lastName: newName.split(' ').slice(1).join(' ') || '',
         email: newEmail,
         password: newPassword,
         role: newRole,
@@ -195,14 +215,17 @@ export default function UsersPage() {
     if (!editUser) return;
     setSaving(true);
     try {
+      const nameParts = editName.split(' ');
       const payload: Record<string, unknown> = {
-        name: editName,
+        firstName: nameParts[0] || editName,
+        lastName: nameParts.slice(1).join(' '),
+        username: editName,
         email: editEmail,
         role: editRole,
       };
       if (editPassword) payload.password = editPassword;
 
-      await api.patch<User>(`/users/${editUser.id}`, payload);
+      await api.patch<User>(`/api/users/${editUser.id}`, payload);
       success('User updated', 'User account has been updated.');
       setEditUser(null);
       setEditPassword('');
@@ -218,7 +241,7 @@ export default function UsersPage() {
     if (!deleteUser) return;
     setSaving(true);
     try {
-      await api.del(`/users/${deleteUser.id}`);
+      await api.del(`/api/users/${deleteUser.id}`);
       success('User deleted', `${deleteUser.name} has been deleted.`);
       setDeleteUser(null);
       await fetchUsers();
@@ -475,7 +498,7 @@ export default function UsersPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} />
+                        <AvatarImage src={user.avatarUrl} />
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <span className="font-medium">{user.name}</span>
@@ -490,7 +513,7 @@ export default function UsersPage() {
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(user.createdAt)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{user.postsCount}</TableCell>
+                  <TableCell className="text-muted-foreground">0</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

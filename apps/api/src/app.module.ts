@@ -1,5 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 
@@ -37,6 +38,12 @@ import { InstallCheckMiddleware } from './common/middleware/install-check.middle
 
 @Module({
   imports: [
+    // Global infrastructure
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 60,
+    }]),
+
     // Core
     PrismaModule,
     ConfigModule,
@@ -72,6 +79,7 @@ import { InstallCheckMiddleware } from './common/middleware/install-check.middle
     WorkerModule,
   ],
   providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: CapabilitiesGuard },
