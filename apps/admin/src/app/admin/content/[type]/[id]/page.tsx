@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, RefreshCw, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ContentEditor } from '@/components/content/content-editor';
@@ -16,6 +16,13 @@ interface ContentEntry {
   content: string;
   excerpt: string;
   status: string;
+  categories: { id: string; name: string; slug: string }[];
+  tags: { id: string; name: string; slug: string }[];
+  isSticky: boolean;
+  isPasswordProtected: boolean;
+  allowComments: boolean;
+  createdAt: string;
+  modifiedAt: string;
 }
 
 export default function EditContentPage() {
@@ -47,53 +54,92 @@ export default function EditContentPage() {
     loadEntry();
   }, [loadEntry]);
 
+  /* ── Loading state ───────────────────────────────── */
   if (isLoading) {
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-96 w-full" />
+      <div className="space-y-4">
+        <Skeleton className="h-5 w-32" />
+        <div className="rounded-lg border border-[#c3c4c7] bg-white p-6">
+          <Skeleton className="h-8 w-full max-w-lg" />
+          <Skeleton className="mt-4 h-4 w-64" />
+          <Skeleton className="mt-8 h-96 w-full" />
+        </div>
       </div>
     );
   }
 
+  /* ── Error state ─────────────────────────────────── */
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <AlertCircle className="text-destructive mb-3 h-8 w-8" />
-        <p className="text-destructive font-medium">Failed to load entry</p>
-        <p className="text-muted-foreground mt-1 text-sm">{error}</p>
-        <Button variant="outline" size="sm" className="mt-4" onClick={loadEntry}>
-          <RefreshCw className="mr-1.5 h-4 w-4" /> Retry
+      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#c3c4c7] bg-white p-6 text-center">
+        <AlertCircle className="mb-3 h-12 w-12 text-[#d63638]" />
+        <h2 className="text-lg font-semibold text-[#1d2327]">Failed to load content</h2>
+        <p className="mt-1 max-w-md text-sm text-[#646970]">{error}</p>
+        <div className="mt-4 flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={loadEntry}>
+            <RefreshCw className="mr-1.5 h-4 w-4" /> Retry
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/content/${type}`)}>
+            <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Empty / Not found state ─────────────────────── */
+  if (!entry) {
+    return (
+      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#c3c4c7] bg-white p-6 text-center">
+        <FileText className="mb-4 h-16 w-16 text-[#c3c4c7]" />
+        <h2 className="text-lg font-semibold text-[#1d2327]">Content not found</h2>
+        <p className="mt-1 max-w-sm text-sm text-[#646970]">
+          The {type} you&apos;re looking for doesn&apos;t exist or has been deleted.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4"
+          onClick={() => router.push(`/admin/content/${type}`)}
+        >
+          <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to {type}s
         </Button>
       </div>
     );
   }
 
-  const initialData = entry
-    ? {
-        title: entry.title,
-        slug: entry.slug,
-        content: entry.content ?? '',
-        excerpt: entry.excerpt ?? '',
-      }
-    : undefined;
+  /* ── Normal render ───────────────────────────────── */
+  const initialData = {
+    title: entry.title,
+    slug: entry.slug,
+    content: entry.content ?? '',
+    excerpt: entry.excerpt ?? '',
+    categories: entry.categories ?? [],
+    tags: entry.tags ?? [],
+    isSticky: entry.isSticky ?? false,
+    isPasswordProtected: entry.isPasswordProtected ?? false,
+    allowComments: entry.allowComments ?? true,
+    status: entry.status,
+    createdAt: entry.createdAt,
+    modifiedAt: entry.modifiedAt,
+  };
 
   return (
     <div className="space-y-0">
-      <div className="border-b px-6 py-3">
-        <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/content/${type}`)}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to {type}s
+      {/* Back navigation */}
+      <div className="mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push(`/admin/content${type === 'page' ? '?type=page' : ''}`)}
+          className="text-[#50575e] hover:text-[#1d2327]"
+        >
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          Back to {type === 'post' ? 'Posts' : 'Pages'}
         </Button>
       </div>
 
-      <div className="flex items-center justify-between border-b px-6 py-4">
-        <h1 className="text-xl font-bold tracking-tight">
-          Edit {type.charAt(0).toUpperCase() + type.slice(1)}
-        </h1>
-        <span className="text-muted-foreground text-xs">ID: {id}</span>
-      </div>
-
+      {/* Editor */}
       <ContentEditor contentType={type} entryId={id} initialData={initialData} />
     </div>
   );

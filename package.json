@@ -54,14 +54,17 @@
     "docker:down": "docker compose down",
     "changeset": "changeset",
     "changeset:version": "changeset version",
-    "changeset:publish": "changeset publish"
+    "changeset:publish": "changeset publish",
+    "quick-install": "node scripts/quick-install.js",
+    "install:quick": "node scripts/quick-install.js",
+    "wp-import": "node scripts/wordpress-migrate.js",
+    "migrate:wordpress": "node scripts/wordpress-migrate.js"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
-    "rimraf": "^5.0.0",
     "@changesets/config": "^3.0.0",
     "@types/node": "^20.12.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
@@ -73,7 +76,12 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.2.0",
     "prettier-plugin-tailwindcss": "^0.5.0",
+    "rimraf": "^5.0.0",
     "turbo": "^1.13.0",
     "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "cli-progress": "^3.12.0",
+    "fast-xml-parser": "^5.9.3"
   }
 }

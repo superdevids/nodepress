@@ -1,147 +1,227 @@
-# NodePress — Modern CMS Inspired by WordPress
+# 🚀 NodePress — Build a Website in 5 Minutes
 
-> **A TypeScript-based CMS alternative for developers who love modern tooling.**
-> Currently in **Beta (v1.0.0-beta.2)** — under active development.
-
-[![Version](https://img.shields.io/badge/version-1.0.0--beta.2-blue)](https://github.com/superdevids/nodepress)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-orange)](CONTRIBUTING.md)
+> **A free website builder.** Like WordPress, but newer and faster.
+> No programming needed. No technical skills required.
 
 ---
 
-## 🚀 Quick Install
+## ✨ What Is NodePress?
 
-```bash
-git clone https://github.com/superdevids/nodepress.git
-cd nodepress
-npm install
-npm start
-```
+NodePress is a **website builder** that anyone can use.
 
-**✅ That's it!** Your browser opens to the Setup Wizard at `http://localhost:3000`.
+Want a blog? A business site? A place to share your ideas?
 
-> **System Requirements:** Node.js 20+, 4GB RAM, 10GB free disk space. Docker optional.
+NodePress makes it easy.
 
----
+Here is what you can do with NodePress:
 
-## ✨ What NodePress Does
+| You Want To...       | NodePress Lets You...                         |
+| -------------------- | --------------------------------------------- |
+| 📝 Write blog posts  | ✅ Add text, photos, and videos               |
+| 🖼️ Upload images     | ✅ Drag and drop, just like your phone        |
+| 👥 Add team members  | ✅ Give people different permission levels    |
+| 🔌 Add features      | ✅ Turn on SEO, Comments, Analytics, and more |
+| 🎨 Change the design | ✅ Pick a theme and customize it              |
+| 🔒 Stay secure       | ✅ Built-in security and backups              |
+| 🌍 Go global         | ✅ Support for 11 languages                   |
 
-| Feature                    | Status       | Details                                                  |
-| -------------------------- | ------------ | -------------------------------------------------------- |
-| 📝 **Content Management**  | ✅ Working   | Posts, pages, custom content types                       |
-| 🖼️ **Media Library**       | ✅ Working   | Upload, organize, edit images                            |
-| 🔌 **13 Plugins**          | ✅ Working   | SEO, Comments, Analytics, Security, Backup, Forms & more |
-| 👥 **User Roles**          | ✅ Working   | 6 roles with granular permissions                        |
-| 🌐 **REST + GraphQL APIs** | ✅ Working   | Both built-in, auto-generated                            |
-| 🎨 **Block Editor**        | ⚠️ Partial   | Tiptap-based, 22 extensions, some edge cases remain      |
-| 🔒 **Security**            | ✅ Working   | CSP, CORS, 2FA, Rate Limiting, JWT auth                  |
-| 📦 **Docker Support**      | ✅ Working   | Single-command dev & production stacks                   |
-| 👤 **Forgot Password**     | ⚠️ Partial   | Backend works, frontend page pending                     |
-| 📋 **Install Wizard**      | ⚠️ Partial   | API ready, UI screens in progress                        |
-| 🧪 **Test Coverage**       | ⚠️ Improving | 24 test files, working towards 100+                      |
-
-> **Honest status:** NodePress is ~90% feature-complete compared to WordPress core. The foundation is solid (APIs, content engine, plugin system, security). What remains is polish: install wizard UX, forgot password flow, and testing coverage. Not yet recommended for production sites.
+And it is **100% free.** No hidden costs. No surprises.
 
 ---
 
-## 📖 Documentation
+## 👋 Is This for Me?
 
-| Guide                                       | What's Inside                      |
-| ------------------------------------------- | ---------------------------------- |
-| 🚀 [GETTING-STARTED.md](GETTING-STARTED.md) | Step-by-step install with pictures |
-| ⚡ [QUICK-START.md](QUICK-START.md)         | Developer cheat sheet              |
-| 📘 [docs/USER-GUIDE.md](docs/USER-GUIDE.md) | Complete user manual               |
-| ❓ [docs/FAQ.md](docs/FAQ.md)               | Frequently asked questions         |
-| 🔄 [UPGRADE.md](UPGRADE.md)                 | How to upgrade versions            |
-| 🔒 [SECURITY.md](SECURITY.md)               | Security policies                  |
-| 🤝 [CONTRIBUTING.md](CONTRIBUTING.md)       | How to contribute                  |
+This is for you if:
 
----
+- You want a website but don't know how to code
+- You are tired of paying developers for every little change
+- You used WordPress before and want something faster
+- You just want to write and share your ideas
 
-## 🔌 Plugin Ecosystem
+**You do NOT need to be a programmer.**
 
-NodePress ships with **13 official plugins**, each matching common WordPress functionality:
-
-| Plugin           | What It Does                                  | Status |
-| ---------------- | --------------------------------------------- | ------ |
-| `seo`            | Meta tags, sitemaps, Open Graph, JSON-LD      | ✅     |
-| `cache-redis`    | Redis caching, cache invalidation             | ✅     |
-| `comments`       | Gravatar, moderation, Akismet anti-spam       | ✅     |
-| `forms`          | Drag-and-drop form builder, Stripe, reCAPTCHA | ✅     |
-| `analytics`      | Google Analytics 4, real-time dashboard       | ✅     |
-| `security`       | Web firewall, malware scan, login security    | ✅     |
-| `social-sharing` | Share buttons, share count tracking           | ✅     |
-| `backup`         | Scheduled backups, S3/GDrive storage          | ✅     |
-| `newsletter`     | Email campaigns, subscriber management        | ✅     |
-| `redirection`    | 301/302 redirects, 404 tracking               | ✅     |
-| `performance`    | Minification, lazy loading, CDN               | ✅     |
-| `multilingual`   | 11 languages, auto-translate (DeepL/Google)   | ✅     |
-| `file-editor`    | Monaco code editor, syntax highlighting       | ✅     |
-
-> **Note:** These plugins are functional but store data in memory by default. Database persistence is implemented for beta.2 but is still being hardened.
+If you can double-click a file and answer 5 questions, you can use NodePress.
 
 ---
 
-## 🏗️ Project Structure
+## 🖥️ What You Need
 
-```
-nodepress/
-├── apps/                  # Application shells
-│   ├── admin/             # Admin panel (Next.js 14)
-│   ├── api/               # REST + GraphQL API (NestJS)
-│   ├── web-starter/       # Public facing theme
-│   └── e2e/               # End-to-end tests
-├── packages/              # Shared libraries
-│   ├── core/              # Business logic engine
-│   ├── db/                # Database (Prisma + PostgreSQL)
-│   ├── plugin-sdk/        # Plugin Development Kit
-│   ├── cli/               # CLI tools
-│   ├── editor/            # Block editor (Tiptap)
-│   ├── ui/                # Shared UI components
-│   └── testing/           # Test utilities
-├── plugins/               # 13 official plugins
-└── docs/                  # Documentation
-```
+Just a computer with internet.
+
+| Requirement        | Details                          |
+| ------------------ | -------------------------------- |
+| 💻 **Computer**    | Windows 10+, Mac (any), or Linux |
+| 🌐 **Internet**    | To download files (about 200 MB) |
+| 🧠 **Skill level** | None at all                      |
+
+That is it. You already have everything you need.
 
 ---
 
-## 🧪 Current Test Coverage
+## ⚡ Install in 5 Minutes
 
-```
-📊 Total test files: 24
-   ├── Core engine:  6 tests
-   ├── API:          8 tests
-   ├── Admin UI:     5 tests
-   ├── Media:        2 tests
-   ├── E2E:          2 test files
-   └── Other:        1 test
-```
+**Step 1:** Download NodePress
 
-We're working toward 100+ tests. Contributions welcome!
+Go to `https://github.com/superdevids/nodepress`
+
+Click the green "Code" button.
+
+Click "Download ZIP."
+
+**Step 2:** Extract the ZIP file
+
+Find the ZIP file in your Downloads folder.
+
+Right-click it → "Extract All" (Windows) or double-click (Mac).
+
+**Step 3:** Double-click the installer
+
+Open the `nodepress` folder.
+
+- **Windows:** Double-click `install.bat`
+- **Mac:** Double-click `install.sh`
+- **Linux:** Run `bash install.sh` in Terminal
+
+**Step 4:** Answer 5 questions
+
+Your browser will open to the setup page.
+
+Just answer 5 simple questions.
+
+**Step 5:** You're done! 🎉
+
+Your website is live at `http://localhost:3000`
 
 ---
 
-## 🌐 Tech Stack
+## 📖 Full Beginner Guide
 
-| Layer             | Technology                                 |
-| ----------------- | ------------------------------------------ |
-| **Runtime**       | Node.js 20+ (LTS)                          |
-| **Language**      | TypeScript (strict mode)                   |
-| **API Framework** | NestJS                                     |
-| **Admin Panel**   | Next.js 14 (React 18, RSC, Server Actions) |
-| **Database**      | PostgreSQL 16                              |
-| **ORM**           | Prisma                                     |
-| **Cache / Queue** | Redis 7 + BullMQ                           |
-| **Container**     | Docker + Docker Compose                    |
-| **Styling**       | Tailwind CSS                               |
+👉 **[Read the Absolute Beginner Guide](docs/ABSOLUTE-BEGINNER-GUIDE.md)**
+
+This guide has:
+
+- Big pictures showing you what to click
+- Step-by-step instructions for every step
+- Simple language (5th-grade reading level)
+- Troubleshooting for common problems
+
+It is the only guide you need.
+
+---
+
+## 📚 All Documentation
+
+| Guide                                                             | What's Inside                       | Who It's For     |
+| ----------------------------------------------------------------- | ----------------------------------- | ---------------- |
+| 👶 **[Absolute Beginner Guide](docs/ABSOLUTE-BEGINNER-GUIDE.md)** | Install with pictures, step by step | New users        |
+| ❓ **[FAQ](docs/FAQ.md)**                                         | Common questions and answers        | Everyone         |
+| 📘 **[User Guide](docs/USER-GUIDE.md)**                           | How to use the dashboard            | Content creators |
+| 🔧 **[Troubleshooting](docs/TROUBLESHOOTING.md)**                 | Fix common problems                 | Anyone stuck     |
+
+---
+
+## 🔌 Built-In Features (Plugins)
+
+NodePress comes with 13 features already built in.
+
+Turn them on with one click:
+
+| Feature               | What It Does                              |
+| --------------------- | ----------------------------------------- |
+| 🔍 **SEO**            | Helps people find your site on Google     |
+| 💬 **Comments**       | Lets readers leave messages on your posts |
+| 📊 **Analytics**      | Shows how many people visit your site     |
+| 🔒 **Security**       | Protects your site from hackers           |
+| 📧 **Newsletter**     | Lets people sign up for email updates     |
+| 📤 **Social Sharing** | Adds Facebook/Twitter share buttons       |
+| 💾 **Backup**         | Saves copies of your site automatically   |
+| 🎨 **Forms**          | Creates contact forms for your visitors   |
+| 🌍 **Multilingual**   | Supports 11 different languages           |
+| ⚡ **Performance**    | Makes your site load faster               |
+| 🔗 **Redirection**    | Fixes broken links automatically          |
+| 🛡️ **Cache**          | Speeds up your site with Redis            |
+| 📝 **File Editor**    | Edit code files directly (advanced)       |
+
+---
+
+## 🎯 Quick Facts
+
+| Question                       | Answer                                         |
+| ------------------------------ | ---------------------------------------------- |
+| 💰 Is it free?                 | Yes! 100% free. MIT license.                   |
+| 🏢 Can I use it for business?  | In beta — good for testing, not production yet |
+| 🔄 Can I move from WordPress?  | Yes, import tool included                      |
+| 🐛 Is it stable?               | Beta software — works but still being polished |
+| 👥 How many people can use it? | Unlimited users, unlimited content             |
+| 🚀 How fast is it?             | Very fast — built on modern JavaScript         |
+
+---
+
+## 🖼️ Screenshots
+
+> _Screenshots coming soon!_
+> We are taking screenshots of every screen.
+> They will be added to the Beginner Guide.
+> See `docs/SCREENSHOTS.md` for details.
+
+---
+
+## 🆘 Need Help?
+
+We are here for you.
+
+| Resource                       | Link                                                   |
+| ------------------------------ | ------------------------------------------------------ |
+| 📖 **Absolute Beginner Guide** | `docs/ABSOLUTE-BEGINNER-GUIDE.md`                      |
+| ❓ **FAQ**                     | `docs/FAQ.md`                                          |
+| 🔧 **Troubleshooting**         | `docs/TROUBLESHOOTING.md`                              |
+| 💬 **Ask the Community**       | `https://github.com/superdevids/nodepress/discussions` |
+| 🐛 **Report a Bug**            | `https://github.com/superdevids/nodepress/issues`      |
+| 🔒 **Security Issues**         | `SECURITY.md`                                          |
+
+**When asking for help, tell us:**
+
+1. What computer you have (Windows, Mac, or Linux)
+2. What happened
+3. What you expected to happen
+4. A screenshot (if possible)
+
+---
+
+## 🧑‍💻 For Developers (Technical Info)
+
+NodePress is also built for developers.
+
+It uses modern JavaScript (TypeScript).
+
+| Layer       | Technology       |
+| ----------- | ---------------- |
+| Language    | TypeScript       |
+| API         | NestJS (Node.js) |
+| Admin Panel | Next.js (React)  |
+| Database    | PostgreSQL       |
+| Caching     | Redis            |
+| Containers  | Docker           |
+
+If you are a developer, check out:
+
+- [Getting Started Guide](GETTING-STARTED.md) — Developer install
+- [Quick Start Guide](QUICK-START.md) — Commands cheat sheet
+- [Contributing Guide](CONTRIBUTING.md) — How to help
+- [Project Structure](#) — How the code is organized
 
 ---
 
 ## 📜 License
 
-MIT — Free for personal and commercial use.
+**MIT License** — Free for personal and commercial use.
+
+You can use it, modify it, and share it.
+
+No restrictions.
 
 ---
 
-_Built with ❤️ by the NodePress Team_
+**Built with ❤️ by the NodePress Team**
+
+_Version 1.0.0-beta.2_

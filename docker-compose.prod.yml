@@ -1,20 +1,54 @@
-﻿---
-x-logging: &prod-logging
+﻿# ============================================================
+# NodePress - Production Docker Compose
+# WordPress-compatible CMS built with Node.js / TypeScript
+# ============================================================
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml ps
+#   docker compose -f docker-compose.prod.yml logs -f api
+#   docker compose -f docker-compose.prod.yml down
+# ============================================================
+# Prerequisites:
+#   - Docker 24+ with Compose v2
+#   - .env file with production secrets (use .env.production template)
+#   - Domain DNS pointing to server
+# ============================================================
+
+# ── Shared Logging ────────────────────────────────────────────
+
+x-logging: &logging
   driver: 'json-file'
   options:
     max-size: '10m'
     max-file: '3'
 
-x-restart-policy: &restart-policy
-  restart: unless-stopped
+# ── Healthcheck Templates ────────────────────────────────────
 
-x-healthcheck: &healthcheck
+x-healthcheck: &hc-default
   interval: 30s
   timeout: 10s
   retries: 3
   start_period: 40s
 
-x-resources: &resources
+x-healthcheck-fast: &hc-fast
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 15s
+
+# ── Resource Limits ──────────────────────────────────────────
+
+x-resources-lite: &res-lite
+  deploy:
+    resources:
+      limits:
+        cpus: '0.5'
+        memory: '256M'
+      reservations:
+        cpus: '0.1'
+        memory: '64M'
+
+x-resources: &res-medium
   deploy:
     resources:
       limits:
@@ -24,7 +58,7 @@ x-resources: &resources
         cpus: '0.25'
         memory: '128M'
 
-x-resources-db: &resources-db
+x-resources-db: &res-db
   deploy:
     resources:
       limits:
@@ -34,15 +68,29 @@ x-resources-db: &resources-db
         cpus: '0.5'
         memory: '256M'
 
+x-resources-heavy: &res-heavy
+  deploy:
+    resources:
+      limits:
+        cpus: '4'
+        memory: '2G'
+      reservations:
+        cpus: '1'
+        memory: '512M'
+
+# ── Service Definitions ──────────────────────────────────────
+
 services:
+  # ──────────────────────────────────────────────────────────────
+  # Traefik — Reverse Proxy with Auto SSL (Let's Encrypt)
+  # ──────────────────────────────────────────────────────────────
   traefik:
     image: traefik:v3.1
     container_name: nodepress-traefik
-    <<: *restart-policy
+    restart: unless-stopped
     command:
       - '--entrypoints.web.address=:80'
       - '--entrypoints.websecure.address=:443'
-      - '--entrypoints.api.address=:3001'
       - '--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL:-admin@nodepress.local}'
       - '--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json'
       - '--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web'
@@ -57,10 +105,15 @@ services:
     ports:
       - '${HTTP_PORT:-80}:80'
       - '${HTTPS_PORT:-443}:443'
-      - '3001:3001'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik_letsencrypt:/letsencrypt
+    healthcheck:
+      test: ['CMD', 'traefik', 'healthcheck', '--ping']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.dashboard.rule=Host(`traefik.${APP_DOMAIN:-nodepress.local}`)'
@@ -69,17 +122,21 @@ services:
       - 'traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USERS:-admin:$$2y$$10$$examplehash}'
     networks:
       - nodepress-network
-    logging: *prod-logging
+    logging: *logging
 
+  # ──────────────────────────────────────────────────────────────
+  # PostgreSQL 16 — Primary Database
+  # ──────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: nodepress-postgres
-    <<: [*restart-policy, *resources-db]
+    restart: unless-stopped
+    shm_size: 256MB
     ports:
       - '127.0.0.1:5432:5432'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nodepress}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nodepress}
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:?ERROR: POSTGRES_PASSWORD is REQUIRED}'
       POSTGRES_DB: ${POSTGRES_DB:-nodepress}
       POSTGRES_INITDB_ARGS: '--data-checksums'
     command:
@@ -105,58 +162,59 @@ services:
       - '-c'
       - 'max_replication_slots=4'
       - '-c'
-      - 'ssl=on'
+      - 'ssl=${POSTGRES_SSL:-off}'
       - '-c'
-      - 'ssl_cert_file=/certs/server.crt'
-      - '-c'
-      - 'ssl_key_file=/certs/server.key'
+      - 'log_min_duration_statement=${PG_LOG_SLOW_QUERY_MS:-500}'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./certs/postgres:/certs:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-nodepress} -d ${POSTGRES_DB:-nodepress}']
-      <<: *healthcheck
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     security_opt:
       - no-new-privileges:true
     networks:
       - nodepress-network
-    logging: *prod-logging
+    logging: *logging
 
+  # ──────────────────────────────────────────────────────────────
+  # PgBouncer — Database Connection Pooling
+  # ──────────────────────────────────────────────────────────────
   pgbouncer:
     image: bitnami/pgbouncer:1
     container_name: nodepress-pgbouncer
-    <<: [*restart-policy, *resources]
+    restart: unless-stopped
     ports:
       - '127.0.0.1:6432:6432'
     environment:
       POSTGRESQL_HOST: postgres
       POSTGRESQL_PORT: 5432
-      POSTGRESQL_USERNAME: ${PGBOUNCER_USER:-nodepress}
-      POSTGRESQL_PASSWORD: ${PGBOUNCER_PASSWORD:-nodepress}
-      POSTGRESQL_DATABASE: ${PGBOUNCER_DB:-nodepress}
-      PGBOUNCER_MAX_CLIENT_CONN: 200
+      POSTGRESQL_USERNAME: ${POSTGRES_USER:-nodepress}
+      POSTGRESQL_PASSWORD: '${POSTGRES_PASSWORD:?ERROR: POSTGRES_PASSWORD is REQUIRED}'
+      POSTGRESQL_DATABASE: ${POSTGRES_DB:-nodepress}
+      PGBOUNCER_MAX_CLIENT_CONN: '${PGBOUNCER_MAX_CLIENT_CONN:-200}'
       PGBOUNCER_POOL_MODE: transaction
-      PGBOUNCER_DEFAULT_POOL_SIZE: 25
-      PGBOUNCER_MIN_POOL_SIZE: 5
-      PGBOUNCER_RESERVE_POOL_SIZE: 5
-      PGBOUNCER_RESERVE_POOL_TIMEOUT: 3
-      PGBOUNCER_MAX_DB_CONNECTIONS: 50
-      PGBOUNCER_CLIENT_TLS_SSLMODE: require
-      PGBOUNCER_SERVER_TLS_SSLMODE: require
+      PGBOUNCER_DEFAULT_POOL_SIZE: '${PGBOUNCER_DEFAULT_POOL_SIZE:-25}'
+      PGBOUNCER_MIN_POOL_SIZE: '${PGBOUNCER_MIN_POOL_SIZE:-5}'
+      PGBOUNCER_RESERVE_POOL_SIZE: '${PGBOUNCER_RESERVE_POOL_SIZE:-5}'
+      PGBOUNCER_RESERVE_POOL_TIMEOUT: '${PGBOUNCER_RESERVE_POOL_TIMEOUT:-3}'
+      PGBOUNCER_MAX_DB_CONNECTIONS: '${PGBOUNCER_MAX_DB_CONNECTIONS:-50}'
+      PGBOUNCER_CLIENT_TLS_SSLMODE: '${PGBOUNCER_CLIENT_TLS:-disable}'
+      PGBOUNCER_SERVER_TLS_SSLMODE: '${PGBOUNCER_SERVER_TLS:-disable}'
     healthcheck:
       test:
-        [
-          'CMD',
-          'pg_isready',
-          '-h',
-          'localhost',
-          '-p',
-          '6432',
-          '-U',
-          '${PGBOUNCER_USER:-nodepress}',
-          '-d',
-          '${PGBOUNCER_DB:-nodepress}',
-        ]
+        - 'CMD'
+        - 'pg_isready'
+        - '-h'
+        - 'localhost'
+        - '-p'
+        - '6432'
+        - '-U'
+        - '${POSTGRES_USER:-nodepress}'
+        - '-d'
+        - '${POSTGRES_DB:-nodepress}'
       interval: 30s
       timeout: 10s
       retries: 3
@@ -164,18 +222,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
     networks:
       - nodepress-network
-    logging: *prod-logging
+    logging: *logging
 
+  # ──────────────────────────────────────────────────────────────
+  # Redis 7 — Cache, Sessions, BullMQ Queue
+  # ──────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: nodepress-redis
-    <<: [*restart-policy, *resources]
+    restart: unless-stopped
     ports:
       - '127.0.0.1:6379:6379'
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-nodepress}
+      REDIS_PASSWORD: '${REDIS_PASSWORD:?ERROR: REDIS_PASSWORD is REQUIRED}'
     command:
       - 'redis-server'
       - '--appendonly'
@@ -186,11 +249,15 @@ services:
       - '--loglevel'
       - 'notice'
       - '--requirepass'
-      - '${REDIS_PASSWORD:-nodepress}'
+      - '${REDIS_PASSWORD}'
+      - '--maxmemory'
+      - '${REDIS_MAXMEMORY:-256mb}'
+      - '--maxmemory-policy'
+      - 'allkeys-lru'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-nodepress}', 'ping']
+      test: ['CMD-SHELL', 'redis-cli -a "${REDIS_PASSWORD}" --no-auth-warning ping | grep -q PONG']
       interval: 15s
       timeout: 5s
       retries: 5
@@ -199,18 +266,21 @@ services:
       - no-new-privileges:true
     networks:
       - nodepress-network
-    logging: *prod-logging
+    logging: *logging
 
+  # ──────────────────────────────────────────────────────────────
+  # MinIO — S3-Compatible Object Storage (Media Files)
+  # ──────────────────────────────────────────────────────────────
   minio:
-    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    image: minio/minio:${MINIO_VERSION:-RELEASE.2024-12-18T13-15-44Z}
     container_name: nodepress-minio
-    <<: [*restart-policy, *resources-db]
+    restart: unless-stopped
     ports:
       - '127.0.0.1:9000:9000'
       - '127.0.0.1:9001:9001'
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nodepress}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-nodepress123}
+      MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD:?ERROR: MINIO_ROOT_PASSWORD is REQUIRED}'
       MINIO_DOMAIN: s3.${APP_DOMAIN:-nodepress.local}
     command:
       - 'server'
@@ -225,20 +295,23 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    security_opt:
-      - no-new-privileges:true
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.minio.rule=Host(`s3.${APP_DOMAIN:-nodepress.local}`)'
       - 'traefik.http.routers.minio.entrypoints=websecure'
       - 'traefik.http.routers.minio.tls.certresolver=letsencrypt'
       - 'traefik.http.services.minio.loadbalancer.server.port=9000'
+    security_opt:
+      - no-new-privileges:true
     networks:
       - nodepress-network
-    logging: *prod-logging
+    logging: *logging
 
+  # ──────────────────────────────────────────────────────────────
+  # MinIO Init — One-Shot Bucket & Policy Setup
+  # ──────────────────────────────────────────────────────────────
   minio-init:
-    image: minio/mc:RELEASE.2024-12-18T13-15-44Z
+    image: minio/mc:${MINIO_VERSION:-RELEASE.2024-12-18T13-15-44Z}
     container_name: nodepress-minio-init
     restart: 'no'
     depends_on:
@@ -246,56 +319,76 @@ services:
         condition: service_healthy
     environment:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-nodepress}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-nodepress123}
-    entrypoint: >
-      /bin/sh -c "
-      echo 'Initializing MinIO buckets...';
-      sleep 2;
-      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-nodepress} ${MINIO_ROOT_PASSWORD:-nodepress123};
-      BUCKET=${S3_BUCKET:-nodepress-media};
-      if mc ls local/$${BUCKET} 2>/dev/null; then
-        echo 'Bucket' $${BUCKET} 'already exists';
-      else
-        mc mb local/$${BUCKET} --region ${S3_REGION:-us-east-1};
-        echo 'Created bucket:' $${BUCKET};
-      fi;
-      "
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+    entrypoint:
+      - /bin/sh
+      - '-c'
+      - |
+        echo "Initializing MinIO buckets..."
+        sleep 2
+        mc alias set local http://minio:9000 "${MINIO_ROOT_USER:-nodepress}" "${MINIO_ROOT_PASSWORD}"
+        BUCKET="${S3_BUCKET:-nodepress-media}"
+        if mc ls "local/$${BUCKET}" 2>/dev/null; then
+          echo "Bucket $${BUCKET} already exists"
+        else
+          mc mb "local/$${BUCKET}" --region "${S3_REGION:-us-east-1}"
+          mc anonymous set download "local/$${BUCKET}"
+          echo "Created bucket: $${BUCKET}"
+        fi
     networks:
       - nodepress-network
 
+  # ──────────────────────────────────────────────────────────────
+  # API — NestJS Backend (REST + GraphQL)
+  # ──────────────────────────────────────────────────────────────
   api:
     image: ${DOCKER_REGISTRY:-nodepress}/nodepress-api:${TAG:-latest}
     container_name: nodepress-api
-    <<: [*restart-policy, *resources]
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.1.4}
     env_file:
       - .env
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD:-nodepress}@pgbouncer:6432/${POSTGRES_DB:-nodepress}
-      DATABASE_DIRECT_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD:-nodepress}@postgres:5432/${POSTGRES_DB:-nodepress}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-nodepress}@redis:6379
+      NODEPRESS_DEBUG: 'false'
+      PORT: '3001'
+      SERVICE_TYPE: api
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-nodepress}
+      DATABASE_DIRECT_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-nodepress}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       S3_ENDPOINT: http://minio:9000
       S3_REGION: ${S3_REGION:-us-east-1}
       S3_ACCESS_KEY: ${MINIO_ROOT_USER:-nodepress}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-nodepress123}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       S3_BUCKET: ${S3_BUCKET:-nodepress-media}
       S3_PUBLIC_URL: https://s3.${APP_DOMAIN:-nodepress.local}/${S3_BUCKET:-nodepress-media}
       APP_URL: https://${APP_DOMAIN:-nodepress.local}
       API_URL: https://api.${APP_DOMAIN:-nodepress.local}
-      CORS_ORIGINS: https://${APP_DOMAIN:-nodepress.local},https://admin.${APP_DOMAIN:-nodepress.local}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://${APP_DOMAIN:-nodepress.local},https://admin.${APP_DOMAIN:-nodepress.local}}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      JWT_SECRET: '${JWT_SECRET:?ERROR: JWT_SECRET is REQUIRED}'
+      JWT_REFRESH_SECRET: '${JWT_REFRESH_SECRET:?ERROR: JWT_REFRESH_SECRET is REQUIRED}'
+      ENCRYPTION_KEY: '${ENCRYPTION_KEY:?ERROR: ENCRYPTION_KEY is REQUIRED}'
     depends_on:
       postgres:
         condition: service_healthy
       pgbouncer:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3001/healthz']
-      <<: *healthcheck
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -322,33 +415,47 @@ services:
       - 'traefik.http.middlewares.api-secure-headers.headers.referrerpolicy=strict-origin-when-cross-origin'
     networks:
       - nodepress-network
-    logging: *prod-logging
+    logging: *logging
 
+  # ──────────────────────────────────────────────────────────────
+  # Admin — Next.js Frontend (Admin Panel)
+  # ──────────────────────────────────────────────────────────────
   admin:
     image: ${DOCKER_REGISTRY:-nodepress}/nodepress-admin:${TAG:-latest}
     container_name: nodepress-admin
-    <<: [*restart-policy, *resources]
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: admin
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.1.4}
     env_file:
       - .env
     environment:
       NODE_ENV: production
+      PORT: '3000'
       NEXT_PUBLIC_API_URL: https://api.${APP_DOMAIN:-nodepress.local}
       APP_URL: https://${APP_DOMAIN:-nodepress.local}
       API_URL: https://api.${APP_DOMAIN:-nodepress.local}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD:-nodepress}@pgbouncer:6432/${POSTGRES_DB:-nodepress}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-nodepress}@redis:6379
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-nodepress}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
-      <<: *healthcheck
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     security_opt:
       - no-new-privileges:true
     read_only: true
     tmpfs:
       - /tmp:size=64M
-      - /app/.next/cache:size=256M
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.admin.rule=Host(`${APP_DOMAIN:-nodepress.local}`) || Host(`admin.${APP_DOMAIN:-nodepress.local}`)'
@@ -368,82 +475,79 @@ services:
       - 'traefik.http.middlewares.admin-secure-headers.headers.referrerpolicy=strict-origin-when-cross-origin'
     networks:
       - nodepress-network
-    logging: *prod-logging
+    logging: *logging
 
-  # ------------------------------------------------------------------
-  # WORKER SERVICE (DISABLED)
-  # ------------------------------------------------------------------
-  # The worker module lives at apps/api/src/worker/ and is imported by
-  # AppModule via WorkerModule. WorkerService implements OnModuleInit,
-  # so background workers (cron, scheduled actions) start automatically
-  # inside the API process — no separate container is needed.
-  #
-  # To extract workers to a standalone process in the future:
-  #   1. Create apps/worker/ with its own main.ts (NestJS microservice)
-  #   2. Update the build pipeline (turbo.json, Dockerfile) to compile it
-  #   3. Uncomment the block below and update the command path
-  #   4. Ensure WorkerModule is NOT imported by AppModule when running
-  #      in api-only mode (use environment gating)
-  #
-  # worker:
-  #   image: ${DOCKER_REGISTRY:-nodepress}/nodepress-api:${TAG:-latest}
-  #   container_name: nodepress-worker
-  #   <<: [*restart-policy, *resources]
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     NODE_ENV: production
-  #     SERVICE_TYPE: worker
-  #     DATABASE_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD:-nodepress}@pgbouncer:6432/${POSTGRES_DB:-nodepress}
-  #     REDIS_URL: redis://:${REDIS_PASSWORD:-nodepress}@redis:6379
-  #     S3_ENDPOINT: http://minio:9000
-  #     S3_REGION: ${S3_REGION:-us-east-1}
-  #     S3_ACCESS_KEY: ${MINIO_ROOT_USER:-nodepress}
-  #     S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-nodepress123}
-  #     S3_BUCKET: ${S3_BUCKET:-nodepress-media}
-  #     LOG_LEVEL: ${LOG_LEVEL:-info}
-  #   # TODO: Update path once worker has its own bootstrap entry
-  #   command: ["node", "apps/worker/dist/main"]
-  #   depends_on:
-  #     redis:
-  #       condition: service_healthy
-  #     minio:
-  #       condition: service_healthy
-  #   security_opt:
-  #     - no-new-privileges:true
-  #   read_only: true
-  #   tmpfs:
-  #     - /tmp:size=64M
-  #     - /app/storage/logs:size=128M
-  #   networks:
-  #     - nodepress-network
-  #   logging: *prod-logging
+  # ──────────────────────────────────────────────────────────────
+  # Worker — Background Job Processor (BullMQ)
+  # Activate with: docker compose --profile worker up -d
+  # Uses the same API image but runs in worker mode.
+  # WorkerModule is initialized automatically via OnModuleInit
+  # when SERVICE_TYPE=worker or runs in-process with the API.
+  # ──────────────────────────────────────────────────────────────
+  worker:
+    image: ${DOCKER_REGISTRY:-nodepress}/nodepress-worker:${TAG:-latest}
+    container_name: nodepress-worker
+    restart: unless-stopped
+    profiles:
+      - worker
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.1.4}
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      NODEPRESS_DEBUG: 'false'
+      SERVICE_TYPE: worker
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-nodepress}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-nodepress}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-nodepress-media}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    command: ['node', 'apps/api/dist/main']
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'ps aux | grep -q "apps/api/dist/main" || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+    networks:
+      - nodepress-network
+    logging: *logging
+
+# ── Persistent Volumes ───────────────────────────────────────
 
 volumes:
   postgres_data:
     driver: local
-    driver_opts:
-      type: none
-      device: ${DATA_DIR:-/data}/postgres
-      o: bind
   redis_data:
     driver: local
-    driver_opts:
-      type: none
-      device: ${DATA_DIR:-/data}/redis
-      o: bind
   minio_data:
     driver: local
-    driver_opts:
-      type: none
-      device: ${DATA_DIR:-/data}/minio
-      o: bind
   traefik_letsencrypt:
     driver: local
-    driver_opts:
-      type: none
-      device: ${DATA_DIR:-/data}/traefik
-      o: bind
+
+# ── Networks ─────────────────────────────────────────────────
 
 networks:
   nodepress-network:

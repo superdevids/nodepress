@@ -25,7 +25,7 @@
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
 
-    /* Sidebar */
+    /* Sidebar — WordPress dark sidebar (#1d2327) */
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-muted: 217.2 32.6% 17.5%;
@@ -34,7 +34,7 @@
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 224.3 76.3% 48%;
 
-    /* Admin Bar */
+    /* Admin Bar — WordPress dark bar (#1d2327) */
     --adminbar-background: 222.2 84% 4.9%;
     --adminbar-foreground: 210 40% 98%;
 
@@ -89,14 +89,15 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground bg-[#f0f0f1];
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 }
 
-/* Scrollbar styling */
+/* ─── WordPress-style scrollbar ──────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -105,9 +106,307 @@
 
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ─── WordPress Admin Bar specific styles ────────────────── */
+#wpadminbar {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell,
+    'Helvetica Neue', sans-serif;
+}
+
+#wpadminbar a,
+#wpadminbar button {
+  cursor: pointer;
+}
+
+/* ─── WordPress-style focus ring ──────────────────────────── */
+.wp-focus-ring:focus-visible {
+  outline: 1.5px solid #2271b1;
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+/* ─── WordPress notice animations ─────────────────────────── */
+@keyframes slideIn {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.wp-notice-enter {
+  animation: slideIn 0.3s ease-out;
+}
+
+.wp-notice-exit {
+  animation: slideOut 0.3s ease-in forwards;
+}
+
+/* ─── WordPress-style skeleton shimmer ───────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.wp-skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ─── Drag handle cursor ─────────────────────────────────── */
+.wp-drag-handle {
+  cursor: grab;
+}
+
+.wp-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* ─── WordPress-style tooltip ────────────────────────────── */
+[data-wp-tooltip] {
+  position: relative;
+}
+
+[data-wp-tooltip]::after {
+  content: attr(data-wp-tooltip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  background: #1d2327;
+  color: #f0f0f1;
+  font-size: 11px;
+  line-height: 1.4;
+  border-radius: 3px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 100000;
+}
+
+[data-wp-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* ─── WordPress-style admin badge ────────────────────────── */
+.wp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* ─── Editor title (WordPress-style) ─────────────────────── */
+.wp-editor-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.wp-editor-title::placeholder {
+  color: #c3c4c7;
+}
+
+/* ─── Meta box styling (WordPress-style) ─────────────────── */
+.wp-meta-box {
+  background: #fff;
+  border: 1px solid #c3c4c7;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.wp-meta-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f6f7f7;
+  border-bottom: 1px solid #c3c4c7;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wp-meta-box-header:hover {
+  background: #f0f0f1;
+}
+
+.wp-meta-box-content {
+  padding: 12px;
+}
+
+/* ─── Responsive tables ──────────────────────────────────── */
+.wp-table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ─── WordPress-style admin links ────────────────────────── */
+.wp-admin-link {
+  color: #2271b1;
+  text-decoration: none;
+  transition: color 0.1s ease;
+}
+
+.wp-admin-link:hover {
+  color: #135e96;
+}
+
+.wp-admin-link:active {
+  color: #135e96;
+}
+
+/* ─── Row actions (WordPress-style hover actions) ────────── */
+.wp-row-actions {
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+tr:hover .wp-row-actions,
+.wp-row-actions:focus-within {
+  opacity: 1;
+}
+
+/* ─── Striped table rows (WordPress-style) ───────────────── */
+.wp-striped tbody tr:nth-child(odd) {
+  background-color: #f6f7f7;
+}
+
+.wp-striped tbody tr:hover {
+  background-color: #f0f6fc;
+}
+
+/* ─── WordPress admin notice colors ──────────────────────── */
+.wp-notice-success {
+  border-left: 4px solid #00a32a;
+  background: #f0f6f0;
+}
+
+.wp-notice-error {
+  border-left: 4px solid #d63638;
+  background: #fcf0f1;
+}
+
+.wp-notice-warning {
+  border-left: 4px solid #dba617;
+  background: #fcf9e8;
+}
+
+.wp-notice-info {
+  border-left: 4px solid #2271b1;
+  background: #f0f6fc;
+}
+
+/* ─── Tab styles ──────────────────────────────────────────── */
+.wp-submenu-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #c3c4c7;
+  margin-bottom: 16px;
+  background: #fff;
+  padding: 0 16px;
+}
+
+.wp-submenu-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #646970;
+  border-bottom: 2px solid transparent;
+  transition: all 0.1s ease;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wp-submenu-tab:hover {
+  color: #3c434a;
+}
+
+.wp-submenu-tab.active {
+  color: #2271b1;
+  border-bottom-color: #2271b1;
+}
+
+/* ─── WordPress-style button ─────────────────────────────── */
+.wp-button-primary {
+  background: #2271b1;
+  color: #fff;
+  border: 1px solid #2271b1;
+  padding: 4px 12px;
+  border-radius: 3px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.wp-button-primary:hover {
+  background: #135e96;
+  border-color: #135e96;
+}
+
+.wp-button-secondary {
+  background: #f6f7f7;
+  color: #2271b1;
+  border: 1px solid #2271b1;
+  padding: 4px 12px;
+  border-radius: 3px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.wp-button-secondary:hover {
+  background: #f0f0f1;
+  color: #135e96;
 }

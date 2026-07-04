@@ -25,6 +25,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminMenuModule } from './admin/admin-menu.module';
 import { GraphqlAppModule } from './graphql/graphql.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ImportModule } from './import/import.module';
 import { PrismaModule } from './common/prisma.module';
 import { WorkerModule } from './worker/worker.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -39,10 +40,12 @@ import { InstallCheckMiddleware } from './common/middleware/install-check.middle
 @Module({
   imports: [
     // Global infrastructure
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 60,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 60,
+      },
+    ]),
 
     // Core
     PrismaModule,
@@ -74,6 +77,9 @@ import { InstallCheckMiddleware } from './common/middleware/install-check.middle
     AdminMenuModule,
     GraphqlAppModule,
     NotificationsModule,
+
+    // Import / Export
+    ImportModule,
 
     // Background Workers (cron, scheduled actions)
     WorkerModule,

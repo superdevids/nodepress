@@ -5,22 +5,26 @@
  * =============================
  * Like WordPress: clone → npm i → npm start → everything works
  *
+ * - Detects if NOT installed → redirects to Install Wizard
  * - Works with npm, pnpm, or yarn (auto-detects)
  * - Creates .env with secure defaults (auto-generated secrets)
  * - Starts Docker infrastructure if available
- * - Runs database migrations
+ * - Runs database migrations if needed
  * - Starts dev server
- * - Opens browser
+ * - Opens browser to Install Wizard (if not installed) or Admin (if installed)
  */
 
 const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const http = require('http');
 
 const ROOT = __dirname;
 const ENV_FILE = path.join(ROOT, '.env');
 const ENV_EXAMPLE = path.join(ROOT, '.env.example');
+const CONFIG_DIR = path.join(ROOT, 'config');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'nodepress.config.json');
 
 const C = {
   reset: '\x1b[0m',
@@ -64,9 +68,9 @@ function run(cmd, opts = {}) {
   }
 }
 
-function capture(cmd) {
+function capture(cmd, timeout = 30000) {
   try {
-    return execSync(cmd, { stdio: 'pipe', cwd: ROOT, encoding: 'utf-8', timeout: 30000 }).trim();
+    return execSync(cmd, { stdio: 'pipe', cwd: ROOT, encoding: 'utf-8', timeout }).trim();
   } catch {
     return '';
   }
@@ -91,6 +95,110 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/**
+ * Check if NodePress is installed by looking at the config file
+ * and verifying JWT_SECRET is not the placeholder value.
+ */
+function isInstalled() {
+  // Check 1: Config file exists with installed flag
+  if (fs.existsSync(CONFIG_FILE)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+      if (config.installed === true) return true;
+    } catch {}
+  }
+
+  // Check 2: .env has a valid JWT_SECRET (not placeholder)
+  if (fs.existsSync(ENV_FILE)) {
+    const envContent = fs.readFileSync(ENV_FILE, 'utf-8');
+    const jwtMatch = envContent.match(/^JWT_SECRET=(.+)$/m);
+    if (jwtMatch) {
+      const secret = jwtMatch[1].trim();
+      // Check it's not the placeholder or empty
+      if (secret && secret !== 'change-me-in-production' && secret !== '') {
+        // Check 3: Also verify the config file exists (double-check)
+        // Config file gets written by the install wizard
+        return false; // env has a secret but no config = wizard was started but not completed
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Check if JWT_SECRET is a placeholder (not real secret)
+ */
+function hasValidSecrets() {
+  if (!fs.existsSync(ENV_FILE)) return false;
+
+  const envContent = fs.readFileSync(ENV_FILE, 'utf-8');
+  const jwtMatch = envContent.match(/^JWT_SECRET=(.+)$/m);
+  if (!jwtMatch) return false;
+
+  const secret = jwtMatch[1].trim();
+  return secret !== '' && secret !== 'change-me-in-production' && secret.length >= 20;
+}
+
+/**
+ * Wait for a URL to respond with a successful status code
+ */
+function waitForUrl(url, maxRetries = 30, interval = 2000) {
+  return new Promise((resolve) => {
+    let retries = 0;
+
+    const check = () => {
+      retries++;
+      const parsedUrl = new URL(url);
+
+      const req = http.get(url, { timeout: 3000 }, (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 400) {
+          resolve(true);
+        } else if (retries < maxRetries) {
+          setTimeout(check, interval);
+        } else {
+          resolve(false);
+        }
+        res.resume();
+      });
+
+      req.on('error', () => {
+        if (retries < maxRetries) {
+          setTimeout(check, interval);
+        } else {
+          resolve(false);
+        }
+      });
+
+      req.setTimeout(3000, () => {
+        req.destroy();
+        if (retries < maxRetries) {
+          setTimeout(check, interval);
+        } else {
+          resolve(false);
+        }
+      });
+    };
+
+    check();
+  });
+}
+
+/**
+ * Open browser to a URL
+ */
+function openBrowser(url) {
+  try {
+    const plat = process.platform;
+    if (plat === 'win32') execSync(`start "" "${url}"`, { stdio: 'ignore' });
+    else if (plat === 'darwin') execSync(`open "${url}"`, { stdio: 'ignore' });
+    else execSync(`xdg-open "${url}" 2>/dev/null || true`, { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function checkEnv() {
   console.log('');
   console.log(`${C.bold}${C.cyan}╔═══════════════════════════════════════════╗`);
@@ -112,12 +220,28 @@ async function checkEnv() {
   const pm = detectPkgManager();
   ok(`Package manager: ${pm}`);
 
-  return pm;
+  // Check install status
+  const installed = isInstalled();
+  if (installed) {
+    ok('NodePress is already installed');
+  } else {
+    warn('NodePress is not installed yet');
+    log('The Install Wizard will open in your browser.', C.yellow);
+  }
+
+  return { pm, installed };
 }
 
 async function createEnv(pm) {
   if (fs.existsSync(ENV_FILE)) {
-    ok('.env file exists');
+    // Check if secrets are valid
+    if (!hasValidSecrets()) {
+      warn('.env exists but secrets are placeholders — regenerating...');
+      regenerateSecrets();
+      ok('.env secrets regenerated');
+    } else {
+      ok('.env file exists');
+    }
     return;
   }
 
@@ -158,6 +282,16 @@ async function createEnv(pm) {
 
   fs.writeFileSync(ENV_FILE, envContent, 'utf-8');
   ok('.env created with auto-generated secrets');
+}
+
+function regenerateSecrets() {
+  if (!fs.existsSync(ENV_FILE)) return;
+  let content = fs.readFileSync(ENV_FILE, 'utf-8');
+  content = content
+    .replace(/^JWT_SECRET=.*$/m, `JWT_SECRET=${generateSecret()}`)
+    .replace(/^JWT_REFRESH_SECRET=.*$/m, `JWT_REFRESH_SECRET=${generateSecret()}`)
+    .replace(/^ENCRYPTION_KEY=.*$/m, `ENCRYPTION_KEY=${crypto.randomBytes(32).toString('hex')}`);
+  fs.writeFileSync(ENV_FILE, content, 'utf-8');
 }
 
 async function startInfra() {
@@ -236,18 +370,30 @@ async function setupDb(pm) {
   }
   ok('Database schema ready');
 
-  log('Adding default data...');
-  run(`${cmd} db:seed`, { silent: true });
-  ok('Default data seeded');
+  // Only seed if this is a fresh install (no config file)
+  if (!isInstalled()) {
+    log('Adding default data...');
+    run(`${cmd} db:seed`, { silent: true });
+    ok('Default data seeded');
+  } else {
+    ok('Skipping seed (already installed)');
+  }
 
   return true;
 }
 
-async function launch(pm) {
+async function launch(pm, installed) {
   console.log('');
-  console.log(`${C.bold}${C.green}╔═══════════════════════════════════════════╗`);
-  console.log(`      ✅  NodePress is Ready!`);
-  console.log(`╚═══════════════════════════════════════════╝${C.reset}`);
+  if (installed) {
+    console.log(`${C.bold}${C.green}╔═══════════════════════════════════════════╗`);
+    console.log(`      ✅  NodePress is Ready!`);
+    console.log(`╚═══════════════════════════════════════════╝${C.reset}`);
+  } else {
+    console.log(`${C.bold}${C.yellow}╔═══════════════════════════════════════════╗`);
+    console.log(`      🚀  NodePress - First Launch`);
+    console.log(`      Complete setup in your browser!`);
+    console.log(`╚═══════════════════════════════════════════╝${C.reset}`);
+  }
   console.log('');
   console.log(`  ${C.cyan}🌐${C.reset} Admin Panel:  ${C.bold}http://localhost:3000${C.reset}`);
   console.log(`  ${C.cyan}📖${C.reset} API:          ${C.bold}http://localhost:3001${C.reset}`);
@@ -255,26 +401,54 @@ async function launch(pm) {
     `  ${C.cyan}📚${C.reset} API Docs:     ${C.bold}http://localhost:3001/docs${C.reset}`,
   );
   console.log('');
-  console.log('  Follow the Install Wizard in your browser!');
-  console.log('  5 steps → Create admin → Start creating content!');
-  console.log('');
 
+  if (!installed) {
+    console.log('  ⏳ Starting dev server...');
+    console.log('  The Install Wizard will open automatically when ready.');
+    console.log('');
+  }
+
+  // Start the dev server
   const dev = spawn('npx', ['turbo', 'run', 'dev', '--parallel'], {
     stdio: 'inherit',
     cwd: ROOT,
     shell: true,
   });
 
-  setTimeout(() => {
-    const url = 'http://localhost:3000';
-    const plat = process.platform;
-    try {
-      if (plat === 'win32') execSync(`start "" "${url}"`, { stdio: 'ignore' });
-      else if (plat === 'darwin') execSync(`open "${url}"`, { stdio: 'ignore' });
-      else execSync(`xdg-open "${url}" 2>/dev/null || true`, { stdio: 'ignore' });
-    } catch {}
-  }, 10000);
+  // Wait for the admin server to be ready, then open browser
+  if (!installed) {
+    log('Waiting for server to be ready...', C.yellow);
+    const ready = await waitForUrl('http://localhost:3000', 60, 2000);
 
+    if (ready) {
+      ok('Server is ready!');
+
+      // Open the install wizard
+      const installUrl = 'http://localhost:3000/install';
+      log(`Opening Install Wizard...`);
+      openBrowser(installUrl);
+      console.log('');
+      console.log(`  ${C.bold}${C.cyan}📋${C.reset} Follow the 5-step Install Wizard:`);
+      console.log(`     1. Database connection  (click "Test Connection")`);
+      console.log(`     2. Create admin account (email + password)`);
+      console.log(`     3. Site settings        (name your site)`);
+      console.log(`     4. Choose plugins       (SEO, Comments, Security...)`);
+      console.log(`     5. Done!                (start creating!)`);
+      console.log('');
+    } else {
+      warn('Server did not become ready in time.');
+      warn(`Open manually: ${C.cyan}http://localhost:3000${C.reset}`);
+    }
+  } else {
+    // Already installed, open admin after a short delay
+    setTimeout(() => {
+      const url = 'http://localhost:3000/admin';
+      ok(`Opening ${url}`);
+      openBrowser(url);
+    }, 8000);
+  }
+
+  // Handle shutdown signals
   process.on('SIGINT', () => {
     console.log('');
     log('Shutting down...', C.yellow);
@@ -289,15 +463,19 @@ async function launch(pm) {
 
 async function main() {
   try {
-    const pm = await checkEnv();
+    const { pm, installed } = await checkEnv();
     await createEnv(pm);
     await startInfra();
     const dbOk = await setupDb(pm);
     if (!dbOk) {
       fail('Database setup failed. Fix the issues above and run npm start again.');
+      console.log('');
+      console.log(
+        `  ${C.yellow}💡${C.reset} Tip: Run ${C.cyan}node scripts/quick-install.js${C.reset} for guided setup.`,
+      );
       process.exit(1);
     }
-    await launch(pm);
+    await launch(pm, installed);
   } catch (err) {
     console.log('');
     fail(`Error: ${err.message}`);
