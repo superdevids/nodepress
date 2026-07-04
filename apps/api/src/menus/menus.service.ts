@@ -50,6 +50,9 @@ export class MenusService {
   }
 
   async create(data: { name: string; slug: string; description?: string }): Promise<Menu> {
+    // TODO (Gap A-015): The Prisma Menu model lacks `name` and `description` fields.
+    // Currently only `location: data.slug` is stored. A migration should add these
+    // columns so they can be persisted and returned.
     const menu = await this.prisma.menu.create({
       data: {
         id: randomUUID(),
@@ -65,10 +68,7 @@ export class MenusService {
     return this.toMenu(menu);
   }
 
-  async addItem(
-    menuId: string,
-    item: Omit<MenuItem, 'id'>,
-  ): Promise<Menu> {
+  async addItem(menuId: string, item: Omit<MenuItem, 'id'>): Promise<Menu> {
     const menu = await this.prisma.menu.findUnique({ where: { id: menuId } });
     if (!menu) throw new NotFoundException(`Menu ${menuId} not found`);
 
@@ -105,9 +105,15 @@ export class MenusService {
   }
 
   private toMenu(m: {
-    id: string; location: string; createdAt: Date; updatedAt: Date;
+    id: string;
+    location: string;
+    createdAt: Date;
+    updatedAt: Date;
     items: {
-      id: string; parentId: string | null; label: string; url: string;
+      id: string;
+      parentId: string | null;
+      label: string;
+      url: string;
       order: number;
     }[];
   }): Menu {

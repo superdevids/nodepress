@@ -1,7 +1,7 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import type { PrismaClient } from "@nodepressjs/db";
-import { CapabilityService } from "./capability-service.js";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import type { PrismaClient } from '@nodepressjs/db';
+import { CapabilityService } from './capability-service.js';
 
 export interface LoginInput {
   email: string;
@@ -38,16 +38,47 @@ export class AuthService {
 
     const secret = process.env.JWT_SECRET;
     const refreshSecret = process.env.JWT_REFRESH_SECRET;
-    if (!secret || secret === "nodepress-secret") {
+
+    const wellKnownPlaceholders = [
+      'nodepress-secret',
+      'nodepress-refresh-secret',
+      'change-me-to-a-secure-random-string',
+      'change-me-to-another-secure-random-string',
+      'your-secret-key',
+      'secret',
+      'default',
+    ];
+
+    if (!secret) {
       throw new Error(
-        "JWT_SECRET environment variable must be set and must not be the default value"
+        'JWT_SECRET environment variable must be set. Application cannot start securely.',
       );
     }
-    if (!refreshSecret || refreshSecret === "nodepress-refresh-secret") {
+    if (secret.length < 32) {
+      throw new Error('JWT_SECRET must be at least 32 characters long for adequate security.');
+    }
+    if (wellKnownPlaceholders.includes(secret)) {
       throw new Error(
-        "JWT_REFRESH_SECRET environment variable must be set and must not be the default value"
+        'JWT_SECRET environment variable must not be a well-known placeholder value.',
       );
     }
+
+    if (!refreshSecret) {
+      throw new Error(
+        'JWT_REFRESH_SECRET environment variable must be set. Application cannot start securely.',
+      );
+    }
+    if (refreshSecret.length < 32) {
+      throw new Error(
+        'JWT_REFRESH_SECRET must be at least 32 characters long for adequate security.',
+      );
+    }
+    if (wellKnownPlaceholders.includes(refreshSecret)) {
+      throw new Error(
+        'JWT_REFRESH_SECRET environment variable must not be a well-known placeholder value.',
+      );
+    }
+
     this.jwtSecret = secret;
     this.jwtRefreshSecret = refreshSecret;
   }
@@ -61,12 +92,12 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new Error("Invalid email or password.");
+      throw new Error('Invalid email or password.');
     }
 
     const valid = await bcrypt.compare(input.password, user.passwordHash);
     if (!valid) {
-      throw new Error("Invalid email or password.");
+      throw new Error('Invalid email or password.');
     }
 
     const payload: TokenPayload = {
@@ -90,7 +121,7 @@ export class AuthService {
     });
 
     if (existing) {
-      throw new Error("A user with this email already exists.");
+      throw new Error('A user with this email already exists.');
     }
 
     const passwordHash = await bcrypt.hash(input.password, 12);
@@ -100,7 +131,7 @@ export class AuthService {
         email: input.email,
         passwordHash,
         name: input.name,
-        role: "SUBSCRIBER",
+        role: 'SUBSCRIBER',
       },
     });
 
@@ -127,7 +158,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error("User not found.");
+      throw new Error('User not found.');
     }
 
     return this.generateTokens({
@@ -148,16 +179,16 @@ export class AuthService {
    * Generate access and refresh token pair.
    */
   private generateTokens(payload: TokenPayload): AuthTokens {
-    const expiresIn = parseInt(process.env.JWT_EXPIRES_IN ?? "900", 10);
+    const expiresIn = parseInt(process.env.JWT_EXPIRES_IN ?? '900', 10);
 
     const token = jwt.sign(payload, this.jwtSecret, {
       expiresIn,
-      issuer: process.env.JWT_ISSUER ?? "nodepress",
+      issuer: process.env.JWT_ISSUER ?? 'nodepress',
     });
 
     const refreshToken = jwt.sign(payload, this.jwtRefreshSecret, {
-      expiresIn: "7d",
-      issuer: process.env.JWT_ISSUER ?? "nodepress",
+      expiresIn: '7d',
+      issuer: process.env.JWT_ISSUER ?? 'nodepress',
     });
 
     return { token, refreshToken, expiresIn };

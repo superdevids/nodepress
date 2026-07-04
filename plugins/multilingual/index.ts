@@ -151,10 +151,12 @@ const translations: Translation[] = [];
 const translationMemory: TranslationMemory[] = [];
 
 async function translateText(
+  context: PluginContext,
   text: string,
   sourceLang: string,
   targetLang: string,
 ): Promise<string> {
+  // Check translation memory first
   const cached = translationMemory.find(
     (m) =>
       m.sourceText.toLowerCase() === text.toLowerCase() &&
@@ -165,15 +167,52 @@ async function translateText(
     cached.hits++;
     return cached.translatedText;
   }
-  const translated = `[${targetLang}] ${text}`;
-  translationMemory.push({
-    sourceLang,
-    targetLang,
-    sourceText: text,
-    translatedText: translated,
-    hits: 1,
-  });
-  return translated;
+
+  // Try DeepL API
+  const apiKey = process.env.DEEPL_API_KEY;
+  if (apiKey) {
+    try {
+      const response = await fetch('https://api-free.deepl.com/v2/translate', {
+        method: 'POST',
+        headers: {
+          Authorization: `DeepL-Auth-Key ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: [text],
+          target_lang: targetLang.toUpperCase(),
+          source_lang: sourceLang?.toUpperCase(),
+        }),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as { translations: Array<{ text: string }> };
+        const translatedText = data.translations[0].text;
+
+        // Store in translation memory
+        translationMemory.push({
+          sourceLang,
+          targetLang,
+          sourceText: text,
+          translatedText,
+          hits: 1,
+        });
+
+        return translatedText;
+      }
+      context.logger.warn(`[DeepL] API error: ${response.status} ${response.statusText}`);
+    } catch (err) {
+      context.logger.warn(
+        `[DeepL] Request failed: ${err instanceof Error ? err.message : 'Unknown'}`,
+      );
+    }
+  }
+
+  // Fallback: no DeepL API key or API error
+  context.logger.warn(
+    `[Multilingual] No DeepL API key configured — cannot translate "${text.slice(0, 40)}..."`,
+  );
+  return '';
 }
 
 function getBrowserLanguage(): string {
@@ -242,201 +281,251 @@ export const lifecycle: PluginLifecycle = {
     let defaultLanguage = activeLanguages.find((l) => l.isDefault) || activeLanguages[0];
 
     context.hooks.addFilter('content:render', async (html: string, ...args: unknown[]) => {
-      const meta = args[0] as { lang?: string; slug?: string; title?: string } | undefined;
-      const currentLang = meta?.lang || defaultLanguage.code;
-      const path = meta?.slug || '/';
+      try {
+        const meta = args[0] as { lang?: string; slug?: string; title?: string } | undefined;
+        const currentLang = meta?.lang || defaultLanguage.code;
+        const path = meta?.slug || '/';
 
-      let result = html;
-      result = result.replace('<html', `<html lang="${currentLang}"`);
-      result = applyRtlSupport(result, currentLang);
-      result = result.replace(
-        '</head>',
-        `<link rel="alternate" hreflang="x-default" href="/" />\n${activeLanguages
-          .map(
-            (l) =>
-              `  <link rel="alternate" hreflang="${l.code}" href="${localizeUrl(path, l.code)}" />`,
-          )
-          .join('\n')}\n</head>`,
-      );
-      return result;
+        let result = html;
+        result = result.replace('<html', `<html lang="${currentLang}"`);
+        result = applyRtlSupport(result, currentLang);
+        result = result.replace(
+          '</head>',
+          `<link rel="alternate" hreflang="x-default" href="/" />\n${activeLanguages
+            .map(
+              (l) =>
+                `  <link rel="alternate" hreflang="${l.code}" href="${localizeUrl(path, l.code)}" />`,
+            )
+            .join('\n')}\n</head>`,
+        );
+        return result;
+      } catch (err) {
+        context.logger.error(
+          `content:render error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return html;
+      }
     });
 
     context.hooks.addAction('multilingual:content:add', async (data: unknown) => {
-      const { contentType, contentId, language, title, content, excerpt } = data as {
-        contentType: string;
-        contentId: string;
-        language: string;
-        title: string;
-        content?: string;
-        excerpt?: string;
-      };
-      if (!contentType || !contentId || !language || !title) {
-        context.logger.warn('Multilingual: Missing required fields for translation');
-        return;
-      }
-      const existing = translations.findIndex(
-        (t) =>
-          t.contentType === contentType && t.contentId === contentId && t.language === language,
-      );
-      const translation: Translation = {
-        id: `tr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-        contentType,
-        contentId,
-        language,
-        title,
-        slug: title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, ''),
-        content: content || '',
-        excerpt: excerpt || '',
-        metaTitle: title,
-        metaDescription: excerpt || title,
-        translatedAt: new Date().toISOString(),
-        translatedBy: 'manual',
-      };
-      if (existing >= 0) {
-        translations[existing] = translation;
-        context.logger.log(
-          `Multilingual: Updated ${language} translation for ${contentType}/${contentId}`,
+      try {
+        const { contentType, contentId, language, title, content, excerpt } = data as {
+          contentType: string;
+          contentId: string;
+          language: string;
+          title: string;
+          content?: string;
+          excerpt?: string;
+        };
+        if (!contentType || !contentId || !language || !title) {
+          context.logger.warn('Multilingual: Missing required fields for translation');
+          return;
+        }
+        const existing = translations.findIndex(
+          (t) =>
+            t.contentType === contentType && t.contentId === contentId && t.language === language,
         );
-      } else {
-        translations.push(translation);
-        context.logger.log(
-          `Multilingual: Added ${language} translation for ${contentType}/${contentId}`,
+        const translation: Translation = {
+          id: `tr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+          contentType,
+          contentId,
+          language,
+          title,
+          slug: title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, ''),
+          content: content || '',
+          excerpt: excerpt || '',
+          metaTitle: title,
+          metaDescription: excerpt || title,
+          translatedAt: new Date().toISOString(),
+          translatedBy: 'manual',
+        };
+        if (existing >= 0) {
+          translations[existing] = translation;
+          context.logger.log(
+            `Multilingual: Updated ${language} translation for ${contentType}/${contentId}`,
+          );
+        } else {
+          translations.push(translation);
+          context.logger.log(
+            `Multilingual: Added ${language} translation for ${contentType}/${contentId}`,
+          );
+        }
+      } catch (err) {
+        context.logger.error(
+          `multilingual:content:add error: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     });
 
     context.hooks.addAction('multilingual:auto:translate', async (data: unknown) => {
-      const { contentType, contentId, title, content, targetLanguages } = data as {
-        contentType: string;
-        contentId: string;
-        title: string;
-        content?: string;
-        targetLanguages?: string[];
-      };
-      if (!contentType || !contentId || !title) {
-        context.logger.warn('Multilingual: Auto-translate called without required fields');
-        return;
+      try {
+        const { contentType, contentId, title, content, targetLanguages } = data as {
+          contentType: string;
+          contentId: string;
+          title: string;
+          content?: string;
+          targetLanguages?: string[];
+        };
+        if (!contentType || !contentId || !title) {
+          context.logger.warn('Multilingual: Auto-translate called without required fields');
+          return;
+        }
+        if (!autoTranslateEnabled || autoTranslateProvider === 'none') {
+          context.logger.warn('Multilingual: Auto-translate is not configured');
+          return;
+        }
+        const langs =
+          targetLanguages || activeLanguages.filter((l) => !l.isDefault).map((l) => l.code);
+        for (const lang of langs) {
+          const translatedTitle = await translateText(context, title, defaultLanguage.code, lang);
+          const translatedContent = content
+            ? await translateText(context, content, defaultLanguage.code, lang)
+            : '';
+          const translatedExcerpt = content?.slice(0, 200)
+            ? await translateText(context, content.slice(0, 200), defaultLanguage.code, lang)
+            : '';
+          translations.push({
+            id: `tr-auto-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+            contentType,
+            contentId,
+            language: lang,
+            title: translatedTitle,
+            slug: translatedTitle
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, ''),
+            content: translatedContent,
+            excerpt: translatedExcerpt,
+            metaTitle: translatedTitle,
+            metaDescription: translatedExcerpt || translatedTitle,
+            translatedAt: new Date().toISOString(),
+            translatedBy: 'auto',
+          });
+        }
+        context.logger.log(
+          `Multilingual: Auto-translated "${title}" to ${langs.length} languages via ${autoTranslateProvider}`,
+        );
+      } catch (err) {
+        context.logger.error(
+          `multilingual:auto:translate error: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      if (!autoTranslateEnabled || autoTranslateProvider === 'none') {
-        context.logger.warn('Multilingual: Auto-translate is not configured');
-        return;
-      }
-      const langs =
-        targetLanguages || activeLanguages.filter((l) => !l.isDefault).map((l) => l.code);
-      for (const lang of langs) {
-        const translatedTitle = await translateText(title, defaultLanguage.code, lang);
-        const translatedContent = content
-          ? await translateText(content, defaultLanguage.code, lang)
-          : '';
-        const translatedExcerpt = content?.slice(0, 200)
-          ? await translateText(content.slice(0, 200), defaultLanguage.code, lang)
-          : '';
-        translations.push({
-          id: `tr-auto-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-          contentType,
-          contentId,
-          language: lang,
-          title: translatedTitle,
-          slug: translatedTitle
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, ''),
-          content: translatedContent,
-          excerpt: translatedExcerpt,
-          metaTitle: translatedTitle,
-          metaDescription: translatedExcerpt || translatedTitle,
-          translatedAt: new Date().toISOString(),
-          translatedBy: 'auto',
-        });
-      }
-      context.logger.log(
-        `Multilingual: Auto-translated "${title}" to ${langs.length} languages via ${autoTranslateProvider}`,
-      );
     });
 
     context.hooks.addAction('multilingual:locale:detect', async (data: unknown) => {
-      if (!localeDetectionEnabled) return;
-      const { headers, callback } = data as {
-        headers?: Record<string, string>;
-        callback?: (lang: string, redirectUrl: string) => void;
-      };
-      const acceptLang = headers?.['accept-language'] || '';
-      const browserLangs = acceptLang
-        .split(',')
-        .map((l) => l.split(';')[0].trim().slice(0, 2).toLowerCase());
-      for (const bl of browserLangs) {
-        const matched = activeLanguages.find((l) => l.code === bl);
-        if (matched && !matched.isDefault) {
-          const currentPath = (data as any).path || '/';
-          const currentLang = detectLanguage(currentPath);
-          if (!currentLang) {
-            const redirectUrl = localizeUrl(currentPath, matched.code);
-            if (callback) callback(matched.code, redirectUrl);
+      try {
+        if (!localeDetectionEnabled) return;
+        const { headers, callback } = data as {
+          headers?: Record<string, string>;
+          callback?: (lang: string, redirectUrl: string) => void;
+        };
+        const acceptLang = headers?.['accept-language'] || '';
+        const browserLangs = acceptLang
+          .split(',')
+          .map((l) => l.split(';')[0].trim().slice(0, 2).toLowerCase());
+        for (const bl of browserLangs) {
+          const matched = activeLanguages.find((l) => l.code === bl);
+          if (matched && !matched.isDefault) {
+            const currentPath = (data as any).path || '/';
+            const currentLang = detectLanguage(currentPath);
+            if (!currentLang) {
+              const redirectUrl = localizeUrl(currentPath, matched.code);
+              if (callback) callback(matched.code, redirectUrl);
+            }
+            break;
           }
-          break;
         }
+      } catch (err) {
+        context.logger.error(
+          `multilingual:locale:detect error: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     });
 
     context.hooks.addAction('multilingual:language:switcher:render', async (data: unknown) => {
-      const { lang, position } = data as { lang?: string; position?: 'widget' | 'menu' | 'both' };
-      const currentLang = lang || defaultLanguage.code;
-      const html = generateLanguageSwitcherHtml(currentLang, supportedLanguages);
-      (data as any).html = html;
+      try {
+        const { lang, position } = data as { lang?: string; position?: 'widget' | 'menu' | 'both' };
+        const currentLang = lang || defaultLanguage.code;
+        const html = generateLanguageSwitcherHtml(currentLang, supportedLanguages);
+        (data as any).html = html;
+      } catch (err) {
+        context.logger.error(
+          `multilingual:language:switcher:render error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     context.hooks.addAction('multilingual:language:activate', async (data: unknown) => {
-      const { code } = data as { code: string };
-      const lang = supportedLanguages.find((l) => l.code === code);
-      if (!lang) {
-        context.logger.warn(`Multilingual: Language ${code} not found`);
-        return;
+      try {
+        const { code } = data as { code: string };
+        const lang = supportedLanguages.find((l) => l.code === code);
+        if (!lang) {
+          context.logger.warn(`Multilingual: Language ${code} not found`);
+          return;
+        }
+        lang.enabled = true;
+        activeLanguages.push(lang);
+        context.logger.log(`Multilingual: Activated language ${lang.name} (${code})`);
+      } catch (err) {
+        context.logger.error(
+          `multilingual:language:activate error: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      lang.enabled = true;
-      activeLanguages.push(lang);
-      context.logger.log(`Multilingual: Activated language ${lang.name} (${code})`);
     });
 
     context.hooks.addAction('multilingual:language:deactivate', async (data: unknown) => {
-      const { code } = data as { code: string };
-      const lang = supportedLanguages.find((l) => l.code === code);
-      if (!lang) {
-        context.logger.warn(`Multilingual: Language ${code} not found`);
-        return;
+      try {
+        const { code } = data as { code: string };
+        const lang = supportedLanguages.find((l) => l.code === code);
+        if (!lang) {
+          context.logger.warn(`Multilingual: Language ${code} not found`);
+          return;
+        }
+        if (lang.isDefault) {
+          context.logger.warn('Multilingual: Cannot deactivate default language');
+          return;
+        }
+        lang.enabled = false;
+        const idx = activeLanguages.findIndex((l) => l.code === code);
+        if (idx >= 0) activeLanguages.splice(idx, 1);
+        context.logger.log(`Multilingual: Deactivated language ${lang.name} (${code})`);
+      } catch (err) {
+        context.logger.error(
+          `multilingual:language:deactivate error: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      if (lang.isDefault) {
-        context.logger.warn('Multilingual: Cannot deactivate default language');
-        return;
-      }
-      lang.enabled = false;
-      const idx = activeLanguages.findIndex((l) => l.code === code);
-      if (idx >= 0) activeLanguages.splice(idx, 1);
-      context.logger.log(`Multilingual: Deactivated language ${lang.name} (${code})`);
     });
 
     context.hooks.addAction('multilingual:stats', async (data: unknown) => {
-      const callback = (data as any)?.callback;
-      const stats = {
-        totalLanguages: supportedLanguages.length,
-        activeLanguages: activeLanguages.length,
-        totalTranslations: translations.length,
-        manualTranslations: translations.filter((t) => t.translatedBy === 'manual').length,
-        autoTranslations: translations.filter((t) => t.translatedBy === 'auto').length,
-        rtlLanguages: supportedLanguages.filter((l) => l.dir === 'rtl').length,
-        translationMemoryEntries: translationMemory.length,
-      };
-      if (callback) callback(stats);
+      try {
+        const callback = (data as any)?.callback;
+        const stats = {
+          totalLanguages: supportedLanguages.length,
+          activeLanguages: activeLanguages.length,
+          totalTranslations: translations.length,
+          manualTranslations: translations.filter((t) => t.translatedBy === 'manual').length,
+          autoTranslations: translations.filter((t) => t.translatedBy === 'auto').length,
+          rtlLanguages: supportedLanguages.filter((l) => l.dir === 'rtl').length,
+          translationMemoryEntries: translationMemory.length,
+        };
+        if (callback) callback(stats);
+      } catch (err) {
+        context.logger.error(
+          `multilingual:stats error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     context.hooks.addAction('admin:dashboard:render', async (data: unknown) => {
-      (data as any).widgets = (data as any).widgets || [];
-      (data as any).widgets.push({
-        title: 'Multilingual Overview',
-        priority: 9,
-        content: `<div class="multilingual-widget">
+      try {
+        (data as any).widgets = (data as any).widgets || [];
+        (data as any).widgets.push({
+          title: 'Multilingual Overview',
+          priority: 9,
+          content: `<div class="multilingual-widget">
           <p>Active Languages: ${activeLanguages.length}/${supportedLanguages.length}</p>
           <p>Translations: ${translations.length} (${translations.filter((t) => t.translatedBy === 'manual').length} manual, ${translations.filter((t) => t.translatedBy === 'auto').length} auto)</p>
           <p>Default: ${defaultLanguage.name}</p>
@@ -444,53 +533,64 @@ export const lifecycle: PluginLifecycle = {
           <p>Locale Detection: ${localeDetectionEnabled ? 'Enabled' : 'Disabled'}</p>
           <p>RTL Languages: ${supportedLanguages.filter((l) => l.dir === 'rtl').length}</p>
         </div>`,
-      });
+        });
+      } catch (err) {
+        context.logger.error(
+          `admin:dashboard:render error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     context.hooks.addAction('admin:settings:render', async (data: unknown) => {
-      (data as any).sections = (data as any).sections || [];
-      (data as any).sections.push({
-        slug: 'multilingual',
-        title: 'Multilingual',
-        fields: [
-          {
-            name: 'autoTranslateEnabled',
-            label: 'Auto-Translate',
-            type: 'boolean',
-            value: autoTranslateEnabled,
-          },
-          {
-            name: 'autoTranslateProvider',
-            label: 'Translation Provider',
-            type: 'select',
-            options: ['deepl', 'google'],
-            value: autoTranslateProvider,
-          },
-          {
-            name: 'localeDetectionEnabled',
-            label: 'Locale Detection',
-            type: 'boolean',
-            value: localeDetectionEnabled,
-          },
-          {
-            name: 'defaultLanguage',
-            label: 'Default Language',
-            type: 'select',
-            options: supportedLanguages.map((l) => l.code),
-            value: defaultLanguage.code,
-          },
-        ],
-      });
+      try {
+        (data as any).sections = (data as any).sections || [];
+        (data as any).sections.push({
+          slug: 'multilingual',
+          title: 'Multilingual',
+          fields: [
+            {
+              name: 'autoTranslateEnabled',
+              label: 'Auto-Translate',
+              type: 'boolean',
+              value: autoTranslateEnabled,
+            },
+            {
+              name: 'autoTranslateProvider',
+              label: 'Translation Provider',
+              type: 'select',
+              options: ['deepl', 'google'],
+              value: autoTranslateProvider,
+            },
+            {
+              name: 'localeDetectionEnabled',
+              label: 'Locale Detection',
+              type: 'boolean',
+              value: localeDetectionEnabled,
+            },
+            {
+              name: 'defaultLanguage',
+              label: 'Default Language',
+              type: 'select',
+              options: supportedLanguages.map((l) => l.code),
+              value: defaultLanguage.code,
+            },
+          ],
+        });
+      } catch (err) {
+        context.logger.error(
+          `admin:settings:render error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     context.logger.log('Multilingual plugin booted');
   },
 
-  async activate() {
-    console.log('Multilingual plugin activated');
+  async activate(context: PluginContext) {
+    context.logger.log('Multilingual plugin activated');
   },
 
-  async deactivate() {
-    console.log('Multilingual plugin deactivated');
+  async deactivate(context: PluginContext) {
+    context.logger.log('Multilingual plugin deactivated');
   },
 };

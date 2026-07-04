@@ -1,45 +1,43 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { MoreHorizontal, Eye, Edit, Copy, Trash2, Search, Filter, ArrowUpDown } from 'lucide-react';
 import {
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Copy,
-  Trash2,
-  Search,
-  Filter,
-  ArrowUpDown,
-} from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { BulkActions } from "./bulk-actions";
-import { QuickEdit } from "./quick-edit";
-import { formatDate } from "@/lib/utils";
+} from '@/components/ui/select';
+import { BulkActions } from './bulk-actions';
+import { QuickEdit } from './quick-edit';
+import { formatDate } from '@/lib/utils';
 
 interface ContentItem {
   id: string;
   title: string;
   slug: string;
-  status: "draft" | "published" | "pending" | "trashed";
+  status: 'draft' | 'published' | 'pending' | 'trashed';
   author: string;
   date: Date;
   type: string;
@@ -50,41 +48,39 @@ interface ContentListProps {
   type?: string;
 }
 
-const statusColors: Record<string, "success" | "secondary" | "warning" | "destructive"> = {
-  published: "success",
-  draft: "secondary",
-  pending: "warning",
-  trashed: "destructive",
+const statusColors: Record<string, 'success' | 'secondary' | 'warning' | 'destructive'> = {
+  published: 'success',
+  draft: 'secondary',
+  pending: 'warning',
+  trashed: 'destructive',
 };
 
 export function ContentList({ items, type }: ContentListProps) {
   const router = useRouter();
   const [selected, setSelected] = React.useState<string[]>([]);
-  const [search, setSearch] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [search, setSearch] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState('all');
   const [quickEditId, setQuickEditId] = React.useState<string | null>(null);
-  const [sortField, setSortField] = React.useState<"date" | "title">("date");
-  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
+  const [sortField, setSortField] = React.useState<'date' | 'title'>('date');
+  const [sortDir, setSortDir] = React.useState<'asc' | 'desc'>('desc');
 
   const filtered = items
     .filter((item) => {
       if (search && !item.title.toLowerCase().includes(search.toLowerCase())) return false;
-      if (statusFilter !== "all" && item.status !== statusFilter) return false;
+      if (statusFilter !== 'all' && item.status !== statusFilter) return false;
       return true;
     })
     .sort((a, b) => {
-      if (sortField === "title") {
-        return sortDir === "asc" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title);
+      if (sortField === 'title') {
+        return sortDir === 'asc' ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title);
       }
-      return sortDir === "asc"
+      return sortDir === 'asc'
         ? a.date.getTime() - b.date.getTime()
         : b.date.getTime() - a.date.getTime();
     });
 
   const toggleSelect = (id: string) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
-    );
+    setSelected((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
   };
 
   const toggleSelectAll = () => {
@@ -95,26 +91,26 @@ export function ContentList({ items, type }: ContentListProps) {
     }
   };
 
-  const handleBulkAction = (action: string) => {
-    console.log(`Bulk action: ${action} on`, selected);
+  const handleBulkAction = (_action: string) => {
+    // TODO: implement bulk action using the API client
     setSelected([]);
   };
 
-  const toggleSort = (field: "date" | "title") => {
+  const toggleSort = (field: 'date' | 'title') => {
     if (sortField === field) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
-      setSortDir(field === "date" ? "desc" : "asc");
+      setSortDir(field === 'date' ? 'desc' : 'asc');
     }
   };
 
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[200px] max-w-sm flex-1">
+          <Search className="text-muted-foreground absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search content..."
             className="pl-8"
@@ -124,7 +120,7 @@ export function ContentList({ items, type }: ContentListProps) {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36">
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="mr-2 h-4 w-4" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -135,14 +131,11 @@ export function ContentList({ items, type }: ContentListProps) {
             <SelectItem value="trashed">Trashed</SelectItem>
           </SelectContent>
         </Select>
-        <BulkActions
-          selectedCount={selected.length}
-          onAction={handleBulkAction}
-        />
+        <BulkActions selectedCount={selected.length} onAction={handleBulkAction} />
       </div>
 
       {/* Table */}
-      <div className="rounded-md border bg-background">
+      <div className="bg-background rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -154,7 +147,7 @@ export function ContentList({ items, type }: ContentListProps) {
               </TableHead>
               <TableHead>
                 <button
-                  onClick={() => toggleSort("title")}
+                  onClick={() => toggleSort('title')}
                   className="flex items-center gap-1 font-medium"
                 >
                   Title
@@ -164,7 +157,7 @@ export function ContentList({ items, type }: ContentListProps) {
               <TableHead>Author</TableHead>
               <TableHead>
                 <button
-                  onClick={() => toggleSort("date")}
+                  onClick={() => toggleSort('date')}
                   className="flex items-center gap-1 font-medium"
                 >
                   Date
@@ -178,7 +171,7 @@ export function ContentList({ items, type }: ContentListProps) {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={6} className="text-muted-foreground py-12 text-center">
                   No content found
                 </TableCell>
               </TableRow>
@@ -196,11 +189,11 @@ export function ContentList({ items, type }: ContentListProps) {
                       <div className="flex flex-col">
                         <button
                           onClick={() => router.push(`/admin/content/${item.type}/${item.id}`)}
-                          className="font-medium hover:text-primary transition-colors text-left"
+                          className="hover:text-primary text-left font-medium transition-colors"
                         >
                           {item.title}
                         </button>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-muted-foreground text-xs">
                           {item.type}/{item.slug}
                         </span>
                       </div>
@@ -220,7 +213,9 @@ export function ContentList({ items, type }: ContentListProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/admin/content/${item.type}/${item.id}`)}>
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/admin/content/${item.type}/${item.id}`)}
+                          >
                             <Edit className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem>
@@ -247,7 +242,9 @@ export function ContentList({ items, type }: ContentListProps) {
                           <QuickEdit
                             entry={item}
                             onClose={() => setQuickEditId(null)}
-                            onSaved={(data) => console.log("Saved:", data)}
+                            onSaved={(_data: unknown) => {
+                              // TODO: refresh the content list after save
+                            }}
                           />
                         </div>
                       </TableCell>
@@ -261,7 +258,7 @@ export function ContentList({ items, type }: ContentListProps) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex items-center justify-between text-sm">
         <span>{filtered.length} items</span>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" disabled>

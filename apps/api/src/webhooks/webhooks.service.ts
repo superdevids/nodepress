@@ -64,10 +64,13 @@ export class WebhooksService {
     secret?: string;
   }): Promise<Webhook> {
     const secret = data.secret ?? randomUUID();
+    // TODO (Gap A-016): The `event` column in WebhookSubscription is a single String.
+    // A future migration should change it to a JSON array column (e.g., String[] / Json)
+    // so all events are preserved. For now, we store them as a JSON-serialized array.
     const sub = await this.prisma.webhookSubscription.create({
       data: {
         id: randomUUID(),
-        event: data.events[0] ?? data.name,
+        event: JSON.stringify(data.events),
         targetUrl: data.url,
         secret,
         active: true,
@@ -99,7 +102,7 @@ export class WebhooksService {
     const updateData: Record<string, unknown> = {};
     if (data.url !== undefined) updateData.targetUrl = data.url;
     if (data.enabled !== undefined) updateData.active = data.enabled;
-    if (data.events !== undefined) updateData.event = data.events[0] ?? existing.event;
+    if (data.events !== undefined) updateData.event = JSON.stringify(data.events);
 
     const updated = await this.prisma.webhookSubscription.update({
       where: { id },

@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, HttpStatus, Injectable } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
-import { PrismaClient } from '@nodepressjs/db';
+import { PrismaService } from '../common/prisma.service';
 
 export interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -15,6 +15,8 @@ export class HealthChecker {
   private lastCheck: HealthCheckResult | null = null;
   private lastCheckTime: number = 0;
   private readonly cacheTtl = 5000;
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async checkLiveness(): Promise<{ status: string; timestamp: string }> {
     return { status: 'ok', timestamp: new Date().toISOString() };
@@ -50,7 +52,9 @@ export class HealthChecker {
     return result;
   }
 
-  async checkDetails(): Promise<HealthCheckResult & { version: string; memory: NodeJS.MemoryUsage }> {
+  async checkDetails(): Promise<
+    HealthCheckResult & { version: string; memory: NodeJS.MemoryUsage }
+  > {
     const readiness = await this.checkReadiness();
     return {
       ...readiness,
@@ -61,17 +65,15 @@ export class HealthChecker {
 
   private async checkDatabase(): Promise<{ status: string; latency: number; error?: string }> {
     const start = Date.now();
-    let prisma: PrismaClient | null = null;
     try {
-      prisma = new PrismaClient();
-      await prisma.$queryRawUnsafe('SELECT 1');
+      await this.prisma.$queryRawUnsafe('SELECT 1');
       return { status: 'healthy', latency: Date.now() - start };
     } catch (err) {
-      return { status: 'unhealthy', latency: Date.now() - start, error: err instanceof Error ? err.message : 'Unknown' };
-    } finally {
-      if (prisma) {
-        await prisma.$disconnect();
-      }
+      return {
+        status: 'unhealthy',
+        latency: Date.now() - start,
+        error: err instanceof Error ? err.message : 'Unknown',
+      };
     }
   }
 
@@ -89,7 +91,11 @@ export class HealthChecker {
       await client.quit();
       return { status: 'healthy', latency: Date.now() - start };
     } catch (err) {
-      return { status: 'unhealthy', latency: Date.now() - start, error: err instanceof Error ? err.message : 'Unknown' };
+      return {
+        status: 'unhealthy',
+        latency: Date.now() - start,
+        error: err instanceof Error ? err.message : 'Unknown',
+      };
     }
   }
 
@@ -103,7 +109,11 @@ export class HealthChecker {
       }
       return { status: 'healthy', latency: Date.now() - start };
     } catch (err) {
-      return { status: 'unhealthy', latency: Date.now() - start, error: err instanceof Error ? err.message : 'Unknown' };
+      return {
+        status: 'unhealthy',
+        latency: Date.now() - start,
+        error: err instanceof Error ? err.message : 'Unknown',
+      };
     }
   }
 
@@ -116,7 +126,11 @@ export class HealthChecker {
       }
       return { status: 'healthy', latency: Date.now() - start };
     } catch (err) {
-      return { status: 'unhealthy', latency: Date.now() - start, error: err instanceof Error ? err.message : 'Unknown' };
+      return {
+        status: 'unhealthy',
+        latency: Date.now() - start,
+        error: err instanceof Error ? err.message : 'Unknown',
+      };
     }
   }
 

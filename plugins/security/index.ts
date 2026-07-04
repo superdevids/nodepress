@@ -1,4 +1,6 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { createHash } from 'crypto';
+import { readFileSync } from 'fs';
 
 interface FirewallRule {
   id: string;
@@ -157,234 +159,294 @@ export const lifecycle: PluginLifecycle = {
     }
 
     context.hooks.addFilter('request:incoming', async (request: unknown) => {
-      const req = request as {
-        ip?: string;
-        headers?: Record<string, string>;
-        url?: string;
-        method?: string;
-      };
-      const ip = req.ip || '0.0.0.0';
-      const ua = (req.headers?.['user-agent'] || '').toLowerCase();
-      const path = (req.url || '').toLowerCase();
-      const method = (req.method || 'GET').toUpperCase();
+      try {
+        const req = request as {
+          ip?: string;
+          headers?: Record<string, string>;
+          url?: string;
+          method?: string;
+        };
+        const ip = req.ip || '0.0.0.0';
+        const ua = (req.headers?.['user-agent'] || '').toLowerCase();
+        const path = (req.url || '').toLowerCase();
+        const method = (req.method || 'GET').toUpperCase();
 
-      if (isIpBlocked(ip)) {
-        addAuditLog({
-          actor: ip,
-          action: 'request:blocked',
-          target: path,
-          details: 'IP is blocked',
-          severity: 'warning',
-        });
-        return { blocked: true, status: 403, reason: 'Access denied' };
-      }
-
-      for (const rule of firewallRules) {
-        if (!rule.enabled) continue;
-        if (rule.type === 'ip' && new RegExp(rule.pattern, 'i').test(ip)) {
-          if (rule.action === 'block')
-            return { blocked: true, status: 403, reason: rule.description };
-        }
-        if (rule.type === 'userAgent' && new RegExp(rule.pattern, 'i').test(ua)) {
-          if (rule.action === 'block')
-            return { blocked: true, status: 403, reason: rule.description };
-        }
-        if (rule.type === 'path' && new RegExp(rule.pattern, 'i').test(path)) {
-          if (rule.action === 'block')
-            return { blocked: true, status: 403, reason: rule.description };
-        }
-      }
-
-      for (const mp of maliciousPatterns) {
-        if (mp.type === 'path' && mp.pattern.test(path)) {
+        if (isIpBlocked(ip)) {
           addAuditLog({
             actor: ip,
-            action: 'malicious:detected',
+            action: 'request:blocked',
             target: path,
-            details: `Matched pattern: ${mp.pattern}`,
-            severity: 'critical',
-          });
-          return { blocked: true, status: 403, reason: 'Malicious request detected' };
-        }
-        if (mp.type === 'userAgent' && mp.pattern.test(ua)) {
-          addAuditLog({
-            actor: ip,
-            action: 'malicious:detected',
-            target: path,
-            details: `Matched scraper pattern`,
+            details: 'IP is blocked',
             severity: 'warning',
           });
-          return { blocked: true, status: 403, reason: 'Automated request blocked' };
+          return { blocked: true, status: 403, reason: 'Access denied' };
         }
-      }
 
-      return request;
+        for (const rule of firewallRules) {
+          if (!rule.enabled) continue;
+          if (rule.type === 'ip' && new RegExp(rule.pattern, 'i').test(ip)) {
+            if (rule.action === 'block')
+              return { blocked: true, status: 403, reason: rule.description };
+          }
+          if (rule.type === 'userAgent' && new RegExp(rule.pattern, 'i').test(ua)) {
+            if (rule.action === 'block')
+              return { blocked: true, status: 403, reason: rule.description };
+          }
+          if (rule.type === 'path' && new RegExp(rule.pattern, 'i').test(path)) {
+            if (rule.action === 'block')
+              return { blocked: true, status: 403, reason: rule.description };
+          }
+        }
+
+        for (const mp of maliciousPatterns) {
+          if (mp.type === 'path' && mp.pattern.test(path)) {
+            addAuditLog({
+              actor: ip,
+              action: 'malicious:detected',
+              target: path,
+              details: `Matched pattern: ${mp.pattern}`,
+              severity: 'critical',
+            });
+            return { blocked: true, status: 403, reason: 'Malicious request detected' };
+          }
+          if (mp.type === 'userAgent' && mp.pattern.test(ua)) {
+            addAuditLog({
+              actor: ip,
+              action: 'malicious:detected',
+              target: path,
+              details: `Matched scraper pattern`,
+              severity: 'warning',
+            });
+            return { blocked: true, status: 403, reason: 'Automated request blocked' };
+          }
+        }
+
+        return request;
+      } catch (err) {
+        context.logger.warn(
+          `Security: request:incoming error - ${err instanceof Error ? err.message : 'Unknown'}`,
+        );
+        return request;
+      }
     });
 
     context.hooks.addAction('auth:login:attempt', async (data: unknown) => {
-      const { ip, username, success } = data as { ip: string; username: string; success: boolean };
-      loginAttempts.push({ ip, username, timestamp: Date.now(), success });
-      if (loginAttempts.length > 10000) loginAttempts.splice(0, 1000);
+      try {
+        const { ip, username, success } = data as {
+          ip: string;
+          username: string;
+          success: boolean;
+        };
+        loginAttempts.push({ ip, username, timestamp: Date.now(), success });
+        if (loginAttempts.length > 10000) loginAttempts.splice(0, 1000);
 
-      if (!success) {
-        addAuditLog({
-          actor: ip,
-          action: 'login:failed',
-          target: username,
-          details: `Failed login attempt for ${username}`,
-          severity: 'warning',
-        });
-        if (isLoginLocked(ip)) {
-          context.logger.warn(`Security: Login lockout triggered for IP ${ip}`);
+        if (!success) {
+          addAuditLog({
+            actor: ip,
+            action: 'login:failed',
+            target: username,
+            details: `Failed login attempt for ${username}`,
+            severity: 'warning',
+          });
+          if (isLoginLocked(ip)) {
+            context.logger.warn(`Security: Login lockout triggered for IP ${ip}`);
+          }
+        } else {
+          addAuditLog({
+            actor: username,
+            action: 'login:success',
+            target: ip,
+            details: 'Successful login',
+            severity: 'info',
+          });
         }
-      } else {
-        addAuditLog({
-          actor: username,
-          action: 'login:success',
-          target: ip,
-          details: 'Successful login',
-          severity: 'info',
-        });
+      } catch (err) {
+        context.logger.warn(
+          `Security: auth:login:attempt error - ${err instanceof Error ? err.message : 'Unknown'}`,
+        );
       }
     });
 
     context.hooks.addAction('security:scan:run', async () => {
-      context.logger.log('Security: Running full security scan');
-      const scanResults = [];
+      try {
+        context.logger.log('Security: Running full security scan');
+        const scanResults = [];
 
-      for (const [path, record] of fileIntegrity) {
-        const currentChecksum = await computeChecksum(path);
-        if (currentChecksum !== record.checksum) {
-          record.status = 'modified';
-          record.lastVerified = Date.now();
-          scanResults.push({ path, status: 'modified', severity: 'critical' });
-          addAuditLog({
-            actor: 'system',
-            action: 'integrity:modified',
-            target: path,
-            details: 'File checksum mismatch',
-            severity: 'critical',
-          });
+        for (const [path, record] of fileIntegrity) {
+          const currentChecksum = await computeChecksum(path);
+          if (currentChecksum !== record.checksum) {
+            record.status = 'modified';
+            record.lastVerified = Date.now();
+            scanResults.push({ path, status: 'modified', severity: 'critical' });
+            addAuditLog({
+              actor: 'system',
+              action: 'integrity:modified',
+              target: path,
+              details: 'File checksum mismatch',
+              severity: 'critical',
+            });
+          }
         }
-      }
 
-      const vulnCount = scanResults.filter((r) => r.severity === 'critical').length;
-      context.logger.log(
-        `Security: Scan complete - ${scanResults.length} issues found, ${vulnCount} critical`,
-      );
+        const vulnCount = scanResults.filter((r) => r.severity === 'critical').length;
+        context.logger.log(
+          `Security: Scan complete - ${scanResults.length} issues found, ${vulnCount} critical`,
+        );
+      } catch (err) {
+        context.logger.warn(
+          `Security: scan error - ${err instanceof Error ? err.message : 'Unknown'}`,
+        );
+      }
     });
 
     context.hooks.addAction('security:integrity:check', async (data: unknown) => {
-      const filePath = (data as { path?: string })?.path;
-      if (!filePath) {
-        context.logger.warn('Security: Integrity check called without path');
-        return;
-      }
-      const checksum = await computeChecksum(filePath);
-      const existing = fileIntegrity.get(filePath);
-      if (!existing) {
-        fileIntegrity.set(filePath, {
-          path: filePath,
-          checksum,
-          lastVerified: Date.now(),
-          status: 'added',
-        });
-        addAuditLog({
-          actor: 'system',
-          action: 'integrity:added',
-          target: filePath,
-          details: 'New file monitored',
-          severity: 'info',
-        });
-      } else if (existing.checksum !== checksum) {
-        existing.status = 'modified';
-        existing.lastVerified = Date.now();
-        addAuditLog({
-          actor: 'system',
-          action: 'integrity:modified',
-          target: filePath,
-          details: 'File content changed',
-          severity: 'warning',
-        });
+      try {
+        const filePath = (data as { path?: string })?.path;
+        if (!filePath) {
+          context.logger.warn('Security: Integrity check called without path');
+          return;
+        }
+        const checksum = await computeChecksum(filePath);
+        const existing = fileIntegrity.get(filePath);
+        if (!existing) {
+          fileIntegrity.set(filePath, {
+            path: filePath,
+            checksum,
+            lastVerified: Date.now(),
+            status: 'added',
+          });
+          addAuditLog({
+            actor: 'system',
+            action: 'integrity:added',
+            target: filePath,
+            details: 'New file monitored',
+            severity: 'info',
+          });
+        } else if (existing.checksum !== checksum) {
+          existing.status = 'modified';
+          existing.lastVerified = Date.now();
+          addAuditLog({
+            actor: 'system',
+            action: 'integrity:modified',
+            target: filePath,
+            details: 'File content changed',
+            severity: 'warning',
+          });
+        }
+      } catch (err) {
+        context.logger.warn(
+          `Security: integrity:check error - ${err instanceof Error ? err.message : 'Unknown'}`,
+        );
       }
     });
 
     context.hooks.addAction('security:toggle:2fa', async (data: unknown) => {
-      const { userId, enabled } = data as { userId: string; enabled: boolean };
-      addAuditLog({
-        actor: 'system',
-        action: `2fa:${enabled ? 'enabled' : 'disabled'}`,
-        target: userId,
-        details: `Two-factor ${enabled ? 'enabled' : 'disabled'} for user ${userId}`,
-        severity: 'info',
-      });
-      context.logger.log(`Security: 2FA ${enabled ? 'enabled' : 'disabled'} for user ${userId}`);
+      try {
+        const { userId, enabled } = data as { userId: string; enabled: boolean };
+        addAuditLog({
+          actor: 'system',
+          action: `2fa:${enabled ? 'enabled' : 'disabled'}`,
+          target: userId,
+          details: `Two-factor ${enabled ? 'enabled' : 'disabled'} for user ${userId}`,
+          severity: 'info',
+        });
+        context.logger.log(`Security: 2FA ${enabled ? 'enabled' : 'disabled'} for user ${userId}`);
+      } catch (err) {
+        context.logger.warn(
+          `Security: 2fa toggle error - ${err instanceof Error ? err.message : 'Unknown'}`,
+        );
+      }
     });
 
     context.hooks.addAction('security:firewall:rule:add', async (data: unknown) => {
-      const rule = data as FirewallRule;
-      if (!rule.type || !rule.pattern) {
-        context.logger.warn('Security: Invalid firewall rule');
-        return;
+      try {
+        const rule = data as FirewallRule;
+        if (!rule.type || !rule.pattern) {
+          context.logger.warn('Security: Invalid firewall rule');
+          return;
+        }
+        rule.id = `rule-${Date.now()}`;
+        rule.enabled = true;
+        firewallRules.push(rule);
+        addAuditLog({
+          actor: 'admin',
+          action: 'firewall:rule:added',
+          target: rule.type,
+          details: `Rule ${rule.pattern} added`,
+          severity: 'info',
+        });
+      } catch (err) {
+        context.logger.warn(
+          `Security: firewall:rule:add error - ${err instanceof Error ? err.message : 'Unknown'}`,
+        );
       }
-      rule.id = `rule-${Date.now()}`;
-      rule.enabled = true;
-      firewallRules.push(rule);
-      addAuditLog({
-        actor: 'admin',
-        action: 'firewall:rule:added',
-        target: rule.type,
-        details: `Rule ${rule.pattern} added`,
-        severity: 'info',
-      });
     });
 
     context.hooks.addAction('security:firewall:rule:toggle', async (data: unknown) => {
-      const { id, enabled } = data as { id: string; enabled: boolean };
-      const rule = firewallRules.find((r) => r.id === id);
-      if (rule) {
-        rule.enabled = enabled;
-        addAuditLog({
-          actor: 'admin',
-          action: `firewall:rule:${enabled ? 'enabled' : 'disabled'}`,
-          target: id,
-          details: `Rule ${rule.pattern} ${enabled ? 'enabled' : 'disabled'}`,
-          severity: 'info',
-        });
+      try {
+        const { id, enabled } = data as { id: string; enabled: boolean };
+        const rule = firewallRules.find((r) => r.id === id);
+        if (rule) {
+          rule.enabled = enabled;
+          addAuditLog({
+            actor: 'admin',
+            action: `firewall:rule:${enabled ? 'enabled' : 'disabled'}`,
+            target: id,
+            details: `Rule ${rule.pattern} ${enabled ? 'enabled' : 'disabled'}`,
+            severity: 'info',
+          });
+        }
+      } catch (err) {
+        context.logger.warn(
+          `Security: firewall:rule:toggle error - ${err instanceof Error ? err.message : 'Unknown'}`,
+        );
       }
     });
 
     context.hooks.addAction('admin:audit:export', async () => {
-      context.logger.log('Security: Audit log exported');
+      try {
+        context.logger.log('Security: Audit log exported');
+      } catch {}
     });
 
     context.hooks.addAction('admin:dashboard:render', async (data: unknown) => {
-      const recentCritical = auditLog.filter(
-        (e) => e.severity === 'critical' && e.timestamp > Date.now() - 86400000,
-      ).length;
-      const blockedCount = auditLog.filter(
-        (e) => e.action === 'request:blocked' && e.timestamp > Date.now() - 86400000,
-      ).length;
-      (data as any).widgets = (data as any).widgets || [];
-      (data as any).widgets.push({
-        title: 'Security Overview',
-        priority: 2,
-        content: `<div class="security-widget"><p>Firewall Rules: ${firewallRules.filter((r) => r.enabled).length} active</p><p>Blocked Today: ${blockedCount}</p><p>Critical Events (24h): ${recentCritical}</p><p>Login Attempts: ${loginAttempts.filter((a) => a.timestamp > Date.now() - 86400000).length} total</p></div>`,
-      });
+      try {
+        const recentCritical = auditLog.filter(
+          (e) => e.severity === 'critical' && e.timestamp > Date.now() - 86400000,
+        ).length;
+        const blockedCount = auditLog.filter(
+          (e) => e.action === 'request:blocked' && e.timestamp > Date.now() - 86400000,
+        ).length;
+        (data as any).widgets = (data as any).widgets || [];
+        (data as any).widgets.push({
+          title: 'Security Overview',
+          priority: 2,
+          content: `<div class="security-widget"><p>Firewall Rules: ${firewallRules.filter((r) => r.enabled).length} active</p><p>Blocked Today: ${blockedCount}</p><p>Critical Events (24h): ${recentCritical}</p><p>Login Attempts: ${loginAttempts.filter((a) => a.timestamp > Date.now() - 86400000).length} total</p></div>`,
+        });
+      } catch (err) {
+        context.logger.warn(
+          `Security: dashboard render error - ${err instanceof Error ? err.message : 'Unknown'}`,
+        );
+      }
     });
 
     context.logger.log('Security plugin booted');
   },
 
-  async activate() {
-    console.log('Security plugin activated');
+  async activate(context: PluginContext) {
+    context.logger.log('Security plugin activated');
   },
 
-  async deactivate() {
-    console.log('Security plugin deactivated');
+  async deactivate(context: PluginContext) {
+    context.logger.log('Security plugin deactivated');
   },
 };
 
 async function computeChecksum(filePath: string): Promise<string> {
-  return `${filePath.length}-${Buffer.byteLength(filePath, 'utf-8')}`;
+  try {
+    const content = readFileSync(filePath);
+    return createHash('sha256').update(content).digest('hex');
+  } catch {
+    return `${filePath.length}-${Date.now()}`;
+  }
 }

@@ -21,8 +21,22 @@ export type CustomizerControl = {
   choices?: Record<string, string>;
 } & Record<string, unknown>;
 
-export class ThemeCustomizer {
+function getStorage(): Storage | null {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    return localStorage;
+  }
+  return null;
+}
+
+const memoryStore = new Map<string, string>();
+
+export class ThemeCustomizerPanel {
   private panels: Map<string, CustomizerPanel> = new Map();
+  private storage: Storage | null;
+
+  constructor() {
+    this.storage = getStorage();
+  }
 
   registerPanel(panel: CustomizerPanel): void {
     this.panels.set(panel.id, panel);
@@ -37,16 +51,28 @@ export class ThemeCustomizer {
   }
 
   saveSetting(panelId: string, sectionId: string, controlId: string, value: unknown): void {
-    localStorage.setItem(`customizer_${panelId}_${sectionId}_${controlId}`, JSON.stringify(value));
+    const key = `customizer_${panelId}_${sectionId}_${controlId}`;
+    const serialized = JSON.stringify(value);
+    if (this.storage) {
+      this.storage.setItem(key, serialized);
+    } else {
+      memoryStore.set(key, serialized);
+    }
   }
 
   getSetting(panelId: string, sectionId: string, controlId: string): unknown {
-    const raw = localStorage.getItem(`customizer_${panelId}_${sectionId}_${controlId}`);
+    const key = `customizer_${panelId}_${sectionId}_${controlId}`;
+    let raw: string | null = null;
+    if (this.storage) {
+      raw = this.storage.getItem(key);
+    } else {
+      raw = memoryStore.get(key) ?? null;
+    }
     return raw ? JSON.parse(raw) : null;
   }
 }
 
-export function registerDefaultCustomizerPanels(customizer: ThemeCustomizer): void {
+export function registerDefaultCustomizerPanels(customizer: ThemeCustomizerPanel): void {
   customizer.registerPanel({
     id: 'site-identity',
     title: 'Site Identity',
@@ -131,5 +157,5 @@ export function registerDefaultCustomizerPanels(customizer: ThemeCustomizer): vo
   });
 }
 
-export const themeCustomizer = new ThemeCustomizer();
+export const themeCustomizer = new ThemeCustomizerPanel();
 registerDefaultCustomizerPanels(themeCustomizer);

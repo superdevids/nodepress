@@ -205,7 +205,7 @@ export class ContentService {
       draft: 'DRAFT',
       publish: 'PUBLISHED',
       pending: 'PENDING_REVIEW',
-      private: 'PUBLISHED',
+      private: 'PRIVATE',
     };
     return map[s.toLowerCase()] ?? 'DRAFT';
   }
@@ -215,6 +215,7 @@ export class ContentService {
       DRAFT: 'draft',
       PUBLISHED: 'publish',
       PENDING_REVIEW: 'pending',
+      PRIVATE: 'private',
       SCHEDULED: 'draft',
       TRASHED: 'draft',
     };

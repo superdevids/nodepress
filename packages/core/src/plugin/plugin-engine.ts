@@ -1,21 +1,22 @@
-import type { PrismaClient } from "@nodepressjs/db";
-import { HookRegistry } from "./hook-registry.js";
-import type { ShortcodeEngine } from "../shortcode/shortcode-engine.js";
-import { DependencyResolver } from "./dependency-resolver.js";
-import { RegistryClient } from "./registry-client.js";
-import { RollbackManager } from "./rollback-manager.js";
-import { UninstallManager } from "./uninstall-manager.js";
-import { SettingsApi } from "./settings-api.js";
-import { MuPluginLoader } from "./mu-plugin-loader.js";
-import { ActivationHookManager } from "./activation-hooks.js";
-import { CapabilityRegistrar } from "./capability-registrar.js";
-import { DbMigrationManager } from "./db-migration.js";
-import { CronApi } from "./cron-api.js";
-import { AssetRegistry } from "./asset-registry.js";
-import { FileEditor } from "./file-editor.js";
-import { AutoUpdater } from "./auto-updater.js";
-import { PluginI18n } from "./plugin-i18n.js";
-import { SandboxManager } from "./sandbox-manager.js";
+import type { PrismaClient } from '@nodepressjs/db';
+import { HookRegistry } from './hook-registry.js';
+import type { ShortcodeEngine } from '../shortcode/shortcode-engine.js';
+import { DependencyResolver } from './dependency-resolver.js';
+import { RegistryClient } from './registry-client.js';
+import { RollbackManager } from './rollback-manager.js';
+import { UninstallManager } from './uninstall-manager.js';
+import { SettingsApi } from './settings-api.js';
+import { MuPluginLoader } from './mu-plugin-loader.js';
+import { ActivationHookManager } from './activation-hooks.js';
+import { CapabilityRegistrar } from './capability-registrar.js';
+import { DbMigrationManager } from './db-migration.js';
+import { CronApi } from './cron-api.js';
+import { AssetRegistry } from './asset-registry.js';
+import { FileEditor } from './file-editor.js';
+import { AutoUpdater } from './auto-updater.js';
+import { PluginI18n } from './plugin-i18n.js';
+import { SandboxManager } from './sandbox-manager.js';
+import path from 'node:path';
 
 export interface PluginManifest {
   slug: string;
@@ -25,8 +26,8 @@ export interface PluginManifest {
   author?: string;
   requires?: string;
   permissions?: string[];
-  sandbox?: "isolated-vm" | "none";
-  type?: "mu" | "regular";
+  sandbox?: 'isolated-vm' | 'none';
+  type?: 'mu' | 'regular';
   dependencies?: { plugin: string; version: string }[];
   main?: string;
 }
@@ -45,7 +46,11 @@ export interface PluginBootContext {
   logger: Console;
   cache: Map<string, unknown>;
   shortcode?: {
-    register: (tag: string, handler: (attrs: Record<string, string>, content?: string) => string | Promise<string>, description?: string) => void;
+    register: (
+      tag: string,
+      handler: (attrs: Record<string, string>, content?: string) => string | Promise<string>,
+      description?: string,
+    ) => void;
   };
 }
 
@@ -93,10 +98,10 @@ export class PluginEngine {
     this.hooks = new HookRegistry();
 
     this.options = {
-      pluginsDir: options?.pluginsDir ?? join(process.cwd(), "plugins"),
-      backupDir: options?.backupDir ?? join(process.cwd(), ".backups", "plugins"),
-      muDir: options?.muDir ?? join(process.cwd(), "plugins", "mu"),
-      registryUrl: options?.registryUrl ?? "https://registry.nodepress.dev",
+      pluginsDir: options?.pluginsDir ?? join(process.cwd(), 'plugins'),
+      backupDir: options?.backupDir ?? join(process.cwd(), '.backups', 'plugins'),
+      muDir: options?.muDir ?? join(process.cwd(), 'plugins', 'mu'),
+      registryUrl: options?.registryUrl ?? 'https://registry.nodepress.dev',
     };
 
     this.dependencyResolver = new DependencyResolver();
@@ -105,22 +110,29 @@ export class PluginEngine {
       pluginsDir: this.options.pluginsDir,
       backupDir: this.options.backupDir,
     });
-    this.rollbackManager = new RollbackManager(prisma, this.options.backupDir, this.options.pluginsDir);
+    this.rollbackManager = new RollbackManager(
+      prisma,
+      this.options.backupDir,
+      this.options.pluginsDir,
+    );
     this.uninstallManager = new UninstallManager(prisma, this.hooks, this.options.pluginsDir);
     this.settingsApi = new SettingsApi(prisma, this.hooks);
-    this.muPluginLoader = new MuPluginLoader(this.options.muDir ?? join(this.options.pluginsDir, "mu"), this.hooks);
+    this.muPluginLoader = new MuPluginLoader(
+      this.options.muDir ?? join(this.options.pluginsDir, 'mu'),
+      this.hooks,
+    );
     this.activationHooks = new ActivationHookManager(prisma, this.hooks);
     this.capabilityRegistrar = new CapabilityRegistrar(prisma, this.hooks);
     this.dbMigration = new DbMigrationManager(prisma, this.hooks);
     this.cronApi = new CronApi(prisma, this.hooks);
-    this.assetRegistry = new AssetRegistry(process.env.NODE_ENV === "production");
+    this.assetRegistry = new AssetRegistry(process.env.NODE_ENV === 'production');
     this.fileEditor = new FileEditor(this.options.pluginsDir, this.options.backupDir);
     this.autoUpdater = new AutoUpdater(
       prisma,
       this.hooks,
       this.registryClient,
       this.rollbackManager,
-      { intervalMs: 6 * 60 * 60 * 1000 }
+      { intervalMs: 6 * 60 * 60 * 1000 },
     );
     this.pluginI18n = new PluginI18n(this.hooks, this.options.pluginsDir);
     this.sandboxManager = new SandboxManager(prisma, this.hooks);
@@ -139,7 +151,7 @@ export class PluginEngine {
       this.dependencyResolver.registerPlugin(
         manifest.slug,
         manifest.version,
-        manifest.dependencies.map((d) => ({ plugin: d.plugin, version: d.version }))
+        manifest.dependencies.map((d) => ({ plugin: d.plugin, version: d.version })),
       );
     }
 
@@ -177,10 +189,10 @@ export class PluginEngine {
       }
 
       if (resolved.missing.length > 0) {
-        throw new Error(`Missing dependencies: ${resolved.missing.join(", ")}`);
+        throw new Error(`Missing dependencies: ${resolved.missing.join(', ')}`);
       }
       if (resolved.circular.length > 0) {
-        throw new Error(`Circular dependencies detected: ${resolved.circular.join(" -> ")}`);
+        throw new Error(`Circular dependencies detected: ${resolved.circular.join(' -> ')}`);
       }
     }
 
@@ -205,7 +217,7 @@ export class PluginEngine {
 
     await this.cronApi.startAll(slug);
 
-    await this.hooks.doAction("plugin_activated", slug);
+    await this.hooks.doAction('plugin_activated', slug);
   }
 
   async deactivatePlugin(slug: string): Promise<void> {
@@ -217,7 +229,7 @@ export class PluginEngine {
       throw new Error(`Cannot deactivate must-use plugin "${slug}".`);
     }
 
-    await this.hooks.doAction("plugin_before_deactivate", slug);
+    await this.hooks.doAction('plugin_before_deactivate', slug);
 
     await this.cronApi.stopAll(slug);
 
@@ -233,7 +245,7 @@ export class PluginEngine {
       data: { active: false },
     });
 
-    await this.hooks.doAction("plugin_deactivated", slug);
+    await this.hooks.doAction('plugin_deactivated', slug);
   }
 
   async uninstallPlugin(slug: string): Promise<void> {
@@ -253,7 +265,7 @@ export class PluginEngine {
     this.dependencyResolver.unregisterPlugin(slug);
     this.plugins.delete(slug);
 
-    await this.hooks.doAction("plugin_uninstalled", slug);
+    await this.hooks.doAction('plugin_uninstalled', slug);
   }
 
   async bootActivePlugins(): Promise<void> {
@@ -263,9 +275,7 @@ export class PluginEngine {
       where: { active: true },
     });
 
-    const sorted = this.dependencyResolver.getActivationOrder(
-      dbPlugins.map((p) => p.slug)
-    );
+    const sorted = this.dependencyResolver.getActivationOrder(dbPlugins.map((p) => p.slug));
 
     const sortMap = new Map(sorted.map((s, i) => [s, i]));
     dbPlugins.sort((a, b) => {
@@ -321,7 +331,10 @@ export class PluginEngine {
   }
 }
 
+/**
+ * Cross-platform path join using the Node.js path module.
+ * Replaces backslashes with forward slashes for consistent internal paths.
+ */
 function join(...parts: string[]): string {
-  const separator = process.platform === "win32" ? "\\" : "/";
-  return parts.join(separator).replace(/\\/g, "/");
+  return path.join(...parts).replace(/\\/g, '/');
 }

@@ -10,11 +10,13 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { MediaService } from './media.service';
+import { ImageProcessorService } from './image-processor.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { Public } from '../common/decorators/public.decorator';
@@ -24,7 +26,12 @@ import { Public } from '../common/decorators/public.decorator';
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth()
 export class MediaController {
-  constructor(private readonly mediaService: MediaService) {}
+  private readonly logger = new Logger(MediaController.name);
+
+  constructor(
+    private readonly mediaService: MediaService,
+    private readonly imageProcessor: ImageProcessorService,
+  ) {}
 
   @Public()
   @Get()
@@ -50,7 +57,7 @@ export class MediaController {
   async upload(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: JwtPayload) {
     // Multer saves the uploaded file to disk (configured in MediaModule).
     // Metadata is persisted to the database via mediaService.create().
-    return this.mediaService.create({
+    const media = await this.mediaService.create({
       filename: file.filename ?? file.originalname,
       originalName: file.originalname,
       mimeType: file.mimetype,
@@ -63,6 +70,18 @@ export class MediaController {
       thumbnailUrl: null,
       uploadedBy: user.sub,
     });
+
+    // Enqueue image processing asynchronously if the uploaded file is an image
+    if (file.mimetype.startsWith('image/')) {
+      this.imageProcessor.addToQueue(media.id).catch((err) => {
+        this.logger.error(
+          `Failed to enqueue image processing for media ${media.id}: ${err.message}`,
+          err.stack,
+        );
+      });
+    }
+
+    return media;
   }
 
   @Delete(':id')

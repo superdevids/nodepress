@@ -2,13 +2,17 @@ import { Injectable, Logger, BadRequestException, NotFoundException } from '@nes
 import { PasswordResetEngine } from '@nodepressjs/core';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../common/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class PasswordResetService {
   private readonly logger = new Logger(PasswordResetService.name);
   private readonly engine = new PasswordResetEngine();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async requestReset(email: string): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -27,7 +31,12 @@ export class PasswordResetService {
     });
 
     const resetUrl = this.engine.generateResetUrl(token);
+    const userName = user.displayName || user.name || user.email.split('@')[0];
+
     this.logger.log(`Password reset requested for user ${user.id}: ${resetUrl}`);
+
+    // Send the password reset email
+    await this.mailService.sendPasswordResetEmail(user.email, resetUrl, userName);
 
     return { message: 'If that email is registered, a reset link has been sent.' };
   }

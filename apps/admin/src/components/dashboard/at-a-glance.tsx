@@ -2,15 +2,25 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, Image, Users, MessageSquare, Plug, Layout } from 'lucide-react';
+import {
+  FileText,
+  Image,
+  Users,
+  MessageSquare,
+  Plug,
+  Layout,
+  AlertCircle,
+  RefreshCw,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { useApi } from '@/lib/use-api';
 
 interface StatItem {
   label: string;
   value: number;
   icon: React.ElementType;
-  trend?: { direction: 'up' | 'down'; percentage: number };
   href?: string;
 }
 
@@ -23,35 +33,43 @@ interface DashboardStats {
   activePlugins: number;
 }
 
-function useDashboardStats() {
+export function AtAGlance() {
+  const router = useRouter();
+  const { get } = useApi();
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
+  const fetchStats = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await get<DashboardStats>('/dashboard/at-a-glance');
+      setStats(res.data);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load stats';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [get]);
+
   React.useEffect(() => {
-    fetch('/api/admin/dashboard/stats')
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load stats');
-        return res.json();
-      })
-      .then((data: DashboardStats) => {
-        setStats(data);
-        setLoading(false);
-      })
-      .catch((err: Error) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
+    fetchStats();
+  }, [fetchStats]);
 
-  return { stats, loading, error };
-}
-
-export function AtAGlance() {
-  const router = useRouter();
-  const { stats, loading, error } = useDashboardStats();
-
-  if (error) return null;
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <AlertCircle className="text-destructive mb-2 h-8 w-8" />
+        <p className="text-destructive text-sm font-medium">Failed to load stats</p>
+        <p className="text-muted-foreground mt-1 text-xs">{error}</p>
+        <Button variant="outline" size="sm" className="mt-3" onClick={fetchStats}>
+          <RefreshCw className="mr-1.5 h-3 w-3" /> Retry
+        </Button>
+      </div>
+    );
+  }
 
   if (loading || !stats) {
     return (

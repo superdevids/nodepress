@@ -1,10 +1,9 @@
 ﻿---
-
 x-logging: &prod-logging
-  driver: "json-file"
+  driver: 'json-file'
   options:
-    max-size: "10m"
-    max-file: "3"
+    max-size: '10m'
+    max-file: '3'
 
 x-restart-policy: &restart-policy
   restart: unless-stopped
@@ -19,21 +18,21 @@ x-resources: &resources
   deploy:
     resources:
       limits:
-        cpus: "1"
-        memory: "512M"
+        cpus: '1'
+        memory: '512M'
       reservations:
-        cpus: "0.25"
-        memory: "128M"
+        cpus: '0.25'
+        memory: '128M'
 
 x-resources-db: &resources-db
   deploy:
     resources:
       limits:
-        cpus: "2"
-        memory: "1G"
+        cpus: '2'
+        memory: '1G'
       reservations:
-        cpus: "0.5"
-        memory: "256M"
+        cpus: '0.5'
+        memory: '256M'
 
 services:
   traefik:
@@ -41,32 +40,32 @@ services:
     container_name: nodepress-traefik
     <<: *restart-policy
     command:
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.api.address=:3001"
-      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL:-admin@nodepress.local}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-      - "--api.dashboard=true"
-      - "--api.debug=false"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=nodepress-network"
-      - "--global.sendanonymoususage=false"
-      - "--log.level=${TRAEFIK_LOG_LEVEL:-INFO}"
-      - "--accesslog=true"
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+      - '--entrypoints.api.address=:3001'
+      - '--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL:-admin@nodepress.local}'
+      - '--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json'
+      - '--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web'
+      - '--api.dashboard=true'
+      - '--api.debug=false'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--providers.docker.network=nodepress-network'
+      - '--global.sendanonymoususage=false'
+      - '--log.level=${TRAEFIK_LOG_LEVEL:-INFO}'
+      - '--accesslog=true'
     ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
-      - "3001:3001"
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+      - '3001:3001'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik_letsencrypt:/letsencrypt
     labels:
-      - "traefik.enable=true"
+      - 'traefik.enable=true'
       - 'traefik.http.routers.dashboard.rule=Host(`traefik.${APP_DOMAIN:-nodepress.local}`)'
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.middlewares=auth"
+      - 'traefik.http.routers.dashboard.service=api@internal'
+      - 'traefik.http.routers.dashboard.middlewares=auth'
       - 'traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USERS:-admin:$$2y$$10$$examplehash}'
     networks:
       - nodepress-network
@@ -77,45 +76,45 @@ services:
     container_name: nodepress-postgres
     <<: [*restart-policy, *resources-db]
     ports:
-      - "127.0.0.1:5432:5432"
+      - '127.0.0.1:5432:5432'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nodepress}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nodepress}
       POSTGRES_DB: ${POSTGRES_DB:-nodepress}
-      POSTGRES_INITDB_ARGS: "--data-checksums"
+      POSTGRES_INITDB_ARGS: '--data-checksums'
     command:
-      - "postgres"
-      - "-c"
-      - "max_connections=200"
-      - "-c"
-      - "shared_buffers=256MB"
-      - "-c"
-      - "effective_cache_size=768MB"
-      - "-c"
-      - "work_mem=16MB"
-      - "-c"
-      - "maintenance_work_mem=64MB"
-      - "-c"
-      - "random_page_cost=1.1"
-      - "-c"
-      - "effective_io_concurrency=200"
-      - "-c"
-      - "wal_level=replica"
-      - "-c"
-      - "max_wal_senders=4"
-      - "-c"
-      - "max_replication_slots=4"
-      - "-c"
-      - "ssl=on"
-      - "-c"
-      - "ssl_cert_file=/certs/server.crt"
-      - "-c"
-      - "ssl_key_file=/certs/server.key"
+      - 'postgres'
+      - '-c'
+      - 'max_connections=200'
+      - '-c'
+      - 'shared_buffers=256MB'
+      - '-c'
+      - 'effective_cache_size=768MB'
+      - '-c'
+      - 'work_mem=16MB'
+      - '-c'
+      - 'maintenance_work_mem=64MB'
+      - '-c'
+      - 'random_page_cost=1.1'
+      - '-c'
+      - 'effective_io_concurrency=200'
+      - '-c'
+      - 'wal_level=replica'
+      - '-c'
+      - 'max_wal_senders=4'
+      - '-c'
+      - 'max_replication_slots=4'
+      - '-c'
+      - 'ssl=on'
+      - '-c'
+      - 'ssl_cert_file=/certs/server.crt'
+      - '-c'
+      - 'ssl_key_file=/certs/server.key'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./certs/postgres:/certs:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nodepress} -d ${POSTGRES_DB:-nodepress}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-nodepress} -d ${POSTGRES_DB:-nodepress}']
       <<: *healthcheck
     security_opt:
       - no-new-privileges:true
@@ -128,7 +127,7 @@ services:
     container_name: nodepress-pgbouncer
     <<: [*restart-policy, *resources]
     ports:
-      - "127.0.0.1:6432:6432"
+      - '127.0.0.1:6432:6432'
     environment:
       POSTGRESQL_HOST: postgres
       POSTGRESQL_PORT: 5432
@@ -156,24 +155,24 @@ services:
     container_name: nodepress-redis
     <<: [*restart-policy, *resources]
     ports:
-      - "127.0.0.1:6379:6379"
+      - '127.0.0.1:6379:6379'
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-nodepress}
     command:
-      - "redis-server"
-      - "--appendonly"
-      - "yes"
-      - "--save"
-      - "60"
-      - "1"
-      - "--loglevel"
-      - "notice"
-      - "--requirepass"
-      - "${REDIS_PASSWORD:-nodepress}"
+      - 'redis-server'
+      - '--appendonly'
+      - 'yes'
+      - '--save'
+      - '60'
+      - '1'
+      - '--loglevel'
+      - 'notice'
+      - '--requirepass'
+      - '${REDIS_PASSWORD:-nodepress}'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-nodepress}", "ping"]
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-nodepress}', 'ping']
       interval: 15s
       timeout: 5s
       retries: 5
@@ -189,21 +188,21 @@ services:
     container_name: nodepress-minio
     <<: [*restart-policy, *resources-db]
     ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nodepress}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-nodepress123}
       MINIO_DOMAIN: s3.${APP_DOMAIN:-nodepress.local}
     command:
-      - "server"
-      - "/data"
-      - "--console-address"
-      - ":9001"
+      - 'server'
+      - '/data'
+      - '--console-address'
+      - ':9001'
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
       interval: 30s
       timeout: 10s
       retries: 5
@@ -211,11 +210,11 @@ services:
     security_opt:
       - no-new-privileges:true
     labels:
-      - "traefik.enable=true"
+      - 'traefik.enable=true'
       - 'traefik.http.routers.minio.rule=Host(`s3.${APP_DOMAIN:-nodepress.local}`)'
-      - "traefik.http.routers.minio.entrypoints=websecure"
-      - "traefik.http.routers.minio.tls.certresolver=letsencrypt"
-      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+      - 'traefik.http.routers.minio.entrypoints=websecure'
+      - 'traefik.http.routers.minio.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.minio.loadbalancer.server.port=9000'
     networks:
       - nodepress-network
     logging: *prod-logging
@@ -223,7 +222,7 @@ services:
   minio-init:
     image: minio/mc:latest
     container_name: nodepress-minio-init
-    restart: "no"
+    restart: 'no'
     depends_on:
       minio:
         condition: service_healthy
@@ -277,7 +276,7 @@ services:
       minio-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/healthz"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/healthz']
       <<: *healthcheck
     security_opt:
       - no-new-privileges:true
@@ -286,23 +285,23 @@ services:
       - /tmp:size=64M
       - /app/storage/logs:size=128M
     labels:
-      - "traefik.enable=true"
+      - 'traefik.enable=true'
       - 'traefik.http.routers.api.rule=Host(`api.${APP_DOMAIN:-nodepress.local}`)'
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.api.loadbalancer.server.port=3001"
-      - "traefik.http.routers.api.middlewares=api-rate-limit,api-secure-headers"
-      - "traefik.http.middlewares.api-rate-limit.ratelimit.average=100"
-      - "traefik.http.middlewares.api-rate-limit.ratelimit.burst=200"
-      - "traefik.http.middlewares.api-secure-headers.headers.contentsniff=false"
-      - "traefik.http.middlewares.api-secure-headers.headers.forcestsheader=true"
-      - "traefik.http.middlewares.api-secure-headers.headers.sslredirect=true"
-      - "traefik.http.middlewares.api-secure-headers.headers.stsincludesubdomains=true"
-      - "traefik.http.middlewares.api-secure-headers.headers.stspreload=true"
-      - "traefik.http.middlewares.api-secure-headers.headers.stsseconds=31536000"
-      - "traefik.http.middlewares.api-secure-headers.headers.contenttypenosniff=true"
-      - "traefik.http.middlewares.api-secure-headers.headers.browserxssfilter=true"
-      - "traefik.http.middlewares.api-secure-headers.headers.referrerpolicy=strict-origin-when-cross-origin"
+      - 'traefik.http.routers.api.entrypoints=websecure'
+      - 'traefik.http.routers.api.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.api.loadbalancer.server.port=3001'
+      - 'traefik.http.routers.api.middlewares=api-rate-limit,api-secure-headers'
+      - 'traefik.http.middlewares.api-rate-limit.ratelimit.average=100'
+      - 'traefik.http.middlewares.api-rate-limit.ratelimit.burst=200'
+      - 'traefik.http.middlewares.api-secure-headers.headers.contentsniff=false'
+      - 'traefik.http.middlewares.api-secure-headers.headers.forcestsheader=true'
+      - 'traefik.http.middlewares.api-secure-headers.headers.sslredirect=true'
+      - 'traefik.http.middlewares.api-secure-headers.headers.stsincludesubdomains=true'
+      - 'traefik.http.middlewares.api-secure-headers.headers.stspreload=true'
+      - 'traefik.http.middlewares.api-secure-headers.headers.stsseconds=31536000'
+      - 'traefik.http.middlewares.api-secure-headers.headers.contenttypenosniff=true'
+      - 'traefik.http.middlewares.api-secure-headers.headers.browserxssfilter=true'
+      - 'traefik.http.middlewares.api-secure-headers.headers.referrerpolicy=strict-origin-when-cross-origin'
     networks:
       - nodepress-network
     logging: *prod-logging
@@ -324,7 +323,7 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
       <<: *healthcheck
     security_opt:
       - no-new-privileges:true
@@ -333,58 +332,74 @@ services:
       - /tmp:size=64M
       - /app/.next/cache:size=256M
     labels:
-      - "traefik.enable=true"
+      - 'traefik.enable=true'
       - 'traefik.http.routers.admin.rule=Host(`${APP_DOMAIN:-nodepress.local}`) || Host(`admin.${APP_DOMAIN:-nodepress.local}`)'
-      - "traefik.http.routers.admin.entrypoints=websecure"
-      - "traefik.http.routers.admin.tls.certresolver=letsencrypt"
-      - "traefik.http.services.admin.loadbalancer.server.port=3000"
-      - "traefik.http.routers.admin.middlewares=admin-secure-headers"
-      - "traefik.http.middlewares.admin-secure-headers.headers.contentsniff=false"
-      - "traefik.http.middlewares.admin-secure-headers.headers.forcestsheader=true"
-      - "traefik.http.middlewares.admin-secure-headers.headers.sslredirect=true"
-      - "traefik.http.middlewares.admin-secure-headers.headers.stsincludesubdomains=true"
-      - "traefik.http.middlewares.admin-secure-headers.headers.stspreload=true"
-      - "traefik.http.middlewares.admin-secure-headers.headers.stsseconds=31536000"
-      - "traefik.http.middlewares.admin-secure-headers.headers.contenttypenosniff=true"
-      - "traefik.http.middlewares.admin-secure-headers.headers.browserxssfilter=true"
-      - "traefik.http.middlewares.admin-secure-headers.headers.customframeoptionsvalue=SAMEORIGIN"
-      - "traefik.http.middlewares.admin-secure-headers.headers.referrerpolicy=strict-origin-when-cross-origin"
+      - 'traefik.http.routers.admin.entrypoints=websecure'
+      - 'traefik.http.routers.admin.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.admin.loadbalancer.server.port=3000'
+      - 'traefik.http.routers.admin.middlewares=admin-secure-headers'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.contentsniff=false'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.forcestsheader=true'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.sslredirect=true'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.stsincludesubdomains=true'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.stspreload=true'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.stsseconds=31536000'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.contenttypenosniff=true'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.browserxssfilter=true'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.customframeoptionsvalue=SAMEORIGIN'
+      - 'traefik.http.middlewares.admin-secure-headers.headers.referrerpolicy=strict-origin-when-cross-origin'
     networks:
       - nodepress-network
     logging: *prod-logging
 
-  worker:
-    image: ${DOCKER_REGISTRY:-nodepress}/nodepress-api:${TAG:-latest}
-    container_name: nodepress-worker
-    <<: [*restart-policy, *resources]
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      SERVICE_TYPE: worker
-      DATABASE_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD:-nodepress}@pgbouncer:6432/${POSTGRES_DB:-nodepress}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-nodepress}@redis:6379
-      S3_ENDPOINT: http://minio:9000
-      S3_REGION: ${S3_REGION:-us-east-1}
-      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-nodepress}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-nodepress123}
-      S3_BUCKET: ${S3_BUCKET:-nodepress-media}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-    command: ["node", "apps/worker/dist/main"]
-    depends_on:
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp:size=64M
-      - /app/storage/logs:size=128M
-    networks:
-      - nodepress-network
-    logging: *prod-logging
+  # ------------------------------------------------------------------
+  # WORKER SERVICE (DISABLED)
+  # ------------------------------------------------------------------
+  # The worker module lives at apps/api/src/worker/ and is imported by
+  # AppModule via WorkerModule. WorkerService implements OnModuleInit,
+  # so background workers (cron, scheduled actions) start automatically
+  # inside the API process — no separate container is needed.
+  #
+  # To extract workers to a standalone process in the future:
+  #   1. Create apps/worker/ with its own main.ts (NestJS microservice)
+  #   2. Update the build pipeline (turbo.json, Dockerfile) to compile it
+  #   3. Uncomment the block below and update the command path
+  #   4. Ensure WorkerModule is NOT imported by AppModule when running
+  #      in api-only mode (use environment gating)
+  #
+  # worker:
+  #   image: ${DOCKER_REGISTRY:-nodepress}/nodepress-api:${TAG:-latest}
+  #   container_name: nodepress-worker
+  #   <<: [*restart-policy, *resources]
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     NODE_ENV: production
+  #     SERVICE_TYPE: worker
+  #     DATABASE_URL: postgresql://${POSTGRES_USER:-nodepress}:${POSTGRES_PASSWORD:-nodepress}@pgbouncer:6432/${POSTGRES_DB:-nodepress}
+  #     REDIS_URL: redis://:${REDIS_PASSWORD:-nodepress}@redis:6379
+  #     S3_ENDPOINT: http://minio:9000
+  #     S3_REGION: ${S3_REGION:-us-east-1}
+  #     S3_ACCESS_KEY: ${MINIO_ROOT_USER:-nodepress}
+  #     S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-nodepress123}
+  #     S3_BUCKET: ${S3_BUCKET:-nodepress-media}
+  #     LOG_LEVEL: ${LOG_LEVEL:-info}
+  #   # TODO: Update path once worker has its own bootstrap entry
+  #   command: ["node", "apps/worker/dist/main"]
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     minio:
+  #       condition: service_healthy
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   read_only: true
+  #   tmpfs:
+  #     - /tmp:size=64M
+  #     - /app/storage/logs:size=128M
+  #   networks:
+  #     - nodepress-network
+  #   logging: *prod-logging
 
 volumes:
   postgres_data:

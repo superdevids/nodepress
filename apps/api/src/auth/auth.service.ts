@@ -11,6 +11,7 @@ import { PasswordPolicyService } from './password-policy.service';
 import { TwoFactorService } from './two-factor.service';
 import { SecurityAuditService } from '../common/security-audit.service';
 import { PrismaService } from '../common/prisma.service';
+import { MailService } from '../mail/mail.service';
 import {
   JWT_ACCESS_TOKEN_EXPIRES_IN,
   JWT_REFRESH_TOKEN_EXPIRES_IN,
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly twoFactorService: TwoFactorService,
     private readonly auditService: SecurityAuditService,
     private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<Record<string, unknown> | null> {
@@ -72,6 +74,10 @@ export class AuthService {
 
     await this.passwordPolicyService.addToHistory(id, dto.password);
     this.logger.log(`User registered: ${dto.email}`);
+
+    // Send welcome email (non-blocking — failures are logged, not thrown)
+    const userName = user.displayName || user.name || dto.email.split('@')[0];
+    this.mailService.sendWelcomeEmail(dto.email, userName).catch(() => {});
 
     return this.sanitizeUser(user);
   }
@@ -161,7 +167,7 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.role.toLowerCase(),
+      role: user.role,
       permissions: user.capabilities?.length ? user.capabilities : ['read'],
     };
 
@@ -227,7 +233,7 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.role?.toLowerCase() ?? 'subscriber',
+      role: user.role ?? 'SUBSCRIBER',
       permissions: user.permissions?.length ? user.permissions : ['read'],
     };
 

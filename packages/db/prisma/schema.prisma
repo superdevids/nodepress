@@ -33,6 +33,7 @@ enum Role {
 enum EntryStatus {
   DRAFT
   PENDING_REVIEW
+  PRIVATE
   PUBLISHED
   SCHEDULED
   TRASHED

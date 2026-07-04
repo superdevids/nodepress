@@ -4,7 +4,7 @@
  * WordPress-compatible security keys and salts system.
  * Provides encryption, hashing, nonce generation, and input validation.
  */
-import crypto from "node:crypto";
+import crypto from 'node:crypto';
 
 export interface SecurityKeys {
   authKey: string;
@@ -35,11 +35,11 @@ export class SecurityService {
    * Generate a nonce token (WordPress-compatible).
    * Nonces are valid for 12 hours by default.
    */
-  createNonce(action: string, userId: string = "guest"): string {
+  createNonce(action: string, userId: string = 'guest'): string {
     const hash = crypto
-      .createHmac("sha256", this.keys.nonceKey)
+      .createHmac('sha256', this.keys.nonceKey)
       .update(`${action}:${userId}:${this.getNonceTick()}`)
-      .digest("hex")
+      .digest('hex')
       .substring(0, 10);
 
     return hash;
@@ -48,13 +48,13 @@ export class SecurityService {
   /**
    * Verify a nonce token.
    */
-  verifyNonce(nonce: string, action: string, userId: string = "guest"): boolean {
+  verifyNonce(nonce: string, action: string, userId: string = 'guest'): boolean {
     // Check current tick
     const currentTick = this.getNonceTick();
     const expectedHash = crypto
-      .createHmac("sha256", this.keys.nonceKey)
+      .createHmac('sha256', this.keys.nonceKey)
       .update(`${action}:${userId}:${currentTick}`)
-      .digest("hex")
+      .digest('hex')
       .substring(0, 10);
 
     if (crypto.timingSafeEqual(Buffer.from(nonce), Buffer.from(expectedHash))) {
@@ -65,9 +65,9 @@ export class SecurityService {
     const prevTick = currentTick - 1;
     if (prevTick >= 0) {
       const prevHash = crypto
-        .createHmac("sha256", this.keys.nonceKey)
+        .createHmac('sha256', this.keys.nonceKey)
         .update(`${action}:${userId}:${prevTick}`)
-        .digest("hex")
+        .digest('hex')
         .substring(0, 10);
 
       return crypto.timingSafeEqual(Buffer.from(nonce), Buffer.from(prevHash));
@@ -80,17 +80,14 @@ export class SecurityService {
    * Generate a salt for password hashing.
    */
   generateSalt(length: number = 64): string {
-    return crypto.randomBytes(length).toString("hex");
+    return crypto.randomBytes(length).toString('hex');
   }
 
   /**
    * Hash a value with a secret key (used for cookie tokens, etc.).
    */
   hashWithKey(value: string, key: string): string {
-    return crypto
-      .createHmac("sha256", key)
-      .update(value)
-      .digest("hex");
+    return crypto.createHmac('sha256', key).update(value).digest('hex');
   }
 
   /**
@@ -106,10 +103,10 @@ export class SecurityService {
    */
   sanitizeHtml(input: string): string {
     return input
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-      .replace(/on\w+="[^"]*"/gi, "")
-      .replace(/on\w+='[^']*'/gi, "")
-      .replace(/javascript:/gi, "");
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/on\w+="[^"]*"/gi, '')
+      .replace(/on\w+='[^']*'/gi, '')
+      .replace(/javascript:/gi, '');
   }
 
   /**
@@ -130,7 +127,7 @@ export class SecurityService {
    * Generate a cryptographically secure random token.
    */
   generateToken(length: number = 32): string {
-    return crypto.randomBytes(length).toString("hex");
+    return crypto.randomBytes(length).toString('hex');
   }
 
   /**
@@ -141,19 +138,42 @@ export class SecurityService {
   }
 
   /**
-   * Load security keys from environment variables with fallback generation.
+   * Load security keys from environment variables.
+   * Throws if any required key is missing — ephemeral fallback is a security risk.
    */
   private loadKeys(): SecurityKeys {
-    return {
-      authKey: process.env.AUTH_KEY ?? this.generateSalt(32),
-      secureAuthKey: process.env.SECURE_AUTH_KEY ?? this.generateSalt(32),
-      loggedInKey: process.env.LOGGED_IN_KEY ?? this.generateSalt(32),
-      nonceKey: process.env.NONCE_KEY ?? this.generateSalt(32),
-      authSalt: process.env.AUTH_SALT ?? this.generateSalt(32),
-      secureAuthSalt: process.env.SECURE_AUTH_SALT ?? this.generateSalt(32),
-      loggedInSalt: process.env.LOGGED_IN_SALT ?? this.generateSalt(32),
-      nonceSalt: process.env.NONCE_SALT ?? this.generateSalt(32),
-    };
+    const requiredVars = [
+      { key: 'authKey', env: 'AUTH_KEY' },
+      { key: 'secureAuthKey', env: 'SECURE_AUTH_KEY' },
+      { key: 'loggedInKey', env: 'LOGGED_IN_KEY' },
+      { key: 'nonceKey', env: 'NONCE_KEY' },
+      { key: 'authSalt', env: 'AUTH_SALT' },
+      { key: 'secureAuthSalt', env: 'SECURE_AUTH_SALT' },
+      { key: 'loggedInSalt', env: 'LOGGED_IN_SALT' },
+      { key: 'nonceSalt', env: 'NONCE_SALT' },
+    ] as const;
+
+    const missing: string[] = [];
+    const values: Record<string, string> = {};
+
+    for (const { key, env } of requiredVars) {
+      const value = process.env[env];
+      if (!value) {
+        missing.push(env);
+      } else {
+        values[key] = value;
+      }
+    }
+
+    if (missing.length > 0) {
+      throw new Error(
+        `SECURITY_CONFIG_MISSING: Required environment variable(s) ${missing.join(', ')} ${
+          missing.length === 1 ? 'is' : 'are'
+        } not set. Application cannot start securely.`,
+      );
+    }
+
+    return values as unknown as SecurityKeys;
   }
 
   getKeys(): SecurityKeys {

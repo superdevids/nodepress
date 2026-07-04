@@ -126,7 +126,7 @@ export { WidgetAreaManager, widgetAreaManager } from './theme/widget-areas.js';
 export type { WidgetArea, WidgetBlock } from './theme/widget-areas.js';
 
 export {
-  ThemeCustomizer as PanelThemeCustomizer,
+  ThemeCustomizerPanel as PanelThemeCustomizer,
   registerDefaultCustomizerPanels,
   themeCustomizer,
 } from './theme/theme-customizer-panel.js';
@@ -295,6 +295,15 @@ export type { TableInfo, CleanupResult, CleanupOptions } from './db/db-optimizer
 
 export { SchedulerService } from './scheduler/scheduler.js';
 export type { ScheduledJob, JobExecution, QueueStats } from './scheduler/scheduler.js';
+
+export {
+  calculateNextRun,
+  parseCronExpression,
+  validateCronExpression,
+  describeCronExpression,
+  estimateCronIntervalMs,
+} from './scheduler/cron-parser.js';
+export type { CronFields, CronField } from './scheduler/cron-parser.js';
 
 // ─── Developer Tools ────────────────────────────────────
 export {

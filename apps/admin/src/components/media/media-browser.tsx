@@ -1,27 +1,40 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Search, Grid3X3, List, SlidersHorizontal, Upload, ArrowUpDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import {
+  Search,
+  Grid3X3,
+  List,
+  SlidersHorizontal,
+  Upload,
+  ArrowUpDown,
+  Loader2,
+  AlertCircle,
+  FileText,
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { MediaGrid } from "./media-grid";
-import { MediaUpload } from "./media-upload";
-import { ScreenOptions } from "@/components/admin/screen-options";
-import { formatBytes } from "@/lib/utils";
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { MediaGrid } from './media-grid';
+import { MediaUpload } from './media-upload';
+import { ScreenOptions } from '@/components/admin/screen-options';
+import { formatBytes } from '@/lib/utils';
+import { useApi } from '@/lib/use-api';
+import { useToast } from '@/components/ui/toast';
 
 interface MediaItem {
   id: string;
@@ -38,77 +51,137 @@ interface MediaItem {
   focalPoint?: { x: number; y: number };
 }
 
-const mockMedia: MediaItem[] = [
-  { id: "1", name: "hero-banner.jpg", url: "/mock/hero.jpg", mimeType: "image/jpeg", size: 245000, width: 1920, height: 1080, createdAt: new Date("2026-07-01") },
-  { id: "2", name: "logo.png", url: "/mock/logo.png", mimeType: "image/png", size: 32000, width: 512, height: 512, createdAt: new Date("2026-06-28") },
-  { id: "3", name: "intro-video.mp4", url: "/mock/video.mp4", mimeType: "video/mp4", size: 4500000, createdAt: new Date("2026-06-25") },
-  { id: "4", name: "document.pdf", url: "/mock/doc.pdf", mimeType: "application/pdf", size: 120000, createdAt: new Date("2026-06-20") },
-  { id: "5", name: "screenshot-01.png", url: "/mock/screen1.png", mimeType: "image/png", size: 89000, width: 1280, height: 720, createdAt: new Date("2026-06-18") },
-  { id: "6", name: "team-photo.jpg", url: "/mock/team.jpg", mimeType: "image/jpeg", size: 560000, width: 2048, height: 1365, createdAt: new Date("2026-06-15") },
-  { id: "7", name: "background-pattern.svg", url: "/mock/pattern.svg", mimeType: "image/svg+xml", size: 15000, createdAt: new Date("2026-06-10") },
-  { id: "8", name: "podcast-episode.mp3", url: "/mock/podcast.mp3", mimeType: "audio/mpeg", size: 28000000, createdAt: new Date("2026-06-05") },
-  { id: "9", name: "banner-ad.png", url: "/mock/banner.png", mimeType: "image/png", size: 45000, createdAt: new Date("2026-06-03") },
-  { id: "10", name: "presentation.pptx", url: "/mock/deck.pptx", mimeType: "application/pdf", size: 2100000, createdAt: new Date("2026-06-01") },
-  { id: "11", name: "wallpaper.jpg", url: "/mock/wallpaper.jpg", mimeType: "image/jpeg", size: 1200000, createdAt: new Date("2026-05-28") },
-  { id: "12", name: "icon-set.svg", url: "/mock/icons.svg", mimeType: "image/svg+xml", size: 28000, createdAt: new Date("2026-05-25") },
-];
-
-type ViewMode = "grid" | "list";
-type SortField = "date" | "name" | "size";
+type ViewMode = 'grid' | 'list';
+type SortField = 'date' | 'name' | 'size';
 
 export function MediaBrowser() {
-  const [search, setSearch] = React.useState("");
-  const [typeFilter, setTypeFilter] = React.useState("all");
-  const [viewMode, setViewMode] = React.useState<ViewMode>("grid");
+  const { get, patch, del } = useApi();
+  const { success, error: showError } = useToast();
+  const [search, setSearch] = React.useState('');
+  const [typeFilter, setTypeFilter] = React.useState('all');
+  const [viewMode, setViewMode] = React.useState<ViewMode>('grid');
   const [selected, setSelected] = React.useState<string[]>([]);
   const [showUpload, setShowUpload] = React.useState(false);
-  const [sortField, setSortField] = React.useState<SortField>("date");
-  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
+  const [sortField, setSortField] = React.useState<SortField>('date');
+  const [sortDir, setSortDir] = React.useState<'asc' | 'desc'>('desc');
   const [editItem, setEditItem] = React.useState<MediaItem | null>(null);
+  const [deleteItem, setDeleteItem] = React.useState<MediaItem | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
-  const filtered = mockMedia
+  const [mediaItems, setMediaItems] = React.useState<MediaItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchError, setFetchError] = React.useState<string | null>(null);
+  const [editTitle, setEditTitle] = React.useState('');
+  const [editAlt, setEditAlt] = React.useState('');
+  const [editCaption, setEditCaption] = React.useState('');
+  const [editDescription, setEditDescription] = React.useState('');
+  const [savingEdit, setSavingEdit] = React.useState(false);
+
+  const fetchMedia = React.useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const res = await get<MediaItem[]>('/media');
+      setMediaItems(res.data || []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load media';
+      setFetchError(message);
+      showError('Failed to load media', message);
+    } finally {
+      setLoading(false);
+    }
+  }, [get, showError]);
+
+  React.useEffect(() => {
+    fetchMedia();
+  }, [fetchMedia]);
+
+  const filtered = mediaItems
     .filter((item) => {
       if (search && !item.name.toLowerCase().includes(search.toLowerCase())) return false;
-      if (typeFilter !== "all") {
-        const typeGroup = item.mimeType.split("/")[0];
-        if (typeFilter === "image" && typeGroup !== "image") return false;
-        if (typeFilter === "video" && typeGroup !== "video") return false;
-        if (typeFilter === "audio" && typeGroup !== "audio") return false;
-        if (typeFilter === "document" && !["application", "text"].includes(typeGroup)) return false;
+      if (typeFilter !== 'all') {
+        const typeGroup = item.mimeType.split('/')[0] ?? '';
+        if (typeFilter === 'image' && typeGroup !== 'image') return false;
+        if (typeFilter === 'video' && typeGroup !== 'video') return false;
+        if (typeFilter === 'audio' && typeGroup !== 'audio') return false;
+        if (typeFilter === 'document' && !['application', 'text'].includes(typeGroup)) return false;
       }
       return true;
     })
     .sort((a, b) => {
       let cmp = 0;
-      if (sortField === "name") cmp = a.name.localeCompare(b.name);
-      else if (sortField === "size") cmp = a.size - b.size;
-      else cmp = a.createdAt.getTime() - b.createdAt.getTime();
-      return sortDir === "asc" ? cmp : -cmp;
+      if (sortField === 'name') cmp = a.name.localeCompare(b.name);
+      else if (sortField === 'size') cmp = a.size - b.size;
+      else cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return sortDir === 'asc' ? cmp : -cmp;
     });
 
   const handleSelect = (item: MediaItem) => {
     setSelected((prev) =>
-      prev.includes(item.id)
-        ? prev.filter((id) => id !== item.id)
-        : [...prev, item.id],
+      prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id],
     );
+  };
+
+  const openEdit = (item: MediaItem) => {
+    setEditItem(item);
+    setEditTitle(item.name);
+    setEditAlt(item.altText || '');
+    setEditCaption(item.caption || '');
+    setEditDescription(item.description || '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editItem) return;
+    setSavingEdit(true);
+    try {
+      await patch(`/media/${editItem.id}`, {
+        name: editTitle,
+        altText: editAlt,
+        caption: editCaption,
+        description: editDescription,
+      });
+      success('Media updated', 'Media details have been saved.');
+      setEditItem(null);
+      await fetchMedia();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to save media';
+      showError('Error', message);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteItem) return;
+    setDeleting(true);
+    try {
+      await del(`/media/${deleteItem.id}`);
+      success('Media deleted', `${deleteItem.name} has been deleted.`);
+      setDeleteItem(null);
+      await fetchMedia();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete media';
+      showError('Error', message);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
-      setSortDir("desc");
+      setSortDir('desc');
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 flex-wrap flex-1">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-1 flex-wrap items-center gap-3">
+          <div className="relative min-w-[200px] max-w-sm flex-1">
+            <Search className="text-muted-foreground absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="Search media..."
               className="pl-8"
@@ -118,7 +191,7 @@ export function MediaBrowser() {
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-32">
-              <SlidersHorizontal className="h-4 w-4 mr-2" />
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -129,13 +202,16 @@ export function MediaBrowser() {
               <SelectItem value="document">Documents</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={`${sortField}-${sortDir}`} onValueChange={(v) => {
-            const [field, dir] = v.split("-") as [SortField, "asc" | "desc"];
-            setSortField(field);
-            setSortDir(dir);
-          }}>
+          <Select
+            value={`${sortField}-${sortDir}`}
+            onValueChange={(v) => {
+              const [field, dir] = v.split('-') as [SortField, 'asc' | 'desc'];
+              setSortField(field);
+              setSortDir(dir);
+            }}
+          >
             <SelectTrigger className="w-36">
-              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <ArrowUpDown className="mr-2 h-4 w-4" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -147,20 +223,20 @@ export function MediaBrowser() {
               <SelectItem value="size-asc">Smallest First</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex items-center border rounded-md">
+          <div className="flex items-center rounded-md border">
             <Button
-              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
               size="icon"
               className="h-9 w-9 rounded-none"
-              onClick={() => setViewMode("grid")}
+              onClick={() => setViewMode('grid')}
             >
               <Grid3X3 className="h-4 w-4" />
             </Button>
             <Button
-              variant={viewMode === "list" ? "secondary" : "ghost"}
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
               size="icon"
               className="h-9 w-9 rounded-none"
-              onClick={() => setViewMode("list")}
+              onClick={() => setViewMode('list')}
             >
               <List className="h-4 w-4" />
             </Button>
@@ -169,14 +245,14 @@ export function MediaBrowser() {
         <div className="flex items-center gap-2">
           <ScreenOptions
             columns={[
-              { id: "name", label: "Name" },
-              { id: "type", label: "Type" },
-              { id: "size", label: "Size" },
-              { id: "date", label: "Date" },
+              { id: 'name', label: 'Name' },
+              { id: 'type', label: 'Type' },
+              { id: 'size', label: 'Size' },
+              { id: 'date', label: 'Date' },
             ]}
           />
           <Button onClick={() => setShowUpload(!showUpload)}>
-            <Upload className="h-4 w-4 mr-2" />
+            <Upload className="mr-2 h-4 w-4" />
             Upload
           </Button>
         </div>
@@ -185,79 +261,97 @@ export function MediaBrowser() {
       {showUpload && (
         <MediaUpload
           onUploadComplete={(files) => {
-            setTimeout(() => setShowUpload(false), 1000);
+            setShowUpload(false);
+            fetchMedia();
           }}
         />
       )}
 
-      <MediaGrid
-        items={filtered}
-        onSelect={handleSelect}
-        selected={selected}
-        viewMode={viewMode}
-      />
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+        </div>
+      ) : fetchError ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <AlertCircle className="text-destructive mb-3 h-10 w-10" />
+          <p className="text-destructive font-medium">Failed to load media</p>
+          <p className="text-muted-foreground mt-1 text-sm">{fetchError}</p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={fetchMedia}>
+            Try Again
+          </Button>
+        </div>
+      ) : (
+        <MediaGrid
+          items={filtered}
+          onSelect={handleSelect}
+          selected={selected}
+          viewMode={viewMode}
+          onEdit={openEdit}
+          onDelete={setDeleteItem}
+        />
+      )}
 
-      {filtered.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+      {!loading && !fetchError && filtered.length === 0 && (
+        <div className="text-muted-foreground py-12 text-center">
           <p>No media found</p>
         </div>
       )}
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          {filtered.length} of {mockMedia.length} items
-        </span>
-      </div>
+      {!loading && !fetchError && (
+        <div className="text-muted-foreground flex items-center justify-between text-sm">
+          <span>
+            {filtered.length} of {mediaItems.length} items
+          </span>
+        </div>
+      )}
 
-      <Dialog
-        open={!!editItem}
-        onOpenChange={(o) => !o && setEditItem(null)}
-      >
+      <Dialog open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Media</DialogTitle>
-            <DialogDescription>
-              Update media details and metadata.
-            </DialogDescription>
+            <DialogDescription>Update media details and metadata.</DialogDescription>
           </DialogHeader>
           {editItem && (
             <div className="grid gap-6 py-4">
               <div className="flex gap-6">
-                <div className="w-48 h-48 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                  {editItem.mimeType.startsWith("image/") ? (
+                <div className="bg-muted flex h-48 w-48 shrink-0 items-center justify-center overflow-hidden rounded-lg">
+                  {editItem.mimeType.startsWith('image/') ? (
                     <img
                       src={editItem.url}
                       alt={editItem.altText || editItem.name}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
-                    <FileText className="h-12 w-12 text-muted-foreground" />
+                    <FileText className="text-muted-foreground h-12 w-12" />
                   )}
                 </div>
                 <div className="flex-1 space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">Title</label>
-                    <Input defaultValue={editItem.name} />
+                    <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">Alt Text</label>
                     <Input
-                      defaultValue={editItem.altText || ""}
+                      value={editAlt}
+                      onChange={(e) => setEditAlt(e.target.value)}
                       placeholder="Describe the image for accessibility"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">Caption</label>
                     <Input
-                      defaultValue={editItem.caption || ""}
+                      value={editCaption}
+                      onChange={(e) => setEditCaption(e.target.value)}
                       placeholder="Image caption"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">Description</label>
                     <textarea
-                      className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      defaultValue={editItem.description || ""}
+                      className="border-input bg-background flex min-h-[60px] w-full rounded-md border px-3 py-2 text-sm"
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
                       placeholder="Optional description"
                     />
                   </div>
@@ -266,37 +360,34 @@ export function MediaBrowser() {
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground">File size:</span>{" "}
+                  <span className="text-muted-foreground">File size:</span>{' '}
                   {formatBytes(editItem.size)}
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Type:</span>{" "}
-                  {editItem.mimeType}
+                  <span className="text-muted-foreground">Type:</span> {editItem.mimeType}
                 </div>
                 {editItem.width && editItem.height && (
                   <div>
-                    <span className="text-muted-foreground">Dimensions:</span>{" "}
-                    {editItem.width} x {editItem.height}
+                    <span className="text-muted-foreground">Dimensions:</span> {editItem.width} x{' '}
+                    {editItem.height}
                   </div>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">
-                  Focal Point
-                </label>
-                <p className="text-xs text-muted-foreground">
+                <label className="text-sm font-medium">Focal Point</label>
+                <p className="text-muted-foreground text-xs">
                   Click to set the focal point for cropping.
                 </p>
-                <div className="relative w-48 h-32 bg-muted rounded-md overflow-hidden cursor-crosshair">
+                <div className="bg-muted relative h-32 w-48 cursor-crosshair overflow-hidden rounded-md">
                   <img
                     src={editItem.url}
                     alt="Focal point selector"
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                   {editItem.focalPoint && (
                     <div
-                      className="absolute w-4 h-4 bg-primary rounded-full border-2 border-white -translate-x-1/2 -translate-y-1/2"
+                      className="bg-primary absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white"
                       style={{
                         left: `${editItem.focalPoint.x * 100}%`,
                         top: `${editItem.focalPoint.y * 100}%`,
@@ -307,13 +398,35 @@ export function MediaBrowser() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setEditItem(null)}>
+                <Button variant="outline" onClick={() => setEditItem(null)} disabled={savingEdit}>
                   Cancel
                 </Button>
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveEdit} disabled={savingEdit}>
+                  {savingEdit ? 'Saving...' : 'Save Changes'}
+                </Button>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Media</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {deleteItem?.name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteItem(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

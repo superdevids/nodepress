@@ -5,6 +5,7 @@
 **Status:** Living Document — v1.0 Implemented
 **Author:** Product & Engineering Team
 
+> **Updated:** July 4, 2026 — Consistency fixes applied per PRD5 audit findings.
 > **Note:** This document reflects the original v1.0 specification. All Must Have features are implemented. See [PRD4.md](./PRD4.md) for current status.
 
 ---
@@ -186,11 +187,20 @@ nodepress/
 │   ├── ui/                   # Shared component library (admin + theme)
 │   ├── editor/                # Block editor (Tiptap-based)
 │   └── cli/                   # create-nodepress-app CLI
-├── plugins/
+├── plugins/ (13 WordPress-equivalent plugins)
 │   ├── seo/
 │   ├── cache-redis/
 │   ├── comments/
-│   └── forms/
+│   ├── forms/
+│   ├── file-editor/
+│   ├── analytics/
+│   ├── security/
+│   ├── social-sharing/
+│   ├── backup/
+│   ├── newsletter/
+│   ├── redirection/
+│   ├── performance/
+│   └── multilingual/
 └── turbo.json
 ```
 

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 
 export interface MediaEntry {
@@ -28,7 +23,10 @@ export class MediaService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(page = 1, limit = 20): Promise<{ items: MediaEntry[]; total: number; page: number; limit: number }> {
+  async findAll(
+    page = 1,
+    limit = 20,
+  ): Promise<{ items: MediaEntry[]; total: number; page: number; limit: number }> {
     const [entries, total] = await Promise.all([
       this.prisma.media.findMany({
         skip: (page - 1) * limit,
@@ -52,9 +50,7 @@ export class MediaService {
     return this.toEntry(entry);
   }
 
-  async create(
-    metadata: Omit<MediaEntry, 'id' | 'createdAt'>,
-  ): Promise<MediaEntry> {
+  async create(metadata: Omit<MediaEntry, 'id' | 'createdAt'>): Promise<MediaEntry> {
     const entry = await this.prisma.media.create({
       data: {
         url: metadata.url,
@@ -62,6 +58,10 @@ export class MediaService {
         altText: metadata.alt,
         caption: metadata.caption,
         title: metadata.originalName,
+        // TODO (Gap A-017): The Media model has no separate `filename` column.
+        // Currently the original filename is stored in `title`. Consider adding
+        // a dedicated `filename` column via migration for better fidelity.
+        description: metadata.filename,
         width: metadata.width,
         height: metadata.height,
         fileSize: metadata.size,
@@ -81,9 +81,16 @@ export class MediaService {
   }
 
   private toEntry(m: {
-    id: string; url: string; mimeType: string; altText: string | null;
-    caption: string | null; title: string | null; width: number | null;
-    height: number | null; fileSize: number | null; uploadedBy: string;
+    id: string;
+    url: string;
+    mimeType: string;
+    altText: string | null;
+    caption: string | null;
+    title: string | null;
+    width: number | null;
+    height: number | null;
+    fileSize: number | null;
+    uploadedBy: string;
     createdAt: Date;
   }): MediaEntry {
     return {

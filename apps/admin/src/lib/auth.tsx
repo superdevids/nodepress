@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "EDITOR" | "AUTHOR" | "CONTRIBUTOR" | "SUBSCRIBER";
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'EDITOR' | 'AUTHOR' | 'CONTRIBUTOR' | 'SUBSCRIBER';
 
 export interface User {
   id: string;
@@ -15,6 +15,8 @@ export interface User {
 
 interface AuthState {
   user: User | null;
+  token: string | null;
+  refreshToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -28,29 +30,31 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children, apiUrl }: { children: React.ReactNode; apiUrl: string }) {
-  const [state, setState] = useState<AuthState>({
+  const [state, setState] = useState<AuthState>(() => ({
     user: null,
+    token: typeof window !== 'undefined' ? localStorage.getItem('np_token') : null,
+    refreshToken: null,
     isLoading: true,
     isAuthenticated: false,
-  });
+  }));
 
   useEffect(() => {
     let mounted = true;
     fetch(`${apiUrl}/auth/me`, {
-      credentials: "include",
+      credentials: 'include',
     })
       .then((res) => {
-        if (!res.ok) throw new Error("Not authenticated");
+        if (!res.ok) throw new Error('Not authenticated');
         return res.json();
       })
       .then((user) => {
         if (mounted) {
-          setState({ user, isLoading: false, isAuthenticated: true });
+          setState((prev) => ({ ...prev, user, isLoading: false, isAuthenticated: true }));
         }
       })
       .catch(() => {
         if (mounted) {
-          setState({ user: null, isLoading: false, isAuthenticated: false });
+          setState((prev) => ({ ...prev, isLoading: false, isAuthenticated: false }));
         }
       });
     return () => {
@@ -64,21 +68,32 @@ export function AuthProvider({ children, apiUrl }: { children: React.ReactNode; 
 
       try {
         const response = await fetch(`${apiUrl}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
-          credentials: "include",
+          credentials: 'include',
         });
 
         if (!response.ok) {
           const error = await response.json().catch(() => ({}));
-          throw new Error(error.message || "Login failed");
+          throw new Error(error.message || 'Login failed');
         }
 
         const data = await response.json();
+        const token: string | null = data.token ?? null;
+
+        if (token) {
+          try {
+            localStorage.setItem('np_token', token);
+          } catch {
+            /* noop */
+          }
+        }
 
         setState({
           user: data.user,
+          token,
+          refreshToken: data.refreshToken ?? null,
           isLoading: false,
           isAuthenticated: true,
         });
@@ -92,16 +107,27 @@ export function AuthProvider({ children, apiUrl }: { children: React.ReactNode; 
 
   const logout = useCallback(() => {
     fetch(`${apiUrl}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
+      method: 'POST',
+      credentials: 'include',
     }).catch(() => {});
-    setState({ user: null, isLoading: false, isAuthenticated: false });
+    try {
+      localStorage.removeItem('np_token');
+    } catch {
+      /* noop */
+    }
+    setState({
+      user: null,
+      token: null,
+      refreshToken: null,
+      isLoading: false,
+      isAuthenticated: false,
+    });
   }, [apiUrl]);
 
   const refreshUser = useCallback(async () => {
     try {
       const response = await fetch(`${apiUrl}/auth/me`, {
-        credentials: "include",
+        credentials: 'include',
       });
       if (response.ok) {
         const user = await response.json();
@@ -129,7 +155,7 @@ export function AuthProvider({ children, apiUrl }: { children: React.ReactNode; 
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

@@ -6,18 +6,26 @@
  */
 
 // Utils
-export { cn } from "./utils.js";
+export { cn } from './utils.js';
 
 // Layout components
-export type { BoxProps, StackProps, ContainerProps } from "./layout.js";
-export { Box, Stack, Container, Grid } from "./layout.js";
+export type { BoxProps, StackProps, ContainerProps } from './layout.js';
+export { Box, Stack, Container, Grid } from './layout.js';
 
 // Typography
-export type { HeadingProps, TextProps } from "./typography.js";
-export { Heading, Text } from "./typography.js";
+export type { HeadingProps, TextProps } from './typography.js';
+export { Heading, Text } from './typography.js';
 
 // Primitives
-export { Button, type ButtonProps } from "./button.js";
-export { Badge, type BadgeProps } from "./badge.js";
-export { Card, type CardProps } from "./card.js";
-export { Spinner, type SpinnerProps } from "./spinner.js";
+export { Button, type ButtonProps } from './button.js';
+export { Badge, type BadgeProps } from './badge.js';
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  type CardProps,
+} from './card.js';
+export { Spinner, type SpinnerProps } from './spinner.js';

@@ -11,11 +11,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20"
-  PNPM_VERSION: "9.1.0"
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9.1.0'
   TURBO_TELEMETRY_DISABLED: 1
-  DATABASE_URL: "postgresql://nodepress:nodepress@localhost:5432/nodepress?schema=public"
-  NODEPRESS_DEBUG: "true"
+  DATABASE_URL: 'postgresql://nodepress:nodepress@localhost:5432/nodepress?schema=public'
+  NODEPRESS_DEBUG: 'true'
 
 jobs:
   lint-typecheck:
@@ -34,7 +34,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -88,7 +88,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -139,7 +139,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -171,17 +171,17 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-results.sarif"
-          severity: "HIGH,CRITICAL"
-          exit-code: "0"
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '0'
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: "trivy-results.sarif"
+          sarif_file: 'trivy-results.sarif'
 
   build:
     name: Build
@@ -200,7 +200,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -237,7 +237,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -256,7 +256,7 @@ jobs:
 
       - name: Run k6 load test
         run: |
-          mkdir -p k6-results
+          mkdir k6-results
           if (Test-Path "scripts/load-test.js") {
             k6 run --out json=k6-results/results.json scripts/load-test.js
           } else {
@@ -299,7 +299,7 @@ jobs:
           server_port: 465
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "NodePress CI Failed: ${{ github.repository }}@${{ github.ref_name }}"
+          subject: 'NodePress CI Failed: ${{ github.repository }}@${{ github.ref_name }}'
           to: ${{ secrets.NOTIFICATION_EMAIL }}
           from: NodePress CI
           body: "CI pipeline failed for ${{ github.repository }} on branch ${{ github.ref_name }}.\n\nCommit: ${{ github.sha }}\n\nView details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

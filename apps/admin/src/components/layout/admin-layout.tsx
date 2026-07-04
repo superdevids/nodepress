@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
-import { AdminSidebar } from "./admin-sidebar";
-import { AdminHeader } from "./admin-header";
-import { AdminBar } from "./admin-bar";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
+import { AdminSidebar } from './admin-sidebar';
+import { AdminHeader } from './admin-header';
+import { AdminBar } from './admin-bar';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -18,16 +18,16 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+      router.push('/admin/login');
     }
   }, [isLoading, isAuthenticated, router]);
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
+        <div className="space-y-4 text-center">
+          <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading...</p>
         </div>
       </div>
     );
@@ -47,15 +47,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex flex-1 flex-col">
           <AdminHeader onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-          <main className="flex-1 p-6 pt-4">
-            {children}
-          </main>
+          <main className="flex-1 p-6 pt-4">{children}</main>
 
-          <footer className="border-t px-6 py-3 text-xs text-muted-foreground">
+          <footer className="text-muted-foreground border-t px-6 py-3 text-xs">
             <div className="flex items-center justify-between">
-              <span>
-                NodePress v0.0.1
-              </span>
+              <span>NodePress v0.1.0</span>
               <span>
                 <a
                   href="https://nodepress.dev"
@@ -65,7 +61,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 >
                   Documentation
                 </a>
-                {" · "}
+                {' · '}
                 <a
                   href="https://github.com/nodepress/nodepress"
                   target="_blank"

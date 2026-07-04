@@ -85,15 +85,33 @@ export const lifecycle: PluginLifecycle = {
     }
 
     context.hooks.addAction('content.afterCreate', async (entry: { contentType?: string }) => {
-      invalidateByPrefix(`content:${entry.contentType}`);
+      try {
+        invalidateByPrefix(`content:${entry.contentType}`);
+      } catch (err) {
+        context.logger.error(
+          `content.afterCreate error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     context.hooks.addAction('content.afterUpdate', async (entry: { contentType?: string }) => {
-      invalidateByPrefix(`content:${entry.contentType}`);
+      try {
+        invalidateByPrefix(`content:${entry.contentType}`);
+      } catch (err) {
+        context.logger.error(
+          `content.afterUpdate error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     context.hooks.addAction('content.afterDelete', async (entry: { contentType?: string }) => {
-      invalidateByPrefix(`content:${entry.contentType}`);
+      try {
+        invalidateByPrefix(`content:${entry.contentType}`);
+      } catch (err) {
+        context.logger.error(
+          `content.afterDelete error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     async function warmCache(keys: string[]): Promise<void> {
@@ -129,6 +147,10 @@ export const lifecycle: PluginLifecycle = {
     };
 
     context.logger.log('Redis Cache plugin fully initialized');
+  },
+
+  async activate(context: PluginContext) {
+    context.logger.log('Redis Cache plugin activated');
   },
 
   async deactivate(context: PluginContext) {

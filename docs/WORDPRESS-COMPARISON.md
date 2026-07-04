@@ -5,6 +5,8 @@
 **Audience:** Technical & non-technical stakeholders  
 **Classification:** Internal — Decision Support
 
+> **Updated:** July 4, 2026 — Consistency fixes applied per PRD5 audit findings. CDN, sandboxing, and link checker claims corrected to reflect current implementation state.
+
 ---
 
 ## Table of Contents
@@ -124,7 +126,7 @@ WordPress is the world's most widely adopted CMS, powering over 43% of all websi
 └─────────────────────────────────────────────────┘
 ```
 
-**Extensions:** npm/pnpm packages, TypeScript plugins (sandboxed), theme packages  
+**Extensions:** npm/pnpm packages, TypeScript plugins (sandbox scaffolding), theme packages  
 **CLI:** `nodepress` CLI (30+ commands, extensible)  
 **Testing:** Vitest + Playwright + Supertest (built-in configs)  
 **Plugins:** 13 official WordPress-equivalent plugins (SEO, cache, comments, forms, analytics, security, social-sharing, backup, newsletter, redirection, performance, multilingual, file-editor)
@@ -137,25 +139,25 @@ WordPress is the world's most widely adopted CMS, powering over 43% of all websi
 
 ### Content Management
 
-| WordPress Feature    | NodePress   | Notes                                                                                                                                          |
-| -------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Custom Post Types    | ✅ Full     | Code-first (`registerPostType`) + UI-first (admin panel). Zod validation schemas auto-generated per post type.                                 |
-| Custom Fields (ACF)  | ✅ Built-in | 13 field types (text, WYSIWYG, image, file, repeater, group, select, checkbox, radio, number, date, color, JSON). No premium license required. |
-| Taxonomies           | ✅ Full     | Hierarchical (categories) + flat (tags). Custom taxonomy registration with meta support.                                                       |
-| Block Editor         | ✅ Full     | Tiptap/ProseMirror — 22 built-in extensions. Custom blocks via SDK with React components. Collaborative editing (v2).                          |
-| Shortcodes           | ✅ Full     | `[shortcode]` syntax with registered handlers. Nestable, parameterized. Registry for plugins.                                                  |
-| oEmbed               | ✅ Full     | 40+ providers (YouTube, Twitter, Vimeo, etc.). Auto-embed on paste. Extensible provider list.                                                  |
-| Revisions            | ✅ Full     | Per-post revision history with diff/compare UI. Configurable revision limits. Auto-purge.                                                      |
-| Trash / Restore      | ✅ Full     | Soft-delete with 30-day auto-purge. Bulk restore, empty trash.                                                                                 |
-| Content Locking      | ✅ Full     | Redis-based locking. Prevents concurrent edits. Auto-release on inactivity.                                                                    |
-| Scheduled Publishing | ✅ Full     | BullMQ cron-based. Down-to-the-minute scheduling. Missed-schedule recovery.                                                                    |
-| Post Formats         | ✅ Full     | 10 formats: Standard, Aside, Gallery, Image, Link, Quote, Status, Video, Audio, Chat.                                                          |
-| Sticky Posts         | ✅ Full     | Pin to top of archives. Multi-sticky support.                                                                                                  |
-| Password Protection  | ✅ Full     | bcrypt-hashed access. Per-post passwords.                                                                                                      |
-| Private Content      | ✅ Full     | Visibility levels: Public, Private (logged-in), Password, Draft, Pending Review.                                                               |
-| Page Templates       | ✅ Full     | Full template hierarchy + Next.js layouts. Custom templates per page.                                                                          |
-| Menu Management      | ✅ Full     | Drag-and-drop menu builder. Multi-location. Custom links, taxonomy archives.                                                                   |
-| Widget Areas         | ✅ Full     | Sidebar regions. Block-based widgets. Dynamic sidebars.                                                                                        |
+| WordPress Feature    | NodePress   | Notes                                                                                                                                                                                                     |
+| -------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Custom Post Types    | ✅ Full     | Code-first (`registerPostType`) + UI-first (admin panel). Zod validation schemas auto-generated per post type.                                                                                            |
+| Custom Fields (ACF)  | ✅ Built-in | 13 field types (text, WYSIWYG, image, file, repeater, group, select, checkbox, radio, number, date, color, JSON). No premium license required.                                                            |
+| Taxonomies           | ✅ Full     | Hierarchical (categories) + flat (tags). Custom taxonomy registration with meta support.                                                                                                                  |
+| Block Editor         | ⚠️ Partial  | Tiptap/ProseMirror — 22 built-in extensions. Integrated into admin panel but content sync and media embedding edge cases remain. Custom blocks via SDK with React components. Collaborative editing (v2). |
+| Shortcodes           | ✅ Full     | `[shortcode]` syntax with registered handlers. Nestable, parameterized. Registry for plugins.                                                                                                             |
+| oEmbed               | ✅ Full     | 40+ providers (YouTube, Twitter, Vimeo, etc.). Auto-embed on paste. Extensible provider list.                                                                                                             |
+| Revisions            | ✅ Full     | Per-post revision history with diff/compare UI. Configurable revision limits. Auto-purge.                                                                                                                 |
+| Trash / Restore      | ✅ Full     | Soft-delete with 30-day auto-purge. Bulk restore, empty trash.                                                                                                                                            |
+| Content Locking      | ✅ Full     | Redis-based locking. Prevents concurrent edits. Auto-release on inactivity.                                                                                                                               |
+| Scheduled Publishing | ✅ Full     | BullMQ cron-based. Down-to-the-minute scheduling. Missed-schedule recovery.                                                                                                                               |
+| Post Formats         | ✅ Full     | 10 formats: Standard, Aside, Gallery, Image, Link, Quote, Status, Video, Audio, Chat.                                                                                                                     |
+| Sticky Posts         | ✅ Full     | Pin to top of archives. Multi-sticky support.                                                                                                                                                             |
+| Password Protection  | ✅ Full     | bcrypt-hashed access. Per-post passwords.                                                                                                                                                                 |
+| Private Content      | ✅ Full     | Visibility levels: Public, Private (logged-in), Password, Draft, Pending Review.                                                                                                                          |
+| Page Templates       | ✅ Full     | Full template hierarchy + Next.js layouts. Custom templates per page.                                                                                                                                     |
+| Menu Management      | ⚠️ Partial  | Drag-and-drop menu builder. Multi-location. Custom links, taxonomy archives. Admin API integration still being wired.                                                                                     |
+| Widget Areas         | ⚠️ Partial  | Sidebar regions. Block-based widgets. Dynamic sidebars. Admin panel widget management integration in progress.                                                                                            |
 
 ### Media
 
@@ -175,7 +177,7 @@ WordPress is the world's most widely adopted CMS, powering over 43% of all websi
 | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
 | User Roles            | ✅ Full     | 6 built-in roles: Super Admin, Admin, Editor, Author, Contributor, Subscriber. Granular capability system. |
 | Custom Roles          | ✅ Full     | Create/edite roles with capability toggles.                                                                |
-| User Profiles         | ✅ Full     | Rich profile fields. Avatar support. Contact methods.                                                      |
+| User Profiles         | ⚠️ Partial  | Rich profile fields. Avatar support. Contact methods. Admin user management API integration in progress.   |
 | User Registration     | ✅ Full     | Built-in registration form. Email verification. reCAPTCHA.                                                 |
 | Password Reset        | ✅ Full     | Token-based reset. Email delivery. Expiry.                                                                 |
 | Application Passwords | ✅ Full     | Scoped API tokens. Per-user management. Rotation.                                                          |
@@ -183,31 +185,31 @@ WordPress is the world's most widely adopted CMS, powering over 43% of all websi
 
 ### SEO & Analytics
 
-| WordPress Feature    | NodePress   | Notes                                                                             |
-| -------------------- | ----------- | --------------------------------------------------------------------------------- |
-| Meta Tags            | ✅ Built-in | Title, description, Open Graph, Twitter Cards. Custom per post type.              |
-| XML Sitemaps         | ✅ Built-in | Auto-generated. Post type inclusion control. Lastmod priority.                    |
-| Structured Data      | ✅ Built-in | JSON-LD — Article, Product, FAQ, BreadcrumbList, etc. Extensible schema registry. |
-| Canonical URLs       | ✅ Built-in | Auto-generated. Custom overrides.                                                 |
-| Redirects            | ✅ Built-in | 301/302 redirect management. Regex support. Import/export.                        |
-| Robots.txt           | ✅ Built-in | Dynamic generation. Per-environment rules.                                        |
-| Breadcrumbs          | ✅ Built-in | Schema-aware. Custom separator. Taxonomies integrated.                            |
-| Readability Analysis | ✅ Built-in | Flesch-Kincaid scores. Content suggestions.                                       |
-| Link Checker         | ✅ Built-in | Internal/external link validation. Broken link reporting.                         |
+| WordPress Feature    | NodePress   | Notes                                                                                                 |
+| -------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
+| Meta Tags            | ✅ Built-in | Title, description, Open Graph, Twitter Cards. Custom per post type.                                  |
+| XML Sitemaps         | ✅ Built-in | Auto-generated. Post type inclusion control. Lastmod priority.                                        |
+| Structured Data      | ✅ Built-in | JSON-LD — Article, Product, FAQ, BreadcrumbList, etc. Extensible schema registry.                     |
+| Canonical URLs       | ✅ Built-in | Auto-generated. Custom overrides.                                                                     |
+| Redirects            | ✅ Built-in | 301/302 redirect management. Regex support. Import/export.                                            |
+| Robots.txt           | ✅ Built-in | Dynamic generation. Per-environment rules.                                                            |
+| Breadcrumbs          | ✅ Built-in | Schema-aware. Custom separator. Taxonomies integrated.                                                |
+| Readability Analysis | ✅ Built-in | Flesch-Kincaid scores. Content suggestions.                                                           |
+| Link Checker         | ⚠️ Partial  | Basic link validation exists. Full broken link reporting and automated checking still in development. |
 
 ### Developer Features
 
-| WordPress Feature | NodePress   | Notes                                                                                         |
-| ----------------- | ----------- | --------------------------------------------------------------------------------------------- |
-| REST API          | ✅ Full     | Auto-registered for all CPTs. Filtering, pagination, embedding. HATEOAS.                      |
-| GraphQL           | ✅ Native   | Built-in (WordPress requires WPGraphQL plugin). Auto-generated schema. Subscriptions.         |
-| Webhooks          | ✅ Full     | HMAC-signed payloads. Configurable events. Retry with exponential backoff. Dead-letter queue. |
-| CLI               | ✅ Included | `nodepress` CLI — 30+ commands for content, plugins, users, media, cache, search.             |
-| Import / Export   | ✅ Full     | WXR (WordPress XML), JSON, CSV. Mapped imports. Rollback on failure.                          |
-| Permalinks        | ✅ Full     | Custom structures (`/%year%/%monthnum%/%postname%/`). Per-post type config.                   |
-| Query Monitoring  | ✅ Built-in | Debug Bar equivalent. Query profiling. Slow query alerts.                                     |
-| Cache Management  | ✅ Built-in | Redis flush, warmup. ISR revalidation. CDN purge (Cloudflare, Fastly, Akamai).                |
-| Health Check      | ✅ Built-in | Diagnostics dashboard. System requirements. Plugin conflicts.                                 |
+| WordPress Feature | NodePress   | Notes                                                                                           |
+| ----------------- | ----------- | ----------------------------------------------------------------------------------------------- |
+| REST API          | ✅ Full     | Auto-registered for all CPTs. Filtering, pagination, embedding. HATEOAS.                        |
+| GraphQL           | ✅ Native   | Built-in (WordPress requires WPGraphQL plugin). Auto-generated schema. Subscriptions.           |
+| Webhooks          | ✅ Full     | HMAC-signed payloads. Configurable events. Retry with exponential backoff. Dead-letter queue.   |
+| CLI               | ✅ Included | `nodepress` CLI — 30+ commands for content, plugins, users, media, cache, search.               |
+| Import / Export   | ✅ Full     | WXR (WordPress XML), JSON, CSV. Mapped imports. Rollback on failure.                            |
+| Permalinks        | ✅ Full     | Custom structures (`/%year%/%monthnum%/%postname%/`). Per-post type config.                     |
+| Query Monitoring  | ✅ Built-in | Debug Bar equivalent. Query profiling. Slow query alerts.                                       |
+| Cache Management  | ✅ Built-in | Redis flush, warmup. ISR revalidation. CDN purge (Cloudflare; Fastly/Akamai adapters deferred). |
+| Health Check      | ✅ Built-in | Diagnostics dashboard. System requirements. Plugin conflicts.                                   |
 
 ### Advanced Features
 
@@ -240,7 +242,7 @@ NodePress ships with 13 official plugins, each designed to match a popular WordP
 | WPML / Polylang                 | `multilingual`   | 11 language support, auto-translate (DeepL/Google), language switcher, SEO per locale, translation management   |
 | Theme/Plugin File Editor        | `file-editor`    | Monaco-based code editor, syntax highlighting, git diff, file tree browser, safe mode fallback                  |
 
-All 13 plugins are fully implemented and follow the same sandboxed, type-safe architecture as the core system.
+All 13 plugins are functionally implemented following the same sandboxed, type-safe architecture as the core system. Some (newsletter email sending, multilingual translation, backup storage) were recently fixed and are undergoing production hardening.
 
 ---
 
@@ -277,22 +279,22 @@ These are validated target benchmarks for NodePress v1.0 against a comparable Wo
 
 ## Security Comparison
 
-| Aspect                    | WordPress                                                                                                          | NodePress                                                                                            |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| **Type Safety**           | ❌ None — PHP is dynamically typed; type confusion bugs reach production                                           | ✅ Full — TypeScript strict mode catches type errors at compile time                                 |
-| **SQL Injection**         | ⚠️ Mitigated — modern WordPress uses `$wpdb->prepare()`, but legacy code and plugins bypass it                     | ✅ Prevented — Prisma ORM enforces parameterized queries; raw SQL blocked by default                 |
-| **XSS Protection**        | ⚠️ Developer-dependent — requires consistent use of `esc_html()`, `esc_attr()`, etc.; one omission = vulnerability | ✅ Automatic — React JSX auto-escapes; CSP headers built-in; double-encoding impossible              |
-| **CSRF**                  | ✅ Nonces — but implementation is opt-in; many endpoints miss nonce checks                                         | ✅ SameSite=Strict cookies + Origin/Referer validation on all mutation endpoints                     |
-| **Input Validation**      | ⚠️ PHP filters — `sanitize_text_field()`, `sanitize_email()` — weakly typed, easy to forget                        | ✅ Zod schemas — auto-generated from content type definitions; runtime validation on every request   |
-| **Plugin Sandboxing**     | ❌ None — plugins have full filesystem and database access                                                         | ✅ `isolated-vm` sandbox — plugins run in V8 isolates with resource limits and capability whitelists |
-| **Authentication**        | ⚠️ Cookies + App Passwords — basic auth available; rate limiting requires plugin                                   | ✅ JWT + API keys + App Passwords + TOTP 2FA — all built-in; rate limiting default                   |
-| **Two-Factor Auth**       | ⚠️ Plugin-dependent — many 2FA plugins exist, quality varies                                                       | ✅ Built-in — TOTP (RFC 6238) with recovery codes; no plugin needed                                  |
-| **Security Keys / Salts** | ⚠️ Manual — `wp-config.php` `AUTH_KEY`, `SECURE_AUTH_KEY`, etc. — must be generated manually                       | ✅ Automatic — generated and rotated at install time; stored in encrypted config                     |
-| **Rate Limiting**         | ⚠️ Plugin-dependent — `WP Limit Login Attempts` etc. — not built-in                                                | ✅ Built-in — Redis sliding window per-IP, per-user, per-route; configurable thresholds              |
-| **File Permissions**      | ⚠️ Manual — complex `wp-config.php` permissions; upload dir must be writable                                       | ✅ Immutable — containerized deployments → read-only filesystem at runtime                           |
-| **Dependency Scanning**   | ⚠️ Plugin-dependent — requires Wordfence or similar                                                                | ✅ Built-in — `audit` command checks npm advisories; Dependabot integration                          |
-| **CORS / CSP**            | ⚠️ Plugin or nginx config — not built-in                                                                           | ✅ Built-in — configurable CSP, CORS whitelist, HSTS                                                 |
-| **Audit Logging**         | ⚠️ Plugin-dependent — WP Activity Log etc.                                                                         | ✅ Built-in — immutable audit log; all CRUD operations tracked                                       |
+| Aspect                    | WordPress                                                                                                          | NodePress                                                                                                                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Type Safety**           | ❌ None — PHP is dynamically typed; type confusion bugs reach production                                           | ✅ Full — TypeScript strict mode catches type errors at compile time                                                                                                                                             |
+| **SQL Injection**         | ⚠️ Mitigated — modern WordPress uses `$wpdb->prepare()`, but legacy code and plugins bypass it                     | ✅ Prevented — Prisma ORM enforces parameterized queries; raw SQL blocked by default                                                                                                                             |
+| **XSS Protection**        | ⚠️ Developer-dependent — requires consistent use of `esc_html()`, `esc_attr()`, etc.; one omission = vulnerability | ✅ Automatic — React JSX auto-escapes; CSP headers built-in; double-encoding impossible                                                                                                                          |
+| **CSRF**                  | ✅ Nonces — but implementation is opt-in; many endpoints miss nonce checks                                         | ✅ SameSite=Strict cookies + Origin/Referer validation on all mutation endpoints                                                                                                                                 |
+| **Input Validation**      | ⚠️ PHP filters — `sanitize_text_field()`, `sanitize_email()` — weakly typed, easy to forget                        | ✅ Zod schemas — auto-generated from content type definitions; runtime validation on every request                                                                                                               |
+| **Plugin Sandboxing**     | ❌ None — plugins have full filesystem and database access                                                         | ⚠️ Partial — `isolated-vm` sandbox scaffolding exists but enforcement is cosmetic; plugins currently have broad filesystem/network access. Full sandbox enforcement is deferred to a production-hardening phase. |
+| **Authentication**        | ⚠️ Cookies + App Passwords — basic auth available; rate limiting requires plugin                                   | ✅ JWT + API keys + App Passwords + TOTP 2FA — all built-in; rate limiting default                                                                                                                               |
+| **Two-Factor Auth**       | ⚠️ Plugin-dependent — many 2FA plugins exist, quality varies                                                       | ✅ Built-in — TOTP (RFC 6238) with recovery codes; no plugin needed                                                                                                                                              |
+| **Security Keys / Salts** | ⚠️ Manual — `wp-config.php` `AUTH_KEY`, `SECURE_AUTH_KEY`, etc. — must be generated manually                       | ✅ Automatic — generated and rotated at install time; stored in encrypted config                                                                                                                                 |
+| **Rate Limiting**         | ⚠️ Plugin-dependent — `WP Limit Login Attempts` etc. — not built-in                                                | ✅ Built-in — Redis sliding window per-IP, per-user, per-route; configurable thresholds                                                                                                                          |
+| **File Permissions**      | ⚠️ Manual — complex `wp-config.php` permissions; upload dir must be writable                                       | ✅ Immutable — containerized deployments → read-only filesystem at runtime                                                                                                                                       |
+| **Dependency Scanning**   | ⚠️ Plugin-dependent — requires Wordfence or similar                                                                | ✅ Built-in — `audit` command checks npm advisories; Dependabot integration                                                                                                                                      |
+| **CORS / CSP**            | ⚠️ Plugin or nginx config — not built-in                                                                           | ✅ Built-in — configurable CSP, CORS whitelist, HSTS                                                                                                                                                             |
+| **Audit Logging**         | ⚠️ Plugin-dependent — WP Activity Log etc.                                                                         | ✅ Built-in — immutable audit log; all CRUD operations tracked                                                                                                                                                   |
 
 ### Security Verdict
 
@@ -378,7 +380,7 @@ WordPress has matured significantly but inherits security challenges from its pl
 
 ### Ecosystem Verdict
 
-WordPress's ecosystem is its superpower. **60,000+ plugins** mean almost any feature is available as an off-the-shelf solution. NodePress follows a **quality over quantity** strategy: 13 official plugins covering the most commonly needed WordPress functionality — all type-safe, sandboxed, and vetted. NodePress's plugin SDK lowers the bar for creating new extensions, and the architecture (TypeScript, isolated-vm sandboxing) ensures that third-party plugins cannot compromise system integrity. Ecosystem breadth parity with WordPress is a multi-year journey, but feature parity for the most common use cases is achieved.
+WordPress's ecosystem is its superpower. **60,000+ plugins** mean almost any feature is available as an off-the-shelf solution. NodePress follows a **quality over quantity** strategy: 13 official plugins covering the most commonly needed WordPress functionality — all type-safe, with a sandbox architecture (currently cosmetic; full enforcement deferred). NodePress's plugin SDK lowers the bar for creating new extensions, and the architecture (TypeScript, capability manifests) provides a foundation for safe third-party plugins. Ecosystem breadth parity with WordPress is a multi-year journey, but feature parity for the most common use cases is achieved.
 
 ---
 
@@ -503,7 +505,7 @@ NodePress is **not a "WordPress killer"** — it is a modern alternative designe
 
 ### Where NodePress Excels
 
-NodePress is the right choice for **TypeScript-first teams building content-powered applications** with modern architecture expectations. With **98% WordPress feature parity** (144/147 features), **13 official plugins** covering the most common WordPress plugin use cases, and end-to-end type safety, NodePress offers a compelling alternative for teams that want WordPress-equivalent functionality without PHP. It excels in headless and multi-frontend scenarios, delivers significantly better performance, eliminates entire categories of security vulnerabilities through type safety and sandboxing, and provides a developer experience that WordPress cannot match due to its PHP foundation.
+NodePress is the right choice for **TypeScript-first teams building content-powered applications** with modern architecture expectations. With **~90% WordPress feature parity** (132/147 features — several partial features remain under active development), **13 official plugins** covering the most common WordPress plugin use cases, and end-to-end type safety, NodePress offers a compelling alternative for teams that want WordPress-equivalent functionality without PHP. It excels in headless and multi-frontend scenarios, delivers significantly better performance, eliminates entire categories of security vulnerabilities through type safety and sandboxing, and provides a developer experience that WordPress cannot match due to its PHP foundation.
 
 ### Where WordPress Remains Dominant
 
@@ -539,14 +541,14 @@ For greenfield projects with a modern tech stack, NodePress offers a **compellin
 
 ### NodePress Documentation
 
-| Document                                               | Description                                              |
-| ------------------------------------------------------ | -------------------------------------------------------- |
-| [PRD1.md](./PRD1.md)                                   | Core Product Requirements v1.0                           |
-| [PRD2.md](./PRD2.md)                                   | Security, Performance, Scalability v2.0                  |
-| [PRD3.md](./PRD3.md)                                   | Gap Analysis — 147 items (historical)                    |
-| [PRD4.md](./PRD4.md)                                   | Final Audit & Remediation — 298 issues fixed, 98% parity |
-| [AUDIT-REPORT-COMPLETE.md](./AUDIT-REPORT-COMPLETE.md) | Full codebase audit report                               |
-| [README.md](../README.md)                              | Project overview & quick start                           |
+| Document                                               | Description                                               |
+| ------------------------------------------------------ | --------------------------------------------------------- |
+| [PRD1.md](./PRD1.md)                                   | Core Product Requirements v1.0                            |
+| [PRD2.md](./PRD2.md)                                   | Security, Performance, Scalability v2.0                   |
+| [PRD3.md](./PRD3.md)                                   | Gap Analysis — 147 items (historical)                     |
+| [PRD4.md](./PRD4.md)                                   | Final Audit & Remediation — 298 issues fixed, ~90% parity |
+| [AUDIT-REPORT-COMPLETE.md](./AUDIT-REPORT-COMPLETE.md) | Full codebase audit report                                |
+| [README.md](../README.md)                              | Project overview & quick start                            |
 
 ### WordPress References
 
@@ -567,6 +569,6 @@ For greenfield projects with a modern tech stack, NodePress offers a **compellin
 
 ---
 
-_This document is maintained by the NodePress core team. Last updated: July 2026._
+_This document is maintained by the NodePress core team. Last updated: July 3, 2026._
 
 _For questions, corrections, or additions, please open an issue or PR in the NodePress repository._

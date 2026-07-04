@@ -86,11 +86,10 @@ export class ConfigService {
   getSecret(key: string, minLength = 32): string {
     const secret = this.get<string>(key, '');
     if (!secret || secret.length < minLength) {
-      this.logger.warn(
+      throw new Error(
         `Secret "${key}" is too short or unset ` +
-          `(min ${minLength} chars). Using fallback — DO NOT USE IN PRODUCTION.`,
+          `(min ${minLength} chars). Set it via NODEPRESS_${key} environment variable.`,
       );
-      return 'insecure-fallback-do-not-use-in-production';
     }
     return secret;
   }

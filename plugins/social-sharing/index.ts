@@ -187,148 +187,186 @@ export const lifecycle: PluginLifecycle = {
     }
 
     context.hooks.addFilter('content:render', async (html: string, ...args: unknown[]) => {
-      const meta = args[0] as { title?: string; description?: string; image?: string } | undefined;
-      const url = getCurrentUrl();
-      const title = meta?.title || getCurrentTitle();
-      const description = meta?.description || '';
-      const image = meta?.image || '';
+      try {
+        const meta = args[0] as
+          { title?: string; description?: string; image?: string } | undefined;
+        const url = getCurrentUrl();
+        const title = meta?.title || getCurrentTitle();
+        const description = meta?.description || '';
+        const image = meta?.image || '';
 
-      let result = html;
+        let result = html;
 
-      if (enhanceOgTags && (meta?.title || meta?.description)) {
-        result = result.replace(
-          '</head>',
-          `${generateOgTagsHtml(title, description, image, url)}\n</head>`,
+        if (enhanceOgTags && (meta?.title || meta?.description)) {
+          result = result.replace(
+            '</head>',
+            `${generateOgTagsHtml(title, description, image, url)}\n</head>`,
+          );
+        }
+
+        if (showFloatingBar) {
+          const floatingHtml = generateFloatingBarHtml(activeNetworks, buttonStyle, url, title);
+          result = result.replace('</body>', `${floatingHtml}\n</body>`);
+        }
+
+        if (showInlineBefore) {
+          const inlineHtml = generateShareButtonsHtml(activeNetworks, buttonStyle, url, title);
+          result = result.replace('<article', `${inlineHtml}\n<article`);
+        }
+
+        if (showInlineAfter) {
+          const inlineHtml = generateShareButtonsHtml(activeNetworks, buttonStyle, url, title);
+          result = result.replace('</article>', `</article>\n${inlineHtml}`);
+        }
+
+        return result;
+      } catch (err) {
+        context.logger.error(
+          `content:render error: ${err instanceof Error ? err.message : String(err)}`,
         );
+        return html;
       }
-
-      if (showFloatingBar) {
-        const floatingHtml = generateFloatingBarHtml(activeNetworks, buttonStyle, url, title);
-        result = result.replace('</body>', `${floatingHtml}\n</body>`);
-      }
-
-      if (showInlineBefore) {
-        const inlineHtml = generateShareButtonsHtml(activeNetworks, buttonStyle, url, title);
-        result = result.replace('<article', `${inlineHtml}\n<article`);
-      }
-
-      if (showInlineAfter) {
-        const inlineHtml = generateShareButtonsHtml(activeNetworks, buttonStyle, url, title);
-        result = result.replace('</article>', `</article>\n${inlineHtml}`);
-      }
-
-      return result;
     });
 
     context.hooks.addAction('social:share:track', async (data: unknown) => {
-      const { network, url: sharedUrl } = data as { network: string; url: string };
-      if (!network || !sharedUrl) {
-        context.logger.warn('Social Sharing: track called without network or url');
-        return;
+      try {
+        const { network, url: sharedUrl } = data as { network: string; url: string };
+        if (!network || !sharedUrl) {
+          context.logger.warn('Social Sharing: track called without network or url');
+          return;
+        }
+        const key = `${network}:${sharedUrl}`;
+        shareCounts.set(key, (shareCounts.get(key) || 0) + 1);
+        context.logger.log(`Social Sharing: ${network} share tracked for ${sharedUrl}`);
+      } catch (err) {
+        context.logger.error(
+          `social:share:track error: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      const key = `${network}:${sharedUrl}`;
-      shareCounts.set(key, (shareCounts.get(key) || 0) + 1);
-      context.logger.log(`Social Sharing: ${network} share tracked for ${sharedUrl}`);
     });
 
     context.hooks.addAction('social:count:fetch', async (data: unknown) => {
-      const { url, callback } = data as { url: string; callback: (counts: ShareCount[]) => void };
-      const counts: ShareCount[] = [];
-      for (const network of activeNetworks) {
-        const key = `${network.id}:${url}`;
-        const count = shareCounts.get(key) || 0;
-        counts.push({ network: network.id, count, url });
+      try {
+        const { url, callback } = data as { url: string; callback: (counts: ShareCount[]) => void };
+        const counts: ShareCount[] = [];
+        for (const network of activeNetworks) {
+          const key = `${network.id}:${url}`;
+          const count = shareCounts.get(key) || 0;
+          counts.push({ network: network.id, count, url });
+        }
+        if (callback) callback(counts);
+      } catch (err) {
+        context.logger.error(
+          `social:count:fetch error: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      if (callback) callback(counts);
     });
 
     context.hooks.addAction('social:networks:update', async (data: unknown) => {
-      const updatedNetworks = data as SocialNetwork[];
-      if (!Array.isArray(updatedNetworks)) return;
-      for (const updated of updatedNetworks) {
-        const existing = activeNetworks.find((n) => n.id === updated.id);
-        if (existing) {
-          existing.enabled = updated.enabled;
+      try {
+        const updatedNetworks = data as SocialNetwork[];
+        if (!Array.isArray(updatedNetworks)) return;
+        for (const updated of updatedNetworks) {
+          const existing = activeNetworks.find((n) => n.id === updated.id);
+          if (existing) {
+            existing.enabled = updated.enabled;
+          }
         }
+        context.logger.log(
+          `Social Sharing: ${updatedNetworks.filter((n) => n.enabled).length} networks enabled`,
+        );
+      } catch (err) {
+        context.logger.error(
+          `social:networks:update error: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      context.logger.log(
-        `Social Sharing: ${updatedNetworks.filter((n) => n.enabled).length} networks enabled`,
-      );
     });
 
     context.hooks.addAction('admin:dashboard:render', async (data: unknown) => {
-      const totalShares = Array.from(shareCounts.values()).reduce((a, b) => a + b, 0);
-      (data as any).widgets = (data as any).widgets || [];
-      (data as any).widgets.push({
-        title: 'Social Sharing',
-        priority: 10,
-        content: `<div class="social-widget"><p>Total Shares Tracked: ${totalShares}</p><p>Active Networks: ${activeNetworks.filter((n) => n.enabled).length}</p><p>Layout: ${buttonStyle.layout} | Size: ${buttonStyle.size}</p></div>`,
-      });
+      try {
+        const totalShares = Array.from(shareCounts.values()).reduce((a, b) => a + b, 0);
+        (data as any).widgets = (data as any).widgets || [];
+        (data as any).widgets.push({
+          title: 'Social Sharing',
+          priority: 10,
+          content: `<div class="social-widget"><p>Total Shares Tracked: ${totalShares}</p><p>Active Networks: ${activeNetworks.filter((n) => n.enabled).length}</p><p>Layout: ${buttonStyle.layout} | Size: ${buttonStyle.size}</p></div>`,
+        });
+      } catch (err) {
+        context.logger.error(
+          `admin:dashboard:render error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     context.hooks.addAction('admin:settings:render', async (data: unknown) => {
-      (data as any).sections = (data as any).sections || [];
-      (data as any).sections.push({
-        slug: 'social-sharing',
-        title: 'Social Sharing',
-        fields: [
-          {
-            name: 'showFloatingBar',
-            label: 'Floating Share Bar',
-            type: 'boolean',
-            value: showFloatingBar,
-          },
-          {
-            name: 'showInlineBefore',
-            label: 'Inline Buttons Before Content',
-            type: 'boolean',
-            value: showInlineBefore,
-          },
-          {
-            name: 'showInlineAfter',
-            label: 'Inline Buttons After Content',
-            type: 'boolean',
-            value: showInlineAfter,
-          },
-          {
-            name: 'enhanceOgTags',
-            label: 'Enhance Open Graph Tags',
-            type: 'boolean',
-            value: enhanceOgTags,
-          },
-          {
-            name: 'buttonSize',
-            label: 'Button Size',
-            type: 'select',
-            options: ['small', 'medium', 'large'],
-            value: buttonStyle.size,
-          },
-          {
-            name: 'buttonShape',
-            label: 'Button Shape',
-            type: 'select',
-            options: ['rounded', 'square', 'circle'],
-            value: buttonStyle.shape,
-          },
-          {
-            name: 'layout',
-            label: 'Layout',
-            type: 'select',
-            options: ['horizontal', 'vertical'],
-            value: buttonStyle.layout,
-          },
-        ],
-      });
+      try {
+        (data as any).sections = (data as any).sections || [];
+        (data as any).sections.push({
+          slug: 'social-sharing',
+          title: 'Social Sharing',
+          fields: [
+            {
+              name: 'showFloatingBar',
+              label: 'Floating Share Bar',
+              type: 'boolean',
+              value: showFloatingBar,
+            },
+            {
+              name: 'showInlineBefore',
+              label: 'Inline Buttons Before Content',
+              type: 'boolean',
+              value: showInlineBefore,
+            },
+            {
+              name: 'showInlineAfter',
+              label: 'Inline Buttons After Content',
+              type: 'boolean',
+              value: showInlineAfter,
+            },
+            {
+              name: 'enhanceOgTags',
+              label: 'Enhance Open Graph Tags',
+              type: 'boolean',
+              value: enhanceOgTags,
+            },
+            {
+              name: 'buttonSize',
+              label: 'Button Size',
+              type: 'select',
+              options: ['small', 'medium', 'large'],
+              value: buttonStyle.size,
+            },
+            {
+              name: 'buttonShape',
+              label: 'Button Shape',
+              type: 'select',
+              options: ['rounded', 'square', 'circle'],
+              value: buttonStyle.shape,
+            },
+            {
+              name: 'layout',
+              label: 'Layout',
+              type: 'select',
+              options: ['horizontal', 'vertical'],
+              value: buttonStyle.layout,
+            },
+          ],
+        });
+      } catch (err) {
+        context.logger.error(
+          `admin:settings:render error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     context.logger.log('Social Sharing plugin booted');
   },
 
-  async activate() {
-    console.log('Social Sharing plugin activated');
+  async activate(context: PluginContext) {
+    context.logger.log('Social Sharing plugin activated');
   },
 
-  async deactivate() {
-    console.log('Social Sharing plugin deactivated');
+  async deactivate(context: PluginContext) {
+    context.logger.log('Social Sharing plugin deactivated');
   },
 };

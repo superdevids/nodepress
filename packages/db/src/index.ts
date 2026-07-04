@@ -5,11 +5,11 @@
  * Provides the PrismaClient singleton and seed utilities.
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
-export * from "@prisma/client";
+export * from '@prisma/client';
 
-export type PrismaClient = PrismaClient;
+export type { PrismaClient } from '@prisma/client';
 
 let prisma: PrismaClient | null = null;
 
@@ -19,10 +19,7 @@ let prisma: PrismaClient | null = null;
 export function getPrismaClient(): PrismaClient {
   if (!prisma) {
     prisma = new PrismaClient({
-      log:
-        process.env.NODE_ENV === "development"
-          ? ["query", "error", "warn"]
-          : ["error"],
+      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     });
   }
   return prisma;
@@ -45,7 +42,9 @@ export function createTestClient(): PrismaClient {
   return new PrismaClient({
     datasources: {
       db: {
-        url: process.env.DATABASE_URL ?? "postgresql://nodepress:nodepress@localhost:5432/nodepress_test",
+        url:
+          process.env.DATABASE_URL ??
+          'postgresql://nodepress:nodepress@localhost:5432/nodepress_test',
       },
     },
   });

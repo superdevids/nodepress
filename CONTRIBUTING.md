@@ -1,5 +1,7 @@
 # Contributing to NodePress
 
+> **Updated:** July 4, 2026 — Consistency fixes applied per PRD5 audit findings. Coverage claims reflect actual state (~5 test files); coverage is a goal, not a current requirement.
+
 Thank you for considering contributing to NodePress! This guide will help you get started.
 
 ## Quick Start
@@ -88,7 +90,7 @@ pnpm --filter @nodepress/core test
 ```
 
 - Write tests for all new features
-- Maintain >80% coverage
+- Coverage is a **goal** (target: >80%), not a current requirement — ~5 test files exist as of this writing. Help us grow coverage!
 - Use `@nodepress/testing` factories for test data
 
 ## Commit Convention
@@ -148,7 +150,7 @@ Before submitting a PR:
 
 - [ ] Code follows coding standards (lint + format)
 - [ ] TypeScript compiles without errors
-- [ ] Tests pass and coverage > 80%
+- [ ] Tests pass (coverage target >80% — help us get there!)
 - [ ] New features include tests
 - [ ] Documentation updated (if applicable)
 - [ ] Changeset added (`pnpm changeset`)

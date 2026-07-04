@@ -1,102 +1,14 @@
-import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
-import { RecoveryMode } from '@nodepressjs/core';
 import { IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../common/prisma.service';
+import { RecoveryService } from './recovery.service';
 
 class RecoveryLoginDto {
   @ApiProperty()
   @IsString()
   token!: string;
-}
-
-class EmergencyDeactivateDto {
-  @ApiProperty()
-  @IsString()
-  slug!: string;
-}
-
-@Injectable()
-export class RecoveryService {
-  private readonly logger = new Logger(RecoveryService.name);
-  private readonly recoveryMode = new RecoveryMode();
-
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
-  ) {}
-
-  isInRecovery(): boolean {
-    return this.recoveryMode.isActive();
-  }
-
-  recordPluginError(slug: string, error: Error): boolean {
-    return this.recoveryMode.recordPluginError(slug, error);
-  }
-
-  async generateToken(userId: string): Promise<{ token: string; expiresAt: Date }> {
-    const result = this.recoveryMode.generateRecoveryToken(userId);
-    await this.prisma.recoveryToken.create({
-      data: {
-        userId,
-        token: result.token,
-        expiresAt: result.expiresAt,
-      },
-    });
-    return result;
-  }
-
-  async loginWithToken(
-    token: string,
-  ): Promise<{ accessToken: string; user: { id: string; role: string } }> {
-    const stored = await this.prisma.recoveryToken.findUnique({
-      where: { token },
-    });
-
-    if (!stored) {
-      throw new BadRequestException('Invalid recovery token');
-    }
-    if (new Date() > stored.expiresAt) {
-      await this.prisma.recoveryToken.delete({ where: { id: stored.id } });
-      throw new BadRequestException('Recovery token has expired');
-    }
-    if (stored.usedAt) {
-      throw new BadRequestException('Recovery token has already been used');
-    }
-
-    await this.prisma.recoveryToken.update({
-      where: { id: stored.id },
-      data: { usedAt: new Date() },
-    });
-
-    const user = await this.prisma.user.findUnique({ where: { id: stored.userId } });
-
-    this.recoveryMode.activate();
-    this.logger.log(`Recovery mode activated by user ${stored.userId}`);
-
-    const payload = {
-      sub: stored.userId,
-      email: user?.email || 'recovery@nodepress.local',
-      role: 'SUPER_ADMIN',
-      permissions: ['*'],
-    };
-    const accessToken = this.jwtService.sign(payload);
-    return { accessToken, user: { id: stored.userId, role: 'SUPER_ADMIN' } };
-  }
-
-  deactivate(): void {
-    this.recoveryMode.deactivate();
-    this.recoveryMode.clearPluginErrors();
-    this.logger.log('Recovery mode deactivated');
-  }
-
-  getDeactivatedPlugins(): string[] {
-    return this.recoveryMode.getDeactivatedPlugins();
-  }
 }
 
 @ApiTags('Recovery')

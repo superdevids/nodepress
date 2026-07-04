@@ -17,7 +17,7 @@ import { TwoFactorController } from './two-factor.controller';
 import { SessionService } from './session.service';
 import { SessionController } from './session.controller';
 import { PasswordPolicyService } from './password-policy.service';
-import { RecoveryService } from './recovery.controller';
+import { RecoveryService } from './recovery.service';
 import { RecoveryController } from './recovery.controller';
 import { SecurityLogController } from './security-log.controller';
 import { SecurityAuditService } from '../common/security-audit.service';

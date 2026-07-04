@@ -1,22 +1,29 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
-import { z } from "zod";
-import { Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/lib/auth";
-import { useToast } from "@/components/ui/toast";
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { z } from 'zod';
+import { Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useAuth } from '@/lib/auth';
+import { useToast } from '@/components/ui/toast';
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
   remember: z.boolean().optional(),
   twoFactorCode: z.string().optional(),
 });
@@ -44,12 +51,12 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(data.email, data.password, data.remember);
-      router.push("/admin");
+      router.push('/admin');
     } catch (err: any) {
-      if (err.message?.includes("2FA") || err.message?.includes("two-factor")) {
+      if (err.message?.includes('2FA') || err.message?.includes('two-factor')) {
         setRequires2FA(true);
       } else {
-        showError("Login failed", err.message || "Invalid email or password");
+        showError('Login failed', err.message || 'Invalid email or password');
       }
     } finally {
       setIsLoading(false);
@@ -57,14 +64,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+    <div className="bg-muted/30 flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">NodePress</CardTitle>
           <CardDescription>
             {requires2FA
-              ? "Enter your two-factor authentication code"
-              : "Sign in to your admin dashboard"}
+              ? 'Enter your two-factor authentication code'
+              : 'Sign in to your admin dashboard'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -80,11 +87,11 @@ export default function LoginPage() {
                     placeholder="admin@example.com"
                     autoComplete="email"
                     autoFocus
-                    {...register("email")}
-                    className={errors.email ? "border-destructive" : ""}
+                    {...register('email')}
+                    className={errors.email ? 'border-destructive' : ''}
                   />
                   {errors.email && (
-                    <p className="text-xs text-destructive">{errors.email.message}</p>
+                    <p className="text-destructive text-xs">{errors.email.message}</p>
                   )}
                 </div>
 
@@ -94,32 +101,36 @@ export default function LoginPage() {
                   <div className="relative">
                     <Input
                       id="password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="Enter your password"
                       autoComplete="current-password"
-                      {...register("password")}
-                      className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                      {...register('password')}
+                      className={errors.password ? 'border-destructive pr-10' : 'pr-10'}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                   {errors.password && (
-                    <p className="text-xs text-destructive">{errors.password.message}</p>
+                    <p className="text-destructive text-xs">{errors.password.message}</p>
                   )}
                 </div>
 
                 {/* Remember Me (Gap F-12) */}
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox {...register("remember")} />
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <Checkbox {...register('remember')} />
                     <span>Remember me</span>
                   </label>
-                  <a href="#" className="text-sm text-primary hover:underline">
+                  <a
+                    href="/admin/login/forgot-password"
+                    className="text-primary text-sm hover:underline"
+                  >
+                    {/* TODO: Implement forgot password flow at /admin/login/forgot-password */}
                     Forgot password?
                   </a>
                 </div>
@@ -136,9 +147,9 @@ export default function LoginPage() {
                     autoComplete="one-time-code"
                     autoFocus
                     maxLength={6}
-                    {...register("twoFactorCode")}
+                    {...register('twoFactorCode')}
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Enter the 6-digit code from your authenticator app.
                   </p>
                 </div>
@@ -146,18 +157,15 @@ export default function LoginPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading
-                ? "Signing in..."
-                : requires2FA
-                  ? "Verify Code"
-                  : "Sign In"}
+              {isLoading ? 'Signing in...' : requires2FA ? 'Verify Code' : 'Sign In'}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="justify-center text-sm text-muted-foreground">
+        <CardFooter className="text-muted-foreground justify-center text-sm">
           <span>
-            NodePress v0.1.0 —{" "}
-            <a href="#" className="text-primary hover:underline">
+            NodePress v0.1.0 —{' '}
+            <a href="/admin/login/help" className="text-primary hover:underline">
+              {/* TODO: Implement help page at /admin/login/help */}
               Need help?
             </a>
           </span>

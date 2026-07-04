@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Save, Send, Eye, Bold, Italic, Heading2, List, Link as LinkIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/toast";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Save, Send, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/toast';
+import { BlockEditor } from '@nodepressjs/editor';
 
 const contentSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().min(1, 'Title is required'),
   slug: z.string().optional(),
   excerpt: z.string().optional(),
   content: z.string().optional(),
@@ -24,100 +24,96 @@ export type ContentFormData = z.infer<typeof contentSchema>;
 interface ContentFormProps {
   initialData?: Partial<ContentFormData>;
   contentType: string;
-  onSubmit: (data: ContentFormData, action: "draft" | "publish") => Promise<void>;
+  onSubmit: (data: ContentFormData, action: 'draft' | 'publish') => Promise<void>;
+  isSubmitting?: boolean;
 }
 
-export function ContentForm({ initialData, contentType, onSubmit }: ContentFormProps) {
+export function ContentForm({
+  initialData,
+  contentType,
+  onSubmit,
+  isSubmitting: externalSubmitting,
+}: ContentFormProps) {
   const { success, error } = useToast();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const actionRef = React.useRef<"draft" | "publish">("publish");
+  const [internalSubmitting, setInternalSubmitting] = React.useState(false);
+  const isSubmitting = externalSubmitting ?? internalSubmitting;
+  const actionRef = React.useRef<'draft' | 'publish'>('publish');
+  const contentRef = React.useRef<string | undefined>(initialData?.content);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<ContentFormData>({
     resolver: zodResolver(contentSchema),
     defaultValues: initialData,
   });
 
-  const handleSave = async (data: ContentFormData, action: "draft" | "publish") => {
-    setIsSubmitting(true);
+  const handleSave = async (data: ContentFormData, action: 'draft' | 'publish') => {
+    setInternalSubmitting(true);
     try {
-      await onSubmit(data, action);
-      success(action === "publish" ? "Published!" : "Draft saved!", "Content has been updated.");
+      await onSubmit({ ...data, content: contentRef.current }, action);
     } catch (err) {
-      error("Failed to save", "Please try again.");
+      // Error is already handled by the parent (content-editor)
     } finally {
-      setIsSubmitting(false);
+      setInternalSubmitting(false);
     }
   };
 
+  const handleEditorUpdate = React.useCallback(
+    (html: string) => {
+      contentRef.current = html;
+      setValue('content', html);
+    },
+    [setValue],
+  );
+
   return (
-    <form onSubmit={handleSubmit((data) => handleSave(data, actionRef.current))} className="space-y-6">
+    <form
+      onSubmit={handleSubmit((data) => handleSave(data, actionRef.current))}
+      className="space-y-6"
+    >
       {/* Title */}
       <div className="space-y-1.5">
         <Input
           placeholder={`Add ${contentType} title`}
-          className="text-2xl font-bold h-12 border-none px-0 focus-visible:ring-0"
-          {...register("title")}
+          className="h-12 border-none px-0 text-2xl font-bold focus-visible:ring-0"
+          {...register('title')}
         />
-        {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
+        {errors.title && <p className="text-destructive text-xs">{errors.title.message}</p>}
       </div>
 
       {/* Slug */}
       <div className="space-y-1.5">
         <Label>Permalink</Label>
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-1 text-sm">
           <span>/{contentType}/</span>
-          <Input {...register("slug")} className="h-8 inline-flex w-auto min-w-[200px]" placeholder="slug" />
+          <Input
+            {...register('slug')}
+            className="inline-flex h-8 w-auto min-w-[200px]"
+            placeholder="slug"
+          />
         </div>
       </div>
 
-      {/* Content — Rich Text Editor Placeholder */}
+      {/* Content — Block Editor */}
       <div className="space-y-1.5">
         <Label>Content</Label>
-        <div className="min-h-[300px] border rounded-md bg-background">
-          {/* Toolbar */}
-          <div className="flex items-center gap-1 border-b px-3 py-2 flex-wrap">
-            <button type="button" className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Bold">
-              <Bold className="h-4 w-4" />
-            </button>
-            <button type="button" className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Italic">
-              <Italic className="h-4 w-4" />
-            </button>
-            <span className="w-px h-5 bg-border mx-1" />
-            <button type="button" className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Heading">
-              <Heading2 className="h-4 w-4" />
-            </button>
-            <button type="button" className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="List">
-              <List className="h-4 w-4" />
-            </button>
-            <span className="w-px h-5 bg-border mx-1" />
-            <button type="button" className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Link">
-              <LinkIcon className="h-4 w-4" />
-            </button>
-          </div>
-          {/* Editable Area */}
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            className="min-h-[250px] p-4 focus:outline-none text-sm leading-relaxed"
-            data-placeholder="Start writing..."
-            style={{ fontFamily: "inherit" }}
+        <div className="bg-background min-h-[300px] rounded-md border">
+          <BlockEditor
+            content={initialData?.content}
+            onUpdate={handleEditorUpdate}
+            placeholder="Start writing..."
           />
         </div>
-        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
-          Replace this placeholder with the block editor from @nodepress/editor for full rich-text editing.
-        </p>
       </div>
 
       {/* Excerpt */}
       <div className="space-y-1.5">
         <Label>Excerpt</Label>
         <Textarea
-          {...register("excerpt")}
+          {...register('excerpt')}
           className="min-h-[80px]"
           placeholder="Write a brief excerpt..."
         />
@@ -126,7 +122,7 @@ export function ContentForm({ initialData, contentType, onSubmit }: ContentFormP
       {/* Actions */}
       <div className="flex items-center justify-between border-t pt-4">
         <Button type="button" variant="outline">
-          <Eye className="h-4 w-4 mr-2" />
+          <Eye className="mr-2 h-4 w-4" />
           Preview
         </Button>
         <div className="flex items-center gap-2">
@@ -134,18 +130,22 @@ export function ContentForm({ initialData, contentType, onSubmit }: ContentFormP
             type="submit"
             variant="outline"
             disabled={isSubmitting}
-            onClick={() => { actionRef.current = "draft"; }}
+            onClick={() => {
+              actionRef.current = 'draft';
+            }}
           >
-            <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? "Saving..." : "Save Draft"}
+            <Save className="mr-2 h-4 w-4" />
+            {isSubmitting ? 'Saving...' : 'Save Draft'}
           </Button>
           <Button
             type="submit"
             disabled={isSubmitting}
-            onClick={() => { actionRef.current = "publish"; }}
+            onClick={() => {
+              actionRef.current = 'publish';
+            }}
           >
-            <Send className="h-4 w-4 mr-2" />
-            {isSubmitting ? "Publishing..." : "Publish"}
+            <Send className="mr-2 h-4 w-4" />
+            {isSubmitting ? 'Publishing...' : 'Publish'}
           </Button>
         </div>
       </div>

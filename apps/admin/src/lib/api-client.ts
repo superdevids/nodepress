@@ -5,7 +5,7 @@
  * Handles authentication, token refresh, and request/response serialization.
  */
 
-type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 interface ApiClientOptions {
   baseUrl: string;
@@ -38,7 +38,7 @@ class ApiClientError extends Error {
 
   constructor(error: ApiError) {
     super(error.message);
-    this.name = "ApiClientError";
+    this.name = 'ApiClientError';
     this.status = error.status;
     this.code = error.code;
     this.details = error.details;
@@ -53,7 +53,7 @@ export class ApiClient {
   private refreshPromise: Promise<void> | null = null;
 
   constructor(options: ApiClientOptions) {
-    this.baseUrl = options.baseUrl.replace(/\/+$/, "");
+    this.baseUrl = options.baseUrl.replace(/\/+$/, '');
     this.token = options.token ?? null;
     this.refreshToken = options.refreshToken ?? null;
     this.onTokenRefresh = options.onTokenRefresh;
@@ -81,12 +81,12 @@ export class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}/api${path}`;
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      Accept: "application/json",
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
     };
 
     if (this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`;
+      headers['Authorization'] = `Bearer ${this.token}`;
     }
 
     const response = await fetch(url, {
@@ -99,7 +99,7 @@ export class ApiClient {
     // Handle 401 — attempt token refresh once
     if (response.status === 401 && this.refreshToken) {
       await this.refreshAccessToken();
-      headers["Authorization"] = `Bearer ${this.token}`;
+      headers['Authorization'] = `Bearer ${this.token}`;
       const retryResponse = await fetch(url, {
         method,
         headers,
@@ -117,7 +117,7 @@ export class ApiClient {
       const body = await response.json().catch(() => ({}));
       throw new ApiClientError({
         status: response.status,
-        code: body.code ?? "UNKNOWN_ERROR",
+        code: body.code ?? 'UNKNOWN_ERROR',
         message: body.message ?? response.statusText,
         details: body.details,
       });
@@ -138,8 +138,8 @@ export class ApiClient {
 
     this.refreshPromise = (async () => {
       const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: this.refreshToken }),
       });
 
@@ -147,8 +147,8 @@ export class ApiClient {
         this.clearTokens();
         throw new ApiClientError({
           status: 401,
-          code: "TOKEN_REFRESH_FAILED",
-          message: "Unable to refresh authentication token",
+          code: 'TOKEN_REFRESH_FAILED',
+          message: 'Unable to refresh authentication token',
         });
       }
 
@@ -170,23 +170,23 @@ export class ApiClient {
   // ─── HTTP verb methods ──────────────────────────────────
 
   get<T>(path: string, options?: { signal?: AbortSignal }) {
-    return this.request<T>("GET", path, undefined, options);
+    return this.request<T>('GET', path, undefined, options);
   }
 
   post<T>(path: string, body?: unknown, options?: { signal?: AbortSignal }) {
-    return this.request<T>("POST", path, body, options);
+    return this.request<T>('POST', path, body, options);
   }
 
   put<T>(path: string, body?: unknown, options?: { signal?: AbortSignal }) {
-    return this.request<T>("PUT", path, body, options);
+    return this.request<T>('PUT', path, body, options);
   }
 
   patch<T>(path: string, body?: unknown, options?: { signal?: AbortSignal }) {
-    return this.request<T>("PATCH", path, body, options);
+    return this.request<T>('PATCH', path, body, options);
   }
 
   delete<T>(path: string, options?: { signal?: AbortSignal }) {
-    return this.request<T>("DELETE", path, undefined, options);
+    return this.request<T>('DELETE', path, undefined, options);
   }
 }
 
@@ -197,7 +197,7 @@ let clientInstance: ApiClient | null = null;
 export function getApiClient(): ApiClient {
   if (!clientInstance) {
     clientInstance = new ApiClient({
-      baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000",
+      baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001',
     });
   }
   return clientInstance;

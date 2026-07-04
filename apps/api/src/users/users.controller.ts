@@ -10,12 +10,15 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('Users')
 @Controller('users')
@@ -36,8 +39,14 @@ export class UsersController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a user by ID' })
-  async findOne(@Param('id') id: string) {
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Get a user by ID (admin only, or your own profile)' })
+  async findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    // Allow users to view their own profile
+    if (user.sub !== id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Access denied');
+    }
     return this.usersService.findById(id);
   }
 
@@ -47,17 +56,36 @@ export class UsersController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new user' })
   async create(
-    @Body() data: { email: string; password: string; firstName: string; lastName?: string; username?: string; role?: string },
+    @Body()
+    data: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName?: string;
+      username?: string;
+      role?: string;
+    },
   ) {
     return this.usersService.create(data);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a user' })
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Update a user (admin only)' })
   async update(
     @Param('id') id: string,
     @Body() data: { firstName?: string; lastName?: string; username?: string; role?: string },
+    @CurrentUser() user: JwtPayload,
   ) {
+    // Allow users to update their own profile (but not role)
+    if (user.sub !== id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Access denied');
+    }
+    // Non-admins cannot change their role
+    if (data.role && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Cannot change role');
+    }
     return this.usersService.update(id, data);
   }
 

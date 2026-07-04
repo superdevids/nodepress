@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth";
-import { getInitials } from "@/lib/utils";
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth';
+import { getInitials } from '@/lib/utils';
 
 export function AdminBar() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -10,22 +10,19 @@ export function AdminBar() {
   if (isLoading) return null;
   if (!isAuthenticated) return null;
 
-  const initials = user ? getInitials(user.name) : "?";
+  const initials = user ? getInitials(user.name) : '?';
 
   return (
     <div
       id="wpadminbar"
       className={cn(
-        "fixed left-0 right-0 top-0 z-[99999] flex h-8 items-center",
-        "bg-sidebar text-sidebar-foreground text-xs shadow-sm",
+        'fixed left-0 right-0 top-0 z-[99999] flex h-8 items-center',
+        'bg-sidebar text-sidebar-foreground text-xs shadow-sm',
       )}
     >
       <div className="flex h-full items-center px-2">
-        <a
-          href="/admin"
-          className="flex h-full items-center gap-1.5 px-2 hover:bg-sidebar-accent"
-        >
-          <span className="flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] font-bold text-primary-foreground">
+        <a href="/admin" className="hover:bg-sidebar-accent flex h-full items-center gap-1.5 px-2">
+          <span className="bg-primary text-primary-foreground flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold">
             NP
           </span>
           <span className="font-semibold">NodePress</span>
@@ -34,8 +31,8 @@ export function AdminBar() {
 
       <div className="flex h-full items-center">
         <a
-          href="/admin/content/new"
-          className="flex h-full items-center gap-1 px-3 hover:bg-sidebar-accent"
+          href="/admin/content/post/new"
+          className="hover:bg-sidebar-accent flex h-full items-center gap-1 px-3"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -61,7 +58,7 @@ export function AdminBar() {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex h-full items-center gap-1 px-3 hover:bg-sidebar-accent"
+          className="hover:bg-sidebar-accent flex h-full items-center gap-1 px-3"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -80,7 +77,7 @@ export function AdminBar() {
           <span>View Site</span>
         </a>
 
-        <button className="flex h-full items-center px-3 hover:bg-sidebar-accent">
+        <button className="hover:bg-sidebar-accent flex h-full items-center px-3">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -97,7 +94,7 @@ export function AdminBar() {
         </button>
 
         <div className="group relative flex h-full items-center">
-          <button className="flex h-full items-center gap-1.5 px-3 hover:bg-sidebar-accent">
+          <button className="hover:bg-sidebar-accent flex h-full items-center gap-1.5 px-3">
             {user?.avatar ? (
               <img
                 src={user.avatar}
@@ -105,23 +102,20 @@ export function AdminBar() {
                 className="h-5 w-5 rounded-full object-cover"
               />
             ) : (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+              <span className="bg-primary text-primary-foreground flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold">
                 {initials}
               </span>
             )}
-            <span>{user?.name || "User"}</span>
+            <span>{user?.name || 'User'}</span>
           </button>
-          <div className="absolute right-0 top-full hidden min-w-[160px] rounded-md border bg-popover p-1 shadow-md group-hover:block">
-            <a
-              href="/admin/profile"
-              className="block rounded-sm px-3 py-1.5 text-xs hover:bg-muted"
-            >
+          <div className="bg-popover absolute right-0 top-full hidden min-w-[160px] rounded-md border p-1 shadow-md group-hover:block">
+            <a href="/admin/users" className="hover:bg-muted block rounded-sm px-3 py-1.5 text-xs">
               Profile
             </a>
             <button
               type="button"
               onClick={logout}
-              className="w-full rounded-sm px-3 py-1.5 text-left text-xs hover:bg-muted"
+              className="hover:bg-muted w-full rounded-sm px-3 py-1.5 text-left text-xs"
             >
               Log Out
             </button>

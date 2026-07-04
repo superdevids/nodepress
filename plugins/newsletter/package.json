@@ -17,6 +17,7 @@
     "content:write"
   ],
   "dependencies": {
-    "@nodepressjs/plugin-sdk": "workspace:*"
+    "@nodepressjs/plugin-sdk": "workspace:*",
+    "nodemailer": "^6.9.0"
   }
 }

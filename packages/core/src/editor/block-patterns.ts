@@ -1,4 +1,4 @@
-import { BlockContent } from '../theme/block-patterns';
+import { BlockContent } from '../theme/block-patterns.js';
 
 export interface EditorPattern {
   name: string;

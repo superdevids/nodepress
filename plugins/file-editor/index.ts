@@ -1,4 +1,5 @@
 import type { PluginLifecycle, PluginContext } from '@nodepressjs/plugin-sdk';
+import { readFileSync, writeFileSync } from 'fs';
 
 export const manifest = {
   slug: 'file-editor',
@@ -155,288 +156,368 @@ export const lifecycle: PluginLifecycle = {
     ctx.logger.log('File Editor plugin booting');
 
     ctx.hooks.addAction('file-editor:listFiles', async (data: unknown) => {
-      const { basePaths } = data as { basePaths: string[] };
-      if (!basePaths || basePaths.length === 0) {
-        ctx.logger.warn('File listing rejected: no base paths provided');
-        return [];
-      }
+      try {
+        const { basePaths } = data as { basePaths: string[] };
+        if (!basePaths || basePaths.length === 0) {
+          ctx.logger.warn('File listing rejected: no base paths provided');
+          return [];
+        }
 
-      const validPaths = basePaths.filter((p) => !isPathBlocked(p) && isExtensionAllowed(p));
-      const tree = buildFileTree(validPaths);
-      ctx.logger.log(`File tree built with ${validPaths.length} valid files`);
-      return tree;
+        const validPaths = basePaths.filter((p) => !isPathBlocked(p) && isExtensionAllowed(p));
+        const tree = buildFileTree(validPaths);
+        ctx.logger.log(`File tree built with ${validPaths.length} valid files`);
+        return tree;
+      } catch (err) {
+        ctx.logger.error(
+          `file-editor:listFiles error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return { success: false, error: 'Internal error' };
+      }
     });
 
     ctx.hooks.addAction('file-editor:read', async (data: unknown) => {
-      const { filePath } = data as { filePath: string };
+      try {
+        const { filePath } = data as { filePath: string };
 
-      if (!filePath) {
-        ctx.logger.warn('File read rejected: no path provided');
-        return { success: false, error: 'No path provided' };
+        if (!filePath) {
+          ctx.logger.warn('File read rejected: no path provided');
+          return { success: false, error: 'No path provided' };
+        }
+
+        if (!isExtensionAllowed(filePath)) {
+          ctx.logger.warn(`File read rejected: extension not allowed (${filePath})`);
+          return {
+            success: false,
+            error: `File type "${filePath.slice(filePath.lastIndexOf('.'))}" is not editable`,
+          };
+        }
+
+        if (isPathBlocked(filePath)) {
+          ctx.logger.warn(`File read rejected: path blocked (${filePath})`);
+          return { success: false, error: 'This file cannot be edited for security reasons' };
+        }
+
+        ctx.logger.log(`File read permitted: ${filePath}`);
+        const content = readFileSync(filePath, 'utf-8');
+        return { success: true, path: filePath, content, language: getLanguage(filePath) };
+      } catch (err) {
+        ctx.logger.error(
+          `file-editor:read error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return { success: false, error: 'Internal error' };
       }
-
-      if (!isExtensionAllowed(filePath)) {
-        ctx.logger.warn(`File read rejected: extension not allowed (${filePath})`);
-        return {
-          success: false,
-          error: `File type "${filePath.slice(filePath.lastIndexOf('.'))}" is not editable`,
-        };
-      }
-
-      if (isPathBlocked(filePath)) {
-        ctx.logger.warn(`File read rejected: path blocked (${filePath})`);
-        return { success: false, error: 'This file cannot be edited for security reasons' };
-      }
-
-      ctx.logger.log(`File read permitted: ${filePath}`);
-      return { success: true, path: filePath, language: getLanguage(filePath) };
     });
 
     ctx.hooks.addAction('file-editor:write', async (data: unknown) => {
-      const { filePath, content, createBackup } = data as {
-        filePath: string;
-        content: string;
-        createBackup?: boolean;
-      };
-
-      if (!filePath) {
-        ctx.logger.warn('File write rejected: no path provided');
-        return { success: false, error: 'No path provided' };
-      }
-
-      if (!isExtensionAllowed(filePath)) {
-        ctx.logger.warn(`File write rejected: extension not allowed (${filePath})`);
-        return {
-          success: false,
-          error: `File type "${filePath.slice(filePath.lastIndexOf('.'))}" cannot be written`,
+      try {
+        const { filePath, content, createBackup } = data as {
+          filePath: string;
+          content: string;
+          createBackup?: boolean;
         };
-      }
 
-      if (isPathBlocked(filePath)) {
-        ctx.logger.warn(`File write rejected: path blocked (${filePath})`);
-        return { success: false, error: 'This file cannot be modified for security reasons' };
-      }
+        if (!filePath) {
+          ctx.logger.warn('File write rejected: no path provided');
+          return { success: false, error: 'No path provided' };
+        }
 
-      if (content.length > MAX_FILE_SIZE) {
-        ctx.logger.warn(`File write rejected: file too large (${content.length} bytes)`);
-        return { success: false, error: 'File exceeds maximum size of 512KB' };
-      }
+        if (!isExtensionAllowed(filePath)) {
+          ctx.logger.warn(`File write rejected: extension not allowed (${filePath})`);
+          return {
+            success: false,
+            error: `File type "${filePath.slice(filePath.lastIndexOf('.'))}" cannot be written`,
+          };
+        }
 
-      if (createBackup !== false) {
-        const backupKey = `${filePath}::${Date.now()}`;
-        backends.set(backupKey, {
+        if (isPathBlocked(filePath)) {
+          ctx.logger.warn(`File write rejected: path blocked (${filePath})`);
+          return { success: false, error: 'This file cannot be modified for security reasons' };
+        }
+
+        if (content.length > MAX_FILE_SIZE) {
+          ctx.logger.warn(`File write rejected: file too large (${content.length} bytes)`);
+          return { success: false, error: 'File exceeds maximum size of 512KB' };
+        }
+
+        let oldContent = '';
+        try {
+          oldContent = readFileSync(filePath, 'utf-8');
+        } catch {
+          oldContent = '';
+        }
+
+        writeFileSync(filePath, content, 'utf-8');
+
+        if (createBackup !== false) {
+          const backupKey = `${filePath}::${Date.now()}`;
+          backends.set(backupKey, {
+            path: filePath,
+            content: oldContent,
+            timestamp: new Date().toISOString(),
+            label: `Before edit ${new Date().toLocaleString()}`,
+          });
+
+          if (!changes.has(filePath)) changes.set(filePath, []);
+          changes.get(filePath)!.push({
+            path: filePath,
+            oldContent: oldContent,
+            newContent: content,
+            timestamp: new Date().toISOString(),
+            label: `Edit ${(changes.get(filePath)?.length ?? 0) + 1}`,
+          });
+
+          ctx.logger.log(`Backup created for ${filePath} (${backupKey})`);
+        }
+
+        ctx.logger.log(`File write permitted: ${filePath} (${content.length} bytes)`);
+        return {
+          success: true,
           path: filePath,
-          content: content,
-          timestamp: new Date().toISOString(),
-          label: `Before edit ${new Date().toLocaleString()}`,
-        });
-
-        if (!changes.has(filePath)) changes.set(filePath, []);
-        changes.get(filePath)!.push({
-          path: filePath,
-          oldContent: content,
-          newContent: content,
-          timestamp: new Date().toISOString(),
-          label: `Edit ${(changes.get(filePath)?.length ?? 0) + 1}`,
-        });
-
-        ctx.logger.log(`Backup created for ${filePath} (${backupKey})`);
+          backupKey: createBackup !== false ? `${filePath}::${Date.now()}` : undefined,
+        };
+      } catch (err) {
+        ctx.logger.error(
+          `file-editor:write error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return { success: false, error: 'Internal error' };
       }
-
-      ctx.logger.log(`File write permitted: ${filePath} (${content.length} bytes)`);
-      return {
-        success: true,
-        path: filePath,
-        backupKey: createBackup !== false ? `${filePath}::${Date.now()}` : undefined,
-      };
     });
 
     ctx.hooks.addAction('file-editor:search', async (data: unknown) => {
-      const { query, filePaths } = data as { query: string; filePaths: string[] };
-      if (!query || query.length < 2) {
-        ctx.logger.warn('Search rejected: query too short');
+      try {
+        const { query, filePaths } = data as { query: string; filePaths: string[] };
+        if (!query || query.length < 2) {
+          ctx.logger.warn('Search rejected: query too short');
+          return [];
+        }
+
+        const results = filePaths
+          .filter((p) => isExtensionAllowed(p) && !isPathBlocked(p))
+          .map((path) => ({ path, matches: [] as { line: number; content: string }[] }))
+          .filter((r) => r.matches.length > 0);
+
+        ctx.logger.log(
+          `Search "${query}" across ${filePaths.length} files returned ${results.length} results`,
+        );
+        return results;
+      } catch (err) {
+        ctx.logger.error(
+          `file-editor:search error: ${err instanceof Error ? err.message : String(err)}`,
+        );
         return [];
       }
-
-      const results = filePaths
-        .filter((p) => isExtensionAllowed(p) && !isPathBlocked(p))
-        .map((path) => ({ path, matches: [] as { line: number; content: string }[] }))
-        .filter((r) => r.matches.length > 0);
-
-      ctx.logger.log(
-        `Search "${query}" across ${filePaths.length} files returned ${results.length} results`,
-      );
-      return results;
     });
 
     ctx.hooks.addAction('file-editor:replace', async (data: unknown) => {
-      const { filePath, search, replace, dryRun } = data as {
-        filePath: string;
-        search: string;
-        replace: string;
-        dryRun?: boolean;
-      };
+      try {
+        const { filePath, search, replace, dryRun } = data as {
+          filePath: string;
+          search: string;
+          replace: string;
+          dryRun?: boolean;
+        };
 
-      if (!filePath || !search) {
-        return { success: false, error: 'Missing required parameters' };
+        if (!filePath || !search) {
+          return { success: false, error: 'Missing required parameters' };
+        }
+
+        if (isPathBlocked(filePath)) {
+          return { success: false, error: 'This file cannot be modified' };
+        }
+
+        if (dryRun) {
+          ctx.logger.log(`Replace dry-run in ${filePath}: "${search}" -> "${replace}"`);
+          return { success: true, dryRun: true, replacements: 0 };
+        }
+
+        ctx.logger.log(`Replace in ${filePath}: "${search}" -> "${replace}"`);
+        return { success: true, replacements: 0 };
+      } catch (err) {
+        ctx.logger.error(
+          `file-editor:replace error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return { success: false, error: 'Internal error' };
       }
-
-      if (isPathBlocked(filePath)) {
-        return { success: false, error: 'This file cannot be modified' };
-      }
-
-      if (dryRun) {
-        ctx.logger.log(`Replace dry-run in ${filePath}: "${search}" -> "${replace}"`);
-        return { success: true, dryRun: true, replacements: 0 };
-      }
-
-      ctx.logger.log(`Replace in ${filePath}: "${search}" -> "${replace}"`);
-      return { success: true, replacements: 0 };
     });
 
     ctx.hooks.addAction('file-editor:diff', async (data: unknown) => {
-      const { filePath, originalContent, newContent } = data as {
-        filePath: string;
-        originalContent: string;
-        newContent: string;
-      };
+      try {
+        const { filePath, originalContent, newContent } = data as {
+          filePath: string;
+          originalContent: string;
+          newContent: string;
+        };
 
-      if (!filePath || originalContent == null || newContent == null) {
-        return { success: false, error: 'Missing required parameters' };
+        if (!filePath || originalContent == null || newContent == null) {
+          return { success: false, error: 'Missing required parameters' };
+        }
+
+        const origLines = originalContent.split('\n');
+        const newLines = newContent.split('\n');
+        const maxLen = Math.max(origLines.length, newLines.length);
+        const diffs: {
+          line: number;
+          type: 'same' | 'added' | 'removed' | 'modified';
+          oldContent?: string;
+          newContent?: string;
+        }[] = [];
+
+        for (let i = 0; i < maxLen; i++) {
+          const oldLine = i < origLines.length ? origLines[i] : undefined;
+          const newLine = i < newLines.length ? newLines[i] : undefined;
+
+          if (oldLine === undefined)
+            diffs.push({ line: i + 1, type: 'added', newContent: newLine });
+          else if (newLine === undefined)
+            diffs.push({ line: i + 1, type: 'removed', oldContent: oldLine });
+          else if (oldLine !== newLine)
+            diffs.push({ line: i + 1, type: 'modified', oldContent: oldLine, newContent: newLine });
+          else diffs.push({ line: i + 1, type: 'same' });
+        }
+
+        ctx.logger.log(
+          `Diff generated for ${filePath}: ${diffs.filter((d) => d.type !== 'same').length} changes`,
+        );
+        return { success: true, path: filePath, diffs };
+      } catch (err) {
+        ctx.logger.error(
+          `file-editor:diff error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return { success: false, error: 'Internal error' };
       }
-
-      const origLines = originalContent.split('\n');
-      const newLines = newContent.split('\n');
-      const maxLen = Math.max(origLines.length, newLines.length);
-      const diffs: {
-        line: number;
-        type: 'same' | 'added' | 'removed' | 'modified';
-        oldContent?: string;
-        newContent?: string;
-      }[] = [];
-
-      for (let i = 0; i < maxLen; i++) {
-        const oldLine = i < origLines.length ? origLines[i] : undefined;
-        const newLine = i < newLines.length ? newLines[i] : undefined;
-
-        if (oldLine === undefined) diffs.push({ line: i + 1, type: 'added', newContent: newLine });
-        else if (newLine === undefined)
-          diffs.push({ line: i + 1, type: 'removed', oldContent: oldLine });
-        else if (oldLine !== newLine)
-          diffs.push({ line: i + 1, type: 'modified', oldContent: oldLine, newContent: newLine });
-        else diffs.push({ line: i + 1, type: 'same' });
-      }
-
-      ctx.logger.log(
-        `Diff generated for ${filePath}: ${diffs.filter((d) => d.type !== 'same').length} changes`,
-      );
-      return { success: true, path: filePath, diffs };
     });
 
     ctx.hooks.addAction('file-editor:backups', async (data: unknown) => {
-      const { filePath } = data as { filePath: string };
-      const fileBackups = Array.from(backends.values()).filter((b) => b.path === filePath);
-      const fileChanges = changes.get(filePath) ?? [];
-      ctx.logger.log(
-        `Backups listed for ${filePath}: ${fileBackups.length} backups, ${fileChanges.length} changes`,
-      );
-      return { backups: fileBackups, changes: fileChanges };
+      try {
+        const { filePath } = data as { filePath: string };
+        const fileBackups = Array.from(backends.values()).filter((b) => b.path === filePath);
+        const fileChanges = changes.get(filePath) ?? [];
+        ctx.logger.log(
+          `Backups listed for ${filePath}: ${fileBackups.length} backups, ${fileChanges.length} changes`,
+        );
+        return { backups: fileBackups, changes: fileChanges };
+      } catch (err) {
+        ctx.logger.error(
+          `file-editor:backups error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return { success: false, error: 'Internal error' };
+      }
     });
 
     ctx.hooks.addAction('file-editor:restore', async (data: unknown) => {
-      const { backupKey } = data as { backupKey: string };
-      const backup = backends.get(backupKey);
-      if (!backup) {
-        ctx.logger.warn(`Backup not found: ${backupKey}`);
-        return { success: false, error: 'Backup not found' };
+      try {
+        const { backupKey } = data as { backupKey: string };
+        const backup = backends.get(backupKey);
+        if (!backup) {
+          ctx.logger.warn(`Backup not found: ${backupKey}`);
+          return { success: false, error: 'Backup not found' };
+        }
+        ctx.logger.log(`Restoring backup ${backupKey} for ${backup.path}`);
+        return {
+          success: true,
+          path: backup.path,
+          content: backup.content,
+          timestamp: backup.timestamp,
+          label: backup.label,
+        };
+      } catch (err) {
+        ctx.logger.error(
+          `file-editor:restore error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return { success: false, error: 'Internal error' };
       }
-      ctx.logger.log(`Restoring backup ${backupKey} for ${backup.path}`);
-      return {
-        success: true,
-        path: backup.path,
-        content: backup.content,
-        timestamp: backup.timestamp,
-        label: backup.label,
-      };
     });
 
     ctx.hooks.addAction('file-editor:configure', async () => {
-      ctx.logger.log('Monaco editor configured with NodePress theme');
-      return {
-        theme: 'nodepress-dark',
-        language: 'typescript',
-        minimap: { enabled: true },
-        scrollBeyondLastLine: false,
-        fontSize: 14,
-        lineNumbers: 'on',
-        tabSize: 2,
-        wordWrap: 'on',
-        autoClosingBrackets: 'always',
-        formatOnPaste: true,
-        suggestOnTriggerCharacters: true,
-        bracketPairColorization: { enabled: true },
-        renderWhitespace: 'selection',
-        smoothScrolling: true,
-        cursorBlinking: 'smooth',
-        cursorSmoothCaretAnimation: 'on',
-      };
+      try {
+        ctx.logger.log('Monaco editor configured with NodePress theme');
+        return {
+          theme: 'nodepress-dark',
+          language: 'typescript',
+          minimap: { enabled: true },
+          scrollBeyondLastLine: false,
+          fontSize: 14,
+          lineNumbers: 'on',
+          tabSize: 2,
+          wordWrap: 'on',
+          autoClosingBrackets: 'always',
+          formatOnPaste: true,
+          suggestOnTriggerCharacters: true,
+          bracketPairColorization: { enabled: true },
+          renderWhitespace: 'selection',
+          smoothScrolling: true,
+          cursorBlinking: 'smooth',
+          cursorSmoothCaretAnimation: 'on',
+        };
+      } catch (err) {
+        ctx.logger.error(
+          `file-editor:configure error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return {};
+      }
     });
 
     ctx.hooks.addAction('admin:metaBox:register', (boxes: unknown) => {
-      const list = boxes as Array<Record<string, unknown>>;
-      list.push({
-        id: 'file-editor-settings',
-        title: 'File Editor Settings',
-        screen: 'file-editor',
-        context: 'side',
-        priority: 'high',
-        fields: [
-          {
-            name: 'theme',
-            label: 'Editor Theme',
-            type: 'select',
-            defaultValue: 'vs-dark',
-            options: [
-              { label: 'Dark (VS Code)', value: 'vs-dark' },
-              { label: 'Light', value: 'vs' },
-              { label: 'High Contrast', value: 'hc-black' },
-            ],
-          },
-          { name: 'fontSize', label: 'Font Size', type: 'number', defaultValue: '14' },
-          {
-            name: 'tabSize',
-            label: 'Tab Size',
-            type: 'select',
-            defaultValue: '2',
-            options: [
-              { label: '2 spaces', value: '2' },
-              { label: '4 spaces', value: '4' },
-            ],
-          },
-          {
-            name: 'wordWrap',
-            label: 'Word Wrap',
-            type: 'select',
-            defaultValue: 'on',
-            options: [
-              { label: 'On', value: 'on' },
-              { label: 'Off', value: 'off' },
-            ],
-          },
-          {
-            name: 'createBackups',
-            label: 'Create backups on save',
-            type: 'checkbox',
-            defaultValue: true,
-          },
-          {
-            name: 'allowedDirectories',
-            label: 'Allowed directories (comma-separated)',
-            type: 'text',
-            defaultValue: 'plugins,themes,src',
-          },
-        ],
-      });
+      try {
+        const list = boxes as Array<Record<string, unknown>>;
+        list.push({
+          id: 'file-editor-settings',
+          title: 'File Editor Settings',
+          screen: 'file-editor',
+          context: 'side',
+          priority: 'high',
+          fields: [
+            {
+              name: 'theme',
+              label: 'Editor Theme',
+              type: 'select',
+              defaultValue: 'vs-dark',
+              options: [
+                { label: 'Dark (VS Code)', value: 'vs-dark' },
+                { label: 'Light', value: 'vs' },
+                { label: 'High Contrast', value: 'hc-black' },
+              ],
+            },
+            { name: 'fontSize', label: 'Font Size', type: 'number', defaultValue: '14' },
+            {
+              name: 'tabSize',
+              label: 'Tab Size',
+              type: 'select',
+              defaultValue: '2',
+              options: [
+                { label: '2 spaces', value: '2' },
+                { label: '4 spaces', value: '4' },
+              ],
+            },
+            {
+              name: 'wordWrap',
+              label: 'Word Wrap',
+              type: 'select',
+              defaultValue: 'on',
+              options: [
+                { label: 'On', value: 'on' },
+                { label: 'Off', value: 'off' },
+              ],
+            },
+            {
+              name: 'createBackups',
+              label: 'Create backups on save',
+              type: 'checkbox',
+              defaultValue: true,
+            },
+            {
+              name: 'allowedDirectories',
+              label: 'Allowed directories (comma-separated)',
+              type: 'text',
+              defaultValue: 'plugins,themes,src',
+            },
+          ],
+        });
+      } catch (err) {
+        ctx.logger.error(
+          `admin:metaBox:register error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     });
 
     ctx.logger.log('File Editor plugin booted');

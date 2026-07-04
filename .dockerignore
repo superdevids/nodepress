@@ -1,0 +1,57 @@
+# ============================================================
+# NodePress - .dockerignore
+# ============================================================
+# Prevents unnecessary files from being sent to the Docker
+# build context, reducing build time and image size.
+# ============================================================
+
+# Dependencies
+node_modules
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE / Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Documentation
+*.md
+*.mdx
+
+# Build output
+dist
+.next
+coverage
+.turbo
+*.tsbuildinfo
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Package manager
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+storage/logs
+
+# Temp
+tmp
+temp

@@ -28,9 +28,7 @@ export class SessionService {
     rememberMe: boolean;
   }): Promise<SessionEntry> {
     const id = randomUUID();
-    const expiresIn = params.rememberMe
-      ? 14 * 24 * 60 * 60 * 1000
-      : 24 * 60 * 60 * 1000;
+    const expiresIn = params.rememberMe ? 14 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
     const session = await this.prisma.session.create({
       data: {
@@ -52,6 +50,34 @@ export class SessionService {
     return this.toEntry(session);
   }
 
+  /**
+   * Find a session by its refresh token.
+   *
+   * TODO — Performance: refreshToken is stored inside the JSON `payload` column,
+   * which prevents indexed lookups. This method loads ALL non-expired sessions
+   * and iterates in-memory (O(n)). As the session table grows, this becomes a
+   * scalability bottleneck.
+   *
+   * Future fix: Schema migration to extract `refreshToken` into its own column
+   * (e.g., `sessions.refresh_token TEXT UNIQUE`), then add a partial index:
+   *
+   * ```prisma
+   * model Session {
+   *   refreshToken String? @unique
+   *   @@index([refreshToken], where: "refresh_token IS NOT NULL")
+   * }
+   * ```
+   *
+   * When that migration is done, replace this method with:
+   * ```ts
+   * async findByRefreshToken(token: string) {
+   *   const session = await this.prisma.session.findFirst({
+   *     where: { refreshToken: token, expiresAt: { gt: new Date() } },
+   *   });
+   *   return session ? this.toEntry(session) : null;
+   * }
+   * ```
+   */
   async findByRefreshToken(refreshToken: string): Promise<SessionEntry | null> {
     const sessions = await this.prisma.session.findMany({
       where: { expiresAt: { gt: new Date() } },
@@ -123,6 +149,33 @@ export class SessionService {
     this.logger.log(`All sessions revoked for user ${userId}`);
   }
 
+  /**
+   * Lookup a session by refresh token using a direct column query.
+   *
+   * This method is a **future-ready** replacement for `findByRefreshToken`.
+   * It requires a schema migration that extracts `refreshToken` from the
+   * JSON `payload` column into its own indexed column. See the TODO on
+   * `findByRefreshToken` for details.
+   *
+   * Once the migration is deployed, swap all call sites:
+   * ```ts
+   * // Before
+   * const session = await this.sessionService.findByRefreshToken(token);
+   * // After
+   * const session = await this.sessionService.findByRefreshTokenColumn(token);
+   * ```
+   */
+  async findByRefreshTokenColumn(refreshToken: string): Promise<SessionEntry | null> {
+    // Uncomment after schema migration adds refreshToken column:
+    // const session = await this.prisma.session.findFirst({
+    //   where: { refreshToken, expiresAt: { gt: new Date() } },
+    // });
+    // return session ? this.toEntry(session) : null;
+    throw new Error(
+      'Not implemented — requires schema migration to extract refreshToken column from payload JSON',
+    );
+  }
+
   async cleanupExpired(): Promise<number> {
     const result = await this.prisma.session.deleteMany({
       where: { expiresAt: { lt: new Date() } },
@@ -131,8 +184,12 @@ export class SessionService {
   }
 
   private toEntry(session: {
-    id: string; userId: string; payload: unknown;
-    ipAddress: string | null; userAgent: string | null; expiresAt: Date;
+    id: string;
+    userId: string;
+    payload: unknown;
+    ipAddress: string | null;
+    userAgent: string | null;
+    expiresAt: Date;
   }): SessionEntry {
     const payload = session.payload as Record<string, unknown>;
     return {

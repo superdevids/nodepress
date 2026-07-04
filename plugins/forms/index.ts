@@ -147,191 +147,236 @@ export const lifecycle: PluginLifecycle = {
     ctx.logger.log('Forms plugin booting');
 
     ctx.hooks.addAction('form:define', (forms: unknown) => {
-      const list = forms as FormDefinition[];
-      list.push({
-        id: 'contact-default',
-        title: 'Contact Form',
-        fields: [
-          {
-            id: 'name',
-            type: 'text' as const,
-            label: 'Name',
-            required: true,
-            placeholder: 'Your name',
+      try {
+        const list = forms as FormDefinition[];
+        list.push({
+          id: 'contact-default',
+          title: 'Contact Form',
+          fields: [
+            {
+              id: 'name',
+              type: 'text' as const,
+              label: 'Name',
+              required: true,
+              placeholder: 'Your name',
+            },
+            {
+              id: 'email',
+              type: 'email' as const,
+              label: 'Email',
+              required: true,
+              placeholder: 'your@email.com',
+            },
+            {
+              id: 'subject',
+              type: 'text' as const,
+              label: 'Subject',
+              required: true,
+              placeholder: 'Subject',
+            },
+            {
+              id: 'message',
+              type: 'textarea' as const,
+              label: 'Message',
+              required: true,
+              rows: 6,
+              placeholder: 'Your message',
+            },
+            { id: '_hp', type: 'honeypot' as const, label: '', required: false },
+          ],
+          notifications: {
+            enabled: true,
+            to: [],
+            subject: 'New contact form submission',
+            fromName: 'NodePress',
           },
-          {
-            id: 'email',
-            type: 'email' as const,
-            label: 'Email',
-            required: true,
-            placeholder: 'your@email.com',
-          },
-          {
-            id: 'subject',
-            type: 'text' as const,
-            label: 'Subject',
-            required: true,
-            placeholder: 'Subject',
-          },
-          {
-            id: 'message',
-            type: 'textarea' as const,
-            label: 'Message',
-            required: true,
-            rows: 6,
-            placeholder: 'Your message',
-          },
-          { id: '_hp', type: 'honeypot' as const, label: '', required: false },
-        ],
-        notifications: {
-          enabled: true,
-          to: [],
-          subject: 'New contact form submission',
-          fromName: 'NodePress',
-        },
-        confirmation: { type: 'message', message: 'Thank you! Your message has been sent.' },
-        antiSpam: { honeypot: true, recaptcha: false, timeThreshold: 2000, maxSubmissions: 10 },
-        payments: { enabled: false, currency: 'USD' },
-        csvExport: { enabled: true, includeMetadata: true },
-      });
+          confirmation: { type: 'message', message: 'Thank you! Your message has been sent.' },
+          antiSpam: { honeypot: true, recaptcha: false, timeThreshold: 2000, maxSubmissions: 10 },
+          payments: { enabled: false, currency: 'USD' },
+          csvExport: { enabled: true, includeMetadata: true },
+        });
+      } catch (err) {
+        ctx.logger.warn(
+          `Forms: form:define error - ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
+      }
     });
 
     ctx.hooks.addAction('form:submit', async (data: unknown) => {
-      const payload = data as {
-        formId: string;
-        fields: Record<string, string>;
-        form: FormDefinition;
-        ip?: string;
-        submittedAt?: number;
-      };
-      const { formId, fields, form, ip, submittedAt } = payload;
+      try {
+        const payload = data as {
+          formId: string;
+          fields: Record<string, string>;
+          form: FormDefinition;
+          ip?: string;
+          submittedAt?: number;
+        };
+        const { formId, fields, form, ip, submittedAt } = payload;
 
-      if (!formId || !fields) {
-        ctx.logger.warn('Form submission rejected: missing required data');
-        return { success: false, error: 'Invalid submission' };
+        if (!formId || !fields) {
+          ctx.logger.warn('Form submission rejected: missing required data');
+          return { success: false, error: 'Invalid submission' };
+        }
+
+        const spamReason = isSpamSubmission(fields, form.antiSpam, submittedAt ?? Date.now());
+        if (spamReason) {
+          ctx.logger.warn(`Spam blocked for form ${formId}: ${spamReason}`);
+          return { success: false, error: 'Spam detected', spam: true };
+        }
+
+        ctx.logger.log(
+          `Form ${formId} submitted with ${Object.keys(fields).length} fields from ${ip ?? 'unknown'}`,
+        );
+
+        if (form.notifications.enabled && form.notifications.to.length > 0) {
+          ctx.hooks.doAction('form:notification', {
+            form,
+            fields,
+            email: form.notifications.to.join(','),
+          });
+        }
+
+        return { success: true, formId, fields };
+      } catch (err) {
+        ctx.logger.warn(
+          `Forms: form:submit error - ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
+        return { success: false, error: 'Internal error' };
       }
-
-      const spamReason = isSpamSubmission(fields, form.antiSpam, submittedAt ?? Date.now());
-      if (spamReason) {
-        ctx.logger.warn(`Spam blocked for form ${formId}: ${spamReason}`);
-        return { success: false, error: 'Spam detected', spam: true };
-      }
-
-      ctx.logger.log(
-        `Form ${formId} submitted with ${Object.keys(fields).length} fields from ${ip ?? 'unknown'}`,
-      );
-
-      if (form.notifications.enabled && form.notifications.to.length > 0) {
-        ctx.hooks.doAction('form:notification', {
-          form,
-          fields,
-          email: form.notifications.to.join(','),
-        });
-      }
-
-      return { success: true, formId, fields };
     });
 
     ctx.hooks.addAction('form:notification', async (data: unknown) => {
-      const { form, fields, email } = data as {
-        form: FormDefinition;
-        fields: Record<string, string>;
-        email: string;
-      };
+      try {
+        const { form, fields, email } = data as {
+          form: FormDefinition;
+          fields: Record<string, string>;
+          email: string;
+        };
 
-      if (!email) {
-        ctx.logger.warn(`Form ${form.id}: no notification email configured`);
-        return;
+        if (!email) {
+          ctx.logger.warn(`Form ${form.id}: no notification email configured`);
+          return;
+        }
+
+        const recipients = email.split(',').map((e) => e.trim());
+        ctx.logger.log(
+          `Notification would be sent to ${recipients.length} recipient(s) for form ${form.id}`,
+        );
+
+        ctx.hooks.doAction('mail:send', {
+          to: recipients,
+          subject: form.notifications.subject || `New submission: ${form.title}`,
+          html: buildEmailHtml(fields, form),
+          from: form.notifications.fromEmail || 'noreply@nodepress.local',
+          fromName: form.notifications.fromName || 'NodePress Forms',
+          replyTo: fields.email || form.notifications.replyTo || '',
+        });
+      } catch (err) {
+        ctx.logger.warn(
+          `Forms: form:notification error - ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
       }
-
-      const recipients = email.split(',').map((e) => e.trim());
-      ctx.logger.log(
-        `Notification would be sent to ${recipients.length} recipient(s) for form ${form.id}`,
-      );
-
-      ctx.hooks.doAction('mail:send', {
-        to: recipients,
-        subject: form.notifications.subject || `New submission: ${form.title}`,
-        html: buildEmailHtml(fields, form),
-        from: form.notifications.fromEmail || 'noreply@nodepress.local',
-        fromName: form.notifications.fromName || 'NodePress Forms',
-        replyTo: fields.email || form.notifications.replyTo || '',
-      });
     });
 
     ctx.hooks.addAction('form:export', async (data: unknown) => {
-      const { formId, format, submissions } = data as {
-        formId: string;
-        format: 'csv' | 'json';
-        submissions: Record<string, string>[];
-        includeMetadata?: boolean;
-      };
+      try {
+        const { formId, format, submissions } = data as {
+          formId: string;
+          format: 'csv' | 'json';
+          submissions: Record<string, string>[];
+          includeMetadata?: boolean;
+        };
 
-      if (!submissions || submissions.length === 0) {
-        ctx.logger.warn(`Form ${formId}: no submissions to export`);
+        if (!submissions || submissions.length === 0) {
+          ctx.logger.warn(`Form ${formId}: no submissions to export`);
+          return null;
+        }
+
+        if (format === 'csv') {
+          const csv = toCsv(submissions, true);
+          ctx.logger.log(`Form ${formId} exported as CSV (${submissions.length} rows)`);
+          return csv;
+        }
+
+        ctx.logger.log(`Form ${formId} exported as JSON (${submissions.length} entries)`);
+        return JSON.stringify(submissions, null, 2);
+      } catch (err) {
+        ctx.logger.warn(
+          `Forms: form:export error - ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
         return null;
       }
-
-      if (format === 'csv') {
-        const csv = toCsv(submissions, true);
-        ctx.logger.log(`Form ${formId} exported as CSV (${submissions.length} rows)`);
-        return csv;
-      }
-
-      ctx.logger.log(`Form ${formId} exported as JSON (${submissions.length} entries)`);
-      return JSON.stringify(submissions, null, 2);
     });
 
     ctx.hooks.addAction('form:stripe:createPaymentIntent', async (data: unknown) => {
-      const { formId, amount, currency, metadata } = data as {
-        formId: string;
-        amount: number;
-        currency: string;
-        metadata?: Record<string, string>;
-      };
-      ctx.logger.log(`Stripe payment intent created for form ${formId}: ${amount} ${currency}`);
-      return { clientSecret: `pi_mock_${formId}_${Date.now()}_secret` };
+      try {
+        const { formId, amount, currency, metadata } = data as {
+          formId: string;
+          amount: number;
+          currency: string;
+          metadata?: Record<string, string>;
+        };
+        ctx.logger.log(`Stripe payment intent created for form ${formId}: ${amount} ${currency}`);
+        return { clientSecret: `pi_mock_${formId}_${Date.now()}_secret` };
+      } catch (err) {
+        ctx.logger.warn(
+          `Forms: stripe:createPaymentIntent error - ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
+        return { clientSecret: '' };
+      }
     });
 
     ctx.hooks.addAction('form:stripe:webhook', async (data: unknown) => {
-      const { event, paymentIntent } = data as {
-        event: string;
-        paymentIntent: Record<string, unknown>;
-      };
-      ctx.logger.log(`Stripe webhook received: ${event} for PI ${paymentIntent.id as string}`);
+      try {
+        const { event, paymentIntent } = data as {
+          event: string;
+          paymentIntent: Record<string, unknown>;
+        };
+        ctx.logger.log(`Stripe webhook received: ${event} for PI ${paymentIntent.id as string}`);
+      } catch (err) {
+        ctx.logger.warn(
+          `Forms: stripe:webhook error - ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
+      }
     });
 
     ctx.hooks.addAction('admin:metaBox:register', (boxes: unknown) => {
-      const list = boxes as Array<Record<string, unknown>>;
-      list.push({
-        id: 'form-settings-metabox',
-        title: 'Form Settings',
-        screen: 'form',
-        context: 'normal',
-        priority: 'high',
-        fields: [
-          { name: 'formTitle', label: 'Form Title', type: 'text', required: true },
-          {
-            name: 'notificationEmails',
-            label: 'Notification Emails (comma-separated)',
-            type: 'text',
-            placeholder: 'admin@example.com',
-          },
-          { name: 'confirmationMessage', label: 'Confirmation Message', type: 'textarea' },
-          { name: 'redirectUrl', label: 'Redirect URL (optional)', type: 'url' },
-          { name: 'enableCaptcha', label: 'Enable reCAPTCHA', type: 'checkbox' },
-          { name: 'enableStripe', label: 'Enable Stripe Payments', type: 'checkbox' },
-          { name: 'stripePriceId', label: 'Stripe Price ID', type: 'text' },
-          {
-            name: 'allowedFileTypes',
-            label: 'Allowed File Types (comma-separated)',
-            type: 'text',
-            placeholder: '.pdf,.jpg,.png',
-          },
-          { name: 'maxFileSize', label: 'Max File Size (MB)', type: 'number', defaultValue: '5' },
-          { name: 'emailTemplate', label: 'Email Notification Template', type: 'textarea' },
-        ],
-      });
+      try {
+        const list = boxes as Array<Record<string, unknown>>;
+        list.push({
+          id: 'form-settings-metabox',
+          title: 'Form Settings',
+          screen: 'form',
+          context: 'normal',
+          priority: 'high',
+          fields: [
+            { name: 'formTitle', label: 'Form Title', type: 'text', required: true },
+            {
+              name: 'notificationEmails',
+              label: 'Notification Emails (comma-separated)',
+              type: 'text',
+              placeholder: 'admin@example.com',
+            },
+            { name: 'confirmationMessage', label: 'Confirmation Message', type: 'textarea' },
+            { name: 'redirectUrl', label: 'Redirect URL (optional)', type: 'url' },
+            { name: 'enableCaptcha', label: 'Enable reCAPTCHA', type: 'checkbox' },
+            { name: 'enableStripe', label: 'Enable Stripe Payments', type: 'checkbox' },
+            { name: 'stripePriceId', label: 'Stripe Price ID', type: 'text' },
+            {
+              name: 'allowedFileTypes',
+              label: 'Allowed File Types (comma-separated)',
+              type: 'text',
+              placeholder: '.pdf,.jpg,.png',
+            },
+            { name: 'maxFileSize', label: 'Max File Size (MB)', type: 'number', defaultValue: '5' },
+            { name: 'emailTemplate', label: 'Email Notification Template', type: 'textarea' },
+          ],
+        });
+      } catch (err) {
+        ctx.logger.warn(
+          `Forms: admin:metaBox:register error - ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
+      }
     });
 
     ctx.logger.log('Forms plugin booted');

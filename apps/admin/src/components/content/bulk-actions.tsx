@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -16,9 +16,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Trash2, Copy, Archive, Send, Download, Tags } from "lucide-react";
-import { useToast } from "@/components/ui/toast";
+} from '@/components/ui/dialog';
+import { Trash2, Copy, Archive, Send, Download, Tags } from 'lucide-react';
+import { useToast } from '@/components/ui/toast';
+import { useApi } from '@/lib/use-api';
 
 interface BulkActionsProps {
   selectedCount: number;
@@ -35,14 +36,15 @@ export function BulkActions({
   selectedIds,
   totalCount,
 }: BulkActionsProps) {
+  const { post } = useApi();
   const { success, error: showError } = useToast();
-  const [action, setAction] = React.useState("");
+  const [action, setAction] = React.useState('');
   const [showConfirm, setShowConfirm] = React.useState(false);
-  const [confirmAction, setConfirmAction] = React.useState("");
+  const [confirmAction, setConfirmAction] = React.useState('');
   const [progress, setProgress] = React.useState(0);
   const [isProcessing, setIsProcessing] = React.useState(false);
 
-  const destructiveActions = ["trash", "delete"];
+  const destructiveActions = ['trash', 'delete'];
 
   const handleApply = () => {
     if (!action) return;
@@ -59,30 +61,21 @@ export function BulkActions({
     setProgress(0);
 
     try {
-      const isLarge = totalCount && totalCount > 100;
-      if (isLarge) {
-        const interval = setInterval(() => {
-          setProgress((p) => {
-            const next = Math.min(p + Math.random() * 15, 95);
-            return next;
-          });
-        }, 300);
-        await new Promise((r) => setTimeout(r, 1500));
-        clearInterval(interval);
-        setProgress(100);
-        await new Promise((r) => setTimeout(r, 500));
-      } else {
-        await new Promise((r) => setTimeout(r, 500));
-      }
+      setProgress(30);
+      await post('/content/bulk', {
+        action: act,
+        ids: selectedIds,
+      });
+      setProgress(100);
 
       success(
         `Bulk action completed`,
-        `${selectedCount} item(s) ${act === "publish" ? "published" : act === "trash" ? "trashed" : act === "delete" ? "deleted permanently" : act === "draft" ? "moved to draft" : "processed"}.`,
+        `${selectedCount} item(s) ${act === 'publish' ? 'published' : act === 'trash' ? 'trashed' : act === 'delete' ? 'deleted permanently' : act === 'draft' ? 'moved to draft' : 'processed'}.`,
       );
       onAction(act, selectedIds);
-      setAction("");
+      setAction('');
     } catch {
-      showError("Action failed", "Please try again.");
+      showError('Action failed', 'Please try again.');
     } finally {
       setIsProcessing(false);
       setProgress(0);
@@ -100,11 +93,7 @@ export function BulkActions({
         >
           <SelectTrigger className="w-44">
             <SelectValue
-              placeholder={
-                selectedCount > 0
-                  ? `${selectedCount} selected`
-                  : "Bulk Actions"
-              }
+              placeholder={selectedCount > 0 ? `${selectedCount} selected` : 'Bulk Actions'}
             />
           </SelectTrigger>
           <SelectContent>
@@ -151,13 +140,13 @@ export function BulkActions({
           onClick={handleApply}
           disabled={!action || selectedCount === 0 || isProcessing}
         >
-          {isProcessing ? "Processing..." : "Apply"}
+          {isProcessing ? 'Processing...' : 'Apply'}
         </Button>
       </div>
 
       {/* Progress bar for large operations */}
       {isProcessing && progress > 0 && (
-        <div className="w-full bg-muted rounded-full h-2">
+        <div className="bg-muted h-2 w-full rounded-full">
           <div
             className="bg-primary h-2 rounded-full transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -170,26 +159,23 @@ export function BulkActions({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {confirmAction === "trash" ? "Move to Trash" : "Delete Permanently"}
+              {confirmAction === 'trash' ? 'Move to Trash' : 'Delete Permanently'}
             </DialogTitle>
             <DialogDescription>
-              {confirmAction === "trash"
+              {confirmAction === 'trash'
                 ? `Are you sure you want to move ${selectedCount} item(s) to trash?`
                 : `Are you sure you want to permanently delete ${selectedCount} item(s)? This action cannot be undone.`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirm(false)}
-            >
+            <Button variant="outline" onClick={() => setShowConfirm(false)}>
               Cancel
             </Button>
             <Button
-              variant={confirmAction === "delete" ? "destructive" : "default"}
+              variant={confirmAction === 'delete' ? 'destructive' : 'default'}
               onClick={() => executeAction(confirmAction)}
             >
-              {confirmAction === "trash" ? "Move to Trash" : "Delete Permanently"}
+              {confirmAction === 'trash' ? 'Move to Trash' : 'Delete Permanently'}
             </Button>
           </DialogFooter>
         </DialogContent>

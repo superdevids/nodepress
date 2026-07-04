@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 
 export interface FeedEntry {
   id: string;
@@ -26,13 +27,12 @@ export interface CommentFeedEntry {
 export class FeedsService {
   private readonly logger = new Logger(FeedsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settingsService: SettingsService,
+  ) {}
 
-  async getPostsFeed(
-    type: 'rss' | 'atom' = 'rss',
-    page = 1,
-    limit = 20,
-  ): Promise<string> {
+  async getPostsFeed(type: 'rss' | 'atom' = 'rss', page = 1, limit = 20): Promise<string> {
     const [entries, total] = await Promise.all([
       this.prisma.contentEntry.findMany({
         where: { status: 'PUBLISHED' },
@@ -66,9 +66,7 @@ export class FeedsService {
     return this.buildRssXml(feedEntries);
   }
 
-  async getCommentsFeed(
-    type: 'rss' | 'atom' = 'rss',
-  ): Promise<string> {
+  async getCommentsFeed(type: 'rss' | 'atom' = 'rss'): Promise<string> {
     const comments = await this.prisma.comment.findMany({
       where: { status: 'APPROVED' },
       orderBy: { createdAt: 'desc' },
@@ -97,7 +95,35 @@ export class FeedsService {
     return this.buildCommentsRssXml(entries);
   }
 
-  private buildRssXml(entries: FeedEntry[]): string {
+  private async getSiteTitle(): Promise<string> {
+    try {
+      const group = await this.settingsService.getGroup('general');
+      const title = group.values['siteTitle'];
+      if (title && typeof title === 'string' && title.length > 0) {
+        return title;
+      }
+    } catch {
+      // Fall through to default
+    }
+    return 'NodePress';
+  }
+
+  private async getSiteUrl(): Promise<string> {
+    try {
+      const group = await this.settingsService.getGroup('general');
+      const url = group.values['siteUrl'];
+      if (url && typeof url === 'string' && url.length > 0) {
+        return url;
+      }
+    } catch {
+      // Fall through to default
+    }
+    return '/';
+  }
+
+  private async buildRssXml(entries: FeedEntry[]): Promise<string> {
+    const [siteTitle, siteUrl] = await Promise.all([this.getSiteTitle(), this.getSiteUrl()]);
+
     const items = entries
       .map(
         (e) => `    <item>
@@ -114,9 +140,9 @@ export class FeedsService {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>NodePress</title>
-    <link>/</link>
-    <description>Latest content from NodePress</description>
+    <title>${this.escapeXml(siteTitle)}</title>
+    <link>${this.escapeXml(siteUrl)}</link>
+    <description>Latest content from ${this.escapeXml(siteTitle)}</description>
     <language>en-US</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="/feeds/posts" rel="self" type="application/rss+xml"/>
@@ -125,7 +151,9 @@ ${items}
 </rss>`;
   }
 
-  private buildAtomXml(entries: FeedEntry[]): string {
+  private async buildAtomXml(entries: FeedEntry[]): Promise<string> {
+    const [siteTitle, siteUrl] = await Promise.all([this.getSiteTitle(), this.getSiteUrl()]);
+
     const items = entries
       .map(
         (e) => `  <entry>
@@ -141,16 +169,18 @@ ${items}
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>NodePress</title>
+  <title>${this.escapeXml(siteTitle)}</title>
   <link href="/feeds/posts" rel="self"/>
-  <id>/</id>
+  <id>${this.escapeXml(siteUrl)}</id>
   <updated>${new Date().toISOString()}</updated>
-  <subtitle>Latest content from NodePress</subtitle>
+  <subtitle>Latest content from ${this.escapeXml(siteTitle)}</subtitle>
 ${items}
 </feed>`;
   }
 
-  private buildCommentsRssXml(entries: CommentFeedEntry[]): string {
+  private async buildCommentsRssXml(entries: CommentFeedEntry[]): Promise<string> {
+    const [siteTitle, siteUrl] = await Promise.all([this.getSiteTitle(), this.getSiteUrl()]);
+
     const items = entries
       .map(
         (e) => `    <item>
@@ -167,9 +197,9 @@ ${items}
     return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>NodePress - Recent Comments</title>
-    <link>/</link>
-    <description>Recent comments on NodePress</description>
+    <title>${this.escapeXml(siteTitle)} - Recent Comments</title>
+    <link>${this.escapeXml(siteUrl)}</link>
+    <description>Recent comments on ${this.escapeXml(siteTitle)}</description>
     <language>en-US</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="/feeds/comments" rel="self" type="application/rss+xml"/>
@@ -178,7 +208,9 @@ ${items}
 </rss>`;
   }
 
-  private buildCommentsAtomXml(entries: CommentFeedEntry[]): string {
+  private async buildCommentsAtomXml(entries: CommentFeedEntry[]): Promise<string> {
+    const [siteTitle, siteUrl] = await Promise.all([this.getSiteTitle(), this.getSiteUrl()]);
+
     const items = entries
       .map(
         (e) => `  <entry>
@@ -197,11 +229,11 @@ ${items}
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>NodePress - Recent Comments</title>
+  <title>${this.escapeXml(siteTitle)} - Recent Comments</title>
   <link href="/feeds/comments" rel="self"/>
-  <id>/</id>
+  <id>${this.escapeXml(siteUrl)}</id>
   <updated>${new Date().toISOString()}</updated>
-  <subtitle>Recent comments on NodePress</subtitle>
+  <subtitle>Recent comments on ${this.escapeXml(siteTitle)}</subtitle>
 ${items}
 </feed>`;
   }

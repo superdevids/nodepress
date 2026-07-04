@@ -59,7 +59,11 @@ services:
       - 'max_replication_slots=4'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./packages/db/prisma/migrations:/docker-entrypoint-initdb.d:ro
+      # Prisma handles its own migrations via prisma migrate deploy
+      # DO NOT mount migrations to docker-entrypoint-initdb.d:
+      # PostgreSQL would try to execute migration SQL out of order,
+      # conflicting with Prisma's migration tracking table (_prisma_migrations).
+      # - ./packages/db/prisma/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U nodepress -d nodepress']
       interval: 10s

@@ -22,6 +22,7 @@ WORKDIR /app
 
 COPY pnpm-workspace.yaml ./
 COPY package.json ./
+COPY pnpm-lock.yaml ./
 COPY turbo.json ./
 
 COPY apps/api/package.json ./apps/api/
@@ -151,6 +152,8 @@ COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/admin/.next ./apps/admin/.next
 COPY --from=builder /app/apps/admin/package.json ./apps/admin/package.json
 COPY --from=builder /app/apps/admin/public ./apps/admin/public
+COPY --from=builder /app/apps/admin/next.config.js ./apps/admin/next.config.js
+COPY --from=builder /app/apps/admin/tsconfig.json ./apps/admin/tsconfig.json
 
 COPY --from=builder /app/packages ./packages
 

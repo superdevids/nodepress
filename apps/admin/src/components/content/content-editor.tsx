@@ -1,13 +1,16 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import dynamic from "next/dynamic";
-import { ContentForm, type ContentFormData } from "./content-form";
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { ContentForm, type ContentFormData } from './content-form';
+import { useAuth } from '@/lib/auth';
+import { createContentEntry, updateContentEntry } from '@/lib/api-helper';
+import { useToast } from '@/components/ui/toast';
 
-const BlockEditor = dynamic(
-  () => import("@nodepress/editor").then((mod) => mod.BlockEditor),
-  { ssr: false },
-);
+const BlockEditor = dynamic(() => import('@nodepressjs/editor').then((mod) => mod.BlockEditor), {
+  ssr: false,
+});
 
 interface ContentEditorProps {
   contentType: string;
@@ -16,32 +19,61 @@ interface ContentEditorProps {
 }
 
 export function ContentEditor({ contentType, entryId, initialData }: ContentEditorProps) {
-  const [content, setContent] = React.useState<string>(
-    initialData?.content || "",
-  );
+  const [content, setContent] = React.useState<string>(initialData?.content || '');
   const [showBlockEditor, setShowBlockEditor] = React.useState(true);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { token } = useAuth();
+  const { success, error: showError } = useToast();
+  const router = useRouter();
 
-  const handleSubmit = async (data: ContentFormData, action: "draft" | "publish") => {
-    console.log(`${action} ${contentType}:`, { ...data, entryId });
-    await new Promise((resolve) => setTimeout(resolve, 800));
+  const handleSubmit = async (data: ContentFormData, action: 'draft' | 'publish') => {
+    setIsSubmitting(true);
+
+    const payload = {
+      title: data.title,
+      slug:
+        data.slug ||
+        data.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, ''),
+      content: content || data.content || '',
+      excerpt: data.excerpt || '',
+      status: action === 'publish' ? ('published' as const) : ('draft' as const),
+    };
+
+    try {
+      if (entryId) {
+        await updateContentEntry(contentType, entryId, payload, token);
+        success('Updated!', 'Content has been updated successfully.');
+      } else {
+        const res = await createContentEntry(contentType, payload, token);
+        success('Created!', 'Content has been created successfully.');
+        router.push(`/admin/content/${contentType}/${res.data.id}`);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+      showError('Failed to save', message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEditorUpdate = React.useCallback(
-    ({ editor }: { editor: any }) => {
-      const html = editor.getHTML();
-      setContent(html);
-    },
-    [],
-  );
+  const handleEditorUpdate = React.useCallback(({ editor }: { editor: any }) => {
+    const html = editor.getHTML();
+    setContent(html);
+  }, []);
 
   return (
-    <div className="max-w-4xl mx-auto py-6 px-6">
+    <div className="mx-auto max-w-4xl px-6 py-6">
       <div className="mb-4 flex items-center gap-2">
         <button
           type="button"
           onClick={() => setShowBlockEditor(true)}
-          className={`px-3 py-1.5 text-sm rounded-md ${
-            showBlockEditor ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          className={`rounded-md px-3 py-1.5 text-sm ${
+            showBlockEditor
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground'
           }`}
         >
           Block Editor
@@ -49,8 +81,10 @@ export function ContentEditor({ contentType, entryId, initialData }: ContentEdit
         <button
           type="button"
           onClick={() => setShowBlockEditor(false)}
-          className={`px-3 py-1.5 text-sm rounded-md ${
-            !showBlockEditor ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          className={`rounded-md px-3 py-1.5 text-sm ${
+            !showBlockEditor
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground'
           }`}
         >
           Classic Editor
@@ -58,11 +92,8 @@ export function ContentEditor({ contentType, entryId, initialData }: ContentEdit
       </div>
 
       {showBlockEditor ? (
-        <div className="border rounded-lg bg-card mb-6">
-          <BlockEditor
-            content={content}
-            onUpdate={handleEditorUpdate}
-          />
+        <div className="bg-card mb-6 rounded-lg border">
+          <BlockEditor content={content} onUpdate={handleEditorUpdate} />
         </div>
       ) : null}
 
@@ -70,6 +101,7 @@ export function ContentEditor({ contentType, entryId, initialData }: ContentEdit
         contentType={contentType}
         initialData={{ ...initialData, content }}
         onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
       />
     </div>
   );
