@@ -77,7 +77,12 @@ function generateSecret(length = 48) {
 }
 
 function detectPkgManager() {
-  if (fs.existsSync(path.join(ROOT, 'pnpm-lock.yaml'))) return 'pnpm';
+  if (
+    fs.existsSync(path.join(ROOT, 'node_modules', '.pnpm')) &&
+    fs.existsSync(path.join(ROOT, 'pnpm-lock.yaml'))
+  ) {
+    return 'pnpm';
+  }
   if (fs.existsSync(path.join(ROOT, 'yarn.lock'))) return 'yarn';
   return 'npm';
 }
@@ -106,17 +111,6 @@ async function checkEnv() {
 
   const pm = detectPkgManager();
   ok(`Package manager: ${pm}`);
-
-  if (pm === 'pnpm') {
-    const pnpmVer = capture('pnpm --version');
-    if (!pnpmVer) {
-      warn('pnpm not found. Installing globally...');
-      run('npm install -g pnpm@latest');
-      ok('pnpm installed');
-    } else {
-      ok(`pnpm ${pnpmVer}`);
-    }
-  }
 
   return pm;
 }
