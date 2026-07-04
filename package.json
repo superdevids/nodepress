@@ -36,6 +36,7 @@
   "author": "NodePress Team",
   "description": "Production-ready WordPress-compatible CMS built with Node.js / TypeScript — NestJS, Next.js, Prisma, PostgreSQL",
   "scripts": {
+    "start": "node start.js",
     "setup": "bash scripts/setup.sh",
     "setup:win": "powershell -ExecutionPolicy Bypass -File scripts/setup.ps1",
     "go": "pnpm setup && pnpm dev",

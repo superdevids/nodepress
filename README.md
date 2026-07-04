@@ -1,62 +1,58 @@
 # NodePress — CMS for Everyone
 
-> One click to install. Zero config. WordPress-compatible.
+> WordPress-compatible. Built with Node.js. One command to start.
 
-## 🚀 Install in 2 Minutes
+## 🚀 Install (2 Minutes)
 
-### Windows:
-
-Just **double-click** `install.bat`
-
-### Mac / Linux:
-
-Open Terminal and run:
+### 1. Download
 
 ```bash
-bash install.sh
+git clone https://github.com/superdevids/nodepress.git
+cd nodepress
 ```
 
-✅ That's it! Your browser will open to the Setup Wizard.
+### 2. Install dependencies
 
-### What You Need:
+```bash
+npm i
+```
 
-- 💻 **A computer** (Windows, Mac, or Linux)
-- 🌐 **Internet connection** (for first-time setup)
+### 3. Start
 
-Everything else is automatic! The installer will check if you have Docker or Node.js
-and guide you through any missing pieces.
+```bash
+npm start
+```
 
-### After Installation:
+**✅ That's it!** Your browser will open to the Setup Wizard.
 
-1. Follow the 5-step Setup Wizard in your browser
-2. Create your admin account
-3. Start creating content!
+**System Requirements:** Just a computer with Windows, Mac, or Linux.
 
-## ✨ Features
+---
 
-- 📝 **Content Management** — Posts, pages, custom types
-- 🖼️ **Media Library** — Upload, edit, organize
-- 🔌 **13 Plugins** — SEO, Comments, Analytics, Security, and more
-- 🎨 **Block Editor** — Rich text editing like WordPress
-- 👥 **User Roles** — 6 roles with granular permissions
-- 🌐 **REST + GraphQL APIs** — For developers
-- 🔒 **Security** — Built-in: CSP, CORS, 2FA, rate limiting
-- 📦 **Docker Support** — One-command deployment
+## ✨ What You Get
 
-## 📖 Documentation
+| Feature                   | Description                                                 |
+| ------------------------- | ----------------------------------------------------------- |
+| 📝 **Content Management** | Posts, pages, custom types                                  |
+| 🖼️ **Media Library**      | Upload, edit, organize images                               |
+| 🔌 **13 Plugins**         | SEO, Comments, Security, Analytics, Backup, Forms, and more |
+| 🎨 **Block Editor**       | Rich text editing (like WordPress Gutenberg)                |
+| 👥 **User Roles**         | 6 roles: Super Admin → Subscriber                           |
+| 🌐 **REST + GraphQL**     | Both APIs built-in                                          |
+| 🔒 **Security**           | CSP, CORS, 2FA, Rate Limiting                               |
+| 📦 **Docker**             | One-command production deployment                           |
 
-| Guide                 | For                   |
-| --------------------- | --------------------- |
-| 📄 GETTING-STARTED.md | Complete visual guide |
-| ❓ FAQ.md             | Common questions      |
-| 📘 USER-GUIDE.md      | Full user manual      |
-| 👨‍💻 QUICK-START.md     | Developer reference   |
-| 📚 docs/              | All documentation     |
+---
 
-## 🤝 Contributing
+## 📖 Guides
 
-See CONTRIBUTING.md for developers who want to help build NodePress.
+| Guide                 | For                             |
+| --------------------- | ------------------------------- |
+| 📄 GETTING-STARTED.md | Visual walkthrough for everyone |
+| 📘 docs/USER-GUIDE.md | Complete user manual            |
+| ❓ docs/FAQ.md        | Common questions                |
+| 👨‍💻 QUICK-START.md     | Developer quick reference       |
 
 ## 📜 License
 
-MIT
+MIT — Free for personal and commercial use.
